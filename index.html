@@ -341,11 +341,11 @@
                         provider.setCustomParameters({ prompt: 'select_account' });
                         await auth.signInWithPopup(provider);
                     } else {
-                        // Mod Simulasi Tempatan (Membolehkan pengujian tanpa API key Firebase aktif)
+                        // Mod Simulasi Tempatan (Tanpa Firebase Auth aktif)
                         const choice = window.confirm(
-                            "Firebase sedang beroperasi dalam Mod Simulasi Tempatan.\n\n" +
-                            "Klik [OK] untuk simulasi LOG MASUK GURU DELIMa (g-123456@moe-dl.edu.my)\n" +
-                            "Klik [Cancel] untuk simulasi LOG MASUK PENTADBIR UTAMA (sekolah-7608@moe-dl.edu.my)"
+                            "Sistem sedang beroperasi dalam Mod Simulasi Tempatan.\n\n" +
+                            "Klik [OK] untuk masuk sebagai GURU DELIMa (g-123456@moe-dl.edu.my)\n" +
+                            "Klik [Cancel] untuk masuk sebagai PENTADBIR UTAMA (sekolah-7608@moe-dl.edu.my)"
                         );
                         if (choice) {
                             setUserRole("guru");
@@ -363,6 +363,22 @@
                 }
             };
 
+            const handleLogout = async () => {
+                try {
+                    // Tetapkan nilai flag di sessionStorage sebelum melepaskan sesi Firebase
+                    sessionStorage.setItem('explicit_logout', 'true');
+                    
+                    if (typeof firebase !== 'undefined' && auth) {
+                        await auth.signOut();
+                    }
+                    setCurrentUser(null);
+                    setUserRole("pelawat");
+                    showToastMessage("Anda telah log keluar dengan selamat.", "info");
+                } catch (error) {
+                    showToastMessage("Ralat log keluar.", "error");
+                }
+            };
+
             // Rule 3 - Jalankan Autentikasi terlebih dahulu
             useEffect(() => {
                 const initAuth = async () => {
@@ -373,7 +389,7 @@
                         return;
                     }
 
-                    // Jika pengguna telah menekan butang Log Keluar secara manual, sekat log masuk automatik token sistem
+                    // Jika pengguna telah menekan butang Log Keluar secara manual, masuk sebagai anonymous tanpa token otomatis
                     if (sessionStorage.getItem('explicit_logout') === 'true') {
                         try {
                             await auth.signInAnonymously();
@@ -436,7 +452,7 @@
 
             // Rule 3 - Lindungi kueri Firestore dengan status login aktif (currentUser)
             useEffect(() => {
-                if (!currentUser) return; // Lindungi agar tidak terjadi error hak akses
+                if (!currentUser) return; // Lindungi agar tidak terjadi error hak akses sebelum login siap
                 if (typeof firebase === 'undefined' || firebaseConfig.apiKey === "mock-api-key-sps-skb") return;
 
                 const pathAthletes = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('athletes');
@@ -504,7 +520,7 @@
                     Merah: { warna: "bg-red-500", teks: "text-red-600", glow: "hover:shadow-[0_0_20px_rgba(239,68,68,0.4)] hover:border-red-300" },
                     Biru: { warna: "bg-blue-500", teks: "text-blue-600", glow: "hover:shadow-[0_0_20px_rgba(59,130,246,0.4)] hover:border-blue-300" },
                     Hijau: { warna: "bg-emerald-500", teks: "text-emerald-600", glow: "hover:shadow-[0_0_20px_rgba(16,185,129,0.4)] hover:border-emerald-300" },
-                    Kuning: { warna: "bg-amber-400", teks: "text-amber-500", glow: "hover:shadow-[0_0_20px_rgba(251,191,36,0.4)] hover:border-amber-300" },
+                    Kuning: { warna: "bg-amber-400", teks: "text-amber-505", glow: "hover:shadow-[0_0_20px_rgba(251,191,36,0.4)] hover:border-amber-300" },
                     Ungu: { warna: "bg-purple-500", teks: "text-purple-600", glow: "hover:shadow-[0_0_20px_rgba(168,85,247,0.4)] hover:border-purple-300" },
                     Oren: { warna: "bg-orange-500", teks: "text-orange-600", glow: "hover:shadow-[0_0_20px_rgba(249,115,22,0.4)] hover:border-orange-300" },
                     "Merah Jambu": { warna: "bg-pink-500", teks: "text-pink-600", glow: "hover:shadow-[0_0_20px_rgba(236,72,153,0.4)] hover:border-pink-300" },
@@ -650,20 +666,6 @@
                     document.removeEventListener("mousedown", handleClickOutside);
                 };
             }, []);
-
-            const handleLogout = async () => {
-                try {
-                    // Tetapkan nilai flag di sessionStorage sebelum melepaskan sesi Firebase
-                    sessionStorage.setItem('explicit_logout', 'true');
-                    
-                    await auth.signOut();
-                    setCurrentUser(null);
-                    setUserRole("pelawat");
-                    showToastMessage("Anda telah log keluar dengan selamat.", "info");
-                } catch (error) {
-                    showToastMessage("Ralat log keluar.", "error");
-                }
-            };
 
             const handleSavePoints = async () => {
                 if (!checkAuthority()) return;
@@ -1826,7 +1828,6 @@
                         </div>
                     </div>
 
-                    {}
                     <main className="max-w-7xl mx-auto px-4 py-6 flex-grow w-full">
                         {/* DASHBOARD TAB */}
                         {activeTab === "dashboard" && (
@@ -1905,7 +1906,7 @@
 
                                         <div className="space-y-4">
                                             {announcements.length === 0 ? (
-                                                <p className="text-xs text-slate-450 italic py-4">{t.noAnnounce}</p>
+                                                <p className="text-xs text-slate-455 italic py-4">{t.noAnnounce}</p>
                                             ) : (
                                                 announcements.map((announce) => (
                                                     <div key={announce.id} className="relative group bg-amber-50/50 border border-amber-100 rounded-xl p-4 flex items-start gap-3">
@@ -2301,7 +2302,7 @@
                                                 {Object.keys(housesMetadata).map(name => <option key={name} value={name}>{name}</option>)}
                                             </select>
                                             <select value={filterEvent} onChange={(e) => setFilterEvent(e.target.value)} className="p-2 border rounded-xl text-xs font-semibold bg-white">
-                                                <option value="Semua">Semua Acara Lumba</option>
+                                                <option value="Semua">Senarai Semua Lumba</option>
                                                 {events.map(ev => <option key={ev.id} value={ev.id}>{ev.nama} ({ev.kategori})</option>)}
                                             </select>
                                         </div>
@@ -2914,7 +2915,6 @@
                         )}
                     </main>
 
-                    {}
                     {/* Modals Pentadbir */}
                     {showDiagModal && (
                         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[10000]">

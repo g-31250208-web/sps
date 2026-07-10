@@ -45,7 +45,6 @@
     <!-- Babel Standalone CDN -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-    <!-- Daftarkan preset klasik secara terprogram bagi mengelakkan ralat kompilasi modul -->
     <script>
         Babel.registerPreset('react-classic', {
             presets: [
@@ -124,49 +123,13 @@
             return arr;
         };
 
-        const HISTORICAL_CHAMPIONSHIP_RECORDS = [
-            { eventName: "Lari 100m", category: "L12", recordText: "12.20s", athlete: "Adzrul Bin Amin", year: 2022, isTrack: true },
-            { eventName: "Lari 100m", category: "P12", recordText: "13.80s", athlete: "Sharifah Aminah", year: 2023, isTrack: true },
-            { eventName: "Lari 200m", category: "L12", recordText: "25.10s", athlete: "Mohd Daniel", year: 2021, isTrack: true },
-            { eventName: "Lari 200m", category: "P12", recordText: "28.80s", athlete: "Siti Sarah", year: 2024, isTrack: true },
-            { eventName: "Lompat Jauh", category: "L9", recordText: "3.85m", athlete: "Ryan Danial", year: 2023, isTrack: false },
-            { eventName: "Lontar Peluru", category: "P12", recordText: "8.12m", athlete: "Nurul Hidayah", year: 2020, isTrack: false }
-        ];
-
-        const INITIAL_ATHLETES = [
-            { id: "ath_1", noAtlet: "101", nama: "Ahmad Daniyal Bin Rosli", kelas: "6 Bestari", rumah: "Merah", jantina: "Lelaki", kategori: "L12" },
-            { id: "ath_2", noAtlet: "102", nama: "Muhammad Amirul Hakim", kelas: "5 Gemilang", rumah: "Biru", jantina: "Lelaki", kategori: "L12" },
-            { id: "ath_3", noAtlet: "201", nama: "Siti Nurhaliza Binti Ahmad", kelas: "6 Bestari", rumah: "Hijau", jantina: "Perempuan", kategori: "P12" },
-            { id: "ath_4", noAtlet: "301", nama: "Chong Wei Kiat", kelas: "4 Dinamik", rumah: "Kuning", jantina: "Lelaki", kategori: "L9" }
-        ];
-
-        const INITIAL_EVENTS = [
-            { id: "evt_1", nama: "Lari 100m", kategori: "L12", jenis: "Balapan", tarikh: "2026-07-15", masa: "08:30" },
-            { id: "evt_2", nama: "Lari 200m", kategori: "P12", jenis: "Balapan", tarikh: "2026-07-15", masa: "09:30" },
-            { id: "evt_3", nama: "Lompat Jauh", kategori: "L9", jenis: "Padang", tarikh: "2026-07-16", masa: "08:00" }
-        ];
-
-        const INITIAL_RESULTS = [
-            { id: "res_1", eventId: "evt_1", athleteId: "ath_1", kedudukan: "1", catatan: "12.45s" },
-            { id: "res_2", eventId: "evt_1", athleteId: "ath_2", kedudukan: "2", catatan: "12.80s" }
-        ];
-
-        const INITIAL_HEATS = [
-            { id: "heat_1", eventId: "evt_1", athleteId: "ath_1", saringanNo: "1", catatan: "12.50s" },
-            { id: "heat_2", eventId: "evt_1", athleteId: "ath_2", saringanNo: "1", catatan: "12.90s" }
-        ];
-
-        const INITIAL_HOUSES_METADATA = {
-            Merah: { slogan: "Merah Membara Juara Perkasa", guruPenasihat: "Cikgu Jabdi, Cikgu Roslan", bonusPoints: 10, warnaLabel: "Merah" },
-            Biru: { slogan: "Biru Selamanya Garang Berwibawa", guruPenasihat: "Cikgu Halim, Cikgu Aminah", bonusPoints: 5, warnaLabel: "Biru" },
-            Hijau: { slogan: "Hijau Sentiasa Menang Bergaya", guruPenasihat: "Cikgu Latifah, Cikgu Bakri", bonusPoints: 8, warnaLabel: "Hijau" },
-            Kuning: { slogan: "Kuning Diraja Pantas Menyengat", guruPenasihat: "Cikgu Tan, Cikgu Kumar", bonusPoints: 12, warnaLabel: "Kuning" }
-        };
-
-        const DEFAULT_ANNOUNCEMENTS = [
-            { id: "ann_1", text: "Kejohanan Sukan Tahunan SK Bikang kini dibuka secara rasmi oleh Yang Berbahagia Guru Besar!", date: "10/07/2026", author: "Urus Setia Guru" },
-            { id: "ann_2", text: "Acara Lari 100m (L12) akan bermula pada pukul 8:30 pagi esok. Semua peserta diminta bersiap sedia di garisan permulaan.", date: "10/07/2026", author: "Pelepas Larian" }
-        ];
+        const HISTORICAL_CHAMPIONSHIP_RECORDS = [];
+        const INITIAL_ATHLETES = [];
+        const INITIAL_EVENTS = [];
+        const INITIAL_RESULTS = [];
+        const INITIAL_HEATS = [];
+        const INITIAL_HOUSES_METADATA = {};
+        const DEFAULT_ANNOUNCEMENTS = [];
 
         const TrendingUpIcon = () => (
             <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -198,7 +161,9 @@
             </svg>
         );
 
-        const firebaseConfig = {
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'sps_sk_bikang_v1';
+        
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
             apiKey: "mock-api-key-sps-skb",
             authDomain: "sps-skb-mock.firebaseapp.com",
             projectId: "sps-skb-mock",
@@ -208,7 +173,6 @@
         };
         
         let db, auth;
-        const appId = "sps_sk_bikang_v1";
         
         try {
             if (typeof firebase !== 'undefined') {
@@ -222,7 +186,6 @@
             }
         } catch (e) {
             console.warn("Firebase offline or not initialized. Running on local state engine.", e);
-            // Robust local mockup object to prevent undefined errors
             db = {
                 collection: () => ({
                     doc: () => ({
@@ -247,6 +210,7 @@
             auth = {
                 onAuthStateChanged: (cb) => { cb(null); return () => {}; },
                 signInAnonymously: () => Promise.resolve(),
+                signInWithCustomToken: () => Promise.resolve(),
                 signOut: () => Promise.resolve()
             };
         }
@@ -269,14 +233,14 @@
             const [heats, setHeats] = useState(INITIAL_HEATS);
             const [housesMetadata, setHousesMetadata] = useState(INITIAL_HOUSES_METADATA);
             const [announcements, setAnnouncements] = useState(DEFAULT_ANNOUNCEMENTS);
-            const [isEditMode, setIsEditMode] = useState(false); // Toggle mod kemaskini inline murid
+            const [isEditMode, setIsEditMode] = useState(false); 
 
             // Saringan Atlet
             const [filterHouse, setFilterHouse] = useState("Semua");
             const [filterEvent, setFilterEvent] = useState("Semua");
 
             // Form States
-            const [athleteForm, setAthleteForm] = useState({ id: "", noAtlet: "", nama: "", kelas: "", rumah: "Merah", jantina: "Lelaki", kategori: "L12" });
+            const [athleteForm, setAthleteForm] = useState({ id: "", noAtlet: "", nama: "", kelas: "", rumah: "", jantina: "Lelaki", kategori: "L12" });
             const [isEditingAthlete, setIsEditingAthlete] = useState(false);
             const [eventForm, setEventForm] = useState({ id: "", nama: "", kategori: "L12", jenis: "Balapan", tarikh: "", masa: "" });
             const [isEditingEvent, setIsEditingEvent] = useState(false);
@@ -292,8 +256,8 @@
             const [houseForm, setHouseForm] = useState({ nama: "", slogan: "", guruPenasihat: "", bonusPoints: 0, warnaLabel: "Ungu" });
             const [newAdvisorText, setNewAdvisorText] = useState({});
 
-            const [editingAdvisor, setEditingAdvisor] = useState(null); // { houseName, oldName, newName }
-            const [editingMember, setEditingMember] = useState(null); // athlete object to edit
+            const [editingAdvisor, setEditingAdvisor] = useState(null); 
+            const [editingMember, setEditingMember] = useState(null); 
 
             // Borang Hebahan State
             const [announceFormText, setAnnounceFormText] = useState("");
@@ -368,11 +332,10 @@
 
             const handleGoogleLogin = async () => {
                 try {
-                    if (typeof firebase !== 'undefined' && firebase.auth) {
+                    if (typeof firebase !== 'undefined' && firebase.auth && firebaseConfig.apiKey !== "mock-api-key-sps-skb") {
                         const provider = new firebase.auth.GoogleAuthProvider();
                         await auth.signInWithPopup(provider);
                     } else {
-                        // Safe fallback login for mock preview env
                         setUserRole("admin");
                         setCurrentUser({ displayName: "Cikgu Administrator", email: "sekolah-7608@moe-dl.edu.my", isAnonymous: false });
                         showToastMessage("Akses Pentadbir Utama Diterima (Mock Offline Mode)!", "success");
@@ -403,7 +366,11 @@
                         setCurrentUser(null);
                         setUserRole("pelawat");
                         try {
-                            await auth.signInAnonymously();
+                            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                                await auth.signInWithCustomToken(__initial_auth_token);
+                            } else {
+                                await auth.signInAnonymously();
+                            }
                             setIsCloudActive(true);
                         } catch (e) {
                             console.warn("Firestore offline fallback.", e);
@@ -415,7 +382,14 @@
             }, []);
 
             useEffect(() => {
-                if (!isCloudActive || typeof firebase === 'undefined') return;
+                const houseNames = Object.keys(housesMetadata);
+                if (houseNames.length > 0 && !athleteForm.rumah) {
+                    setAthleteForm(prev => ({ ...prev, rumah: houseNames[0] }));
+                }
+            }, [housesMetadata]);
+
+            useEffect(() => {
+                if (!isCloudActive || typeof firebase === 'undefined' || firebaseConfig.apiKey === "mock-api-key-sps-skb") return;
 
                 const pathAthletes = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('athletes');
                 const pathEvents = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('events');
@@ -426,25 +400,25 @@
                 const unsubAthletes = pathAthletes.onSnapshot((snapshot) => {
                     const data = [];
                     snapshot.forEach(doc => data.push({ id: doc.id, ...doc.data() }));
-                    if (data.length > 0) setAthletes(data);
+                    setAthletes(data);
                 }, (e) => console.error("Ralat atlet: ", e));
 
                 const unsubEvents = pathEvents.onSnapshot((snapshot) => {
                     const data = [];
                     snapshot.forEach(doc => data.push({ id: doc.id, ...doc.data() }));
-                    if (data.length > 0) setEvents(data);
+                    setEvents(data);
                 }, (e) => console.error("Ralat acara: ", e));
 
                 const unsubResults = pathResults.onSnapshot((snapshot) => {
                     const data = [];
                     snapshot.forEach(doc => data.push({ id: doc.id, ...doc.data() }));
-                    if (data.length > 0) setResults(data);
+                    setResults(data);
                 }, (e) => console.error("Ralat keputusan: ", e));
 
                 const unsubHeats = pathHeats.onSnapshot((snapshot) => {
                     const data = [];
                     snapshot.forEach(doc => data.push({ id: doc.id, ...doc.data() }));
-                    if (data.length > 0) setHeats(data);
+                    setHeats(data);
                 }, (e) => console.error("Ralat saringan: ", e));
 
                 const unsubMeta = pathMeta.doc('houses').onSnapshot((doc) => {
@@ -643,7 +617,7 @@
             const handleSavePoints = async () => {
                 if (!checkAuthority()) return;
                 try {
-                    if (isCloudActive && typeof firebase !== 'undefined') {
+                    if (isCloudActive && typeof firebase !== 'undefined' && firebaseConfig.apiKey !== "mock-api-key-sps-skb") {
                         await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('metadata').doc('points').set(pointsConfig);
                     }
                     setShowPointsModal(false);
@@ -657,7 +631,7 @@
                 e.preventDefault();
                 if (!checkAuthority()) return;
                 try {
-                    if (isCloudActive && typeof firebase !== 'undefined') {
+                    if (isCloudActive && typeof firebase !== 'undefined' && firebaseConfig.apiKey !== "mock-api-key-sps-skb") {
                         await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('metadata').doc('gas').set({ url: gasUrl });
                     }
                     setShowGasModal(false);
@@ -670,7 +644,7 @@
             const handleSaveConfig = async () => {
                 if (!checkAuthority()) return;
                 try {
-                    if (isCloudActive && typeof firebase !== 'undefined') {
+                    if (isCloudActive && typeof firebase !== 'undefined' && firebaseConfig.apiKey !== "mock-api-key-sps-skb") {
                         await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('metadata').doc('config').set({ activeYear });
                     }
                     showToastMessage(`Tahun kejohanan aktif berjaya ditukar kepada ${activeYear}!`, "success");
@@ -694,7 +668,7 @@
                         await syncWithGas("houses", "save", { id: name, name: `Rumah ${name}`, slogan: meta.slogan, guruPenasihat: meta.guruPenasihat, bonusPoints: meta.bonusPoints, warnaLabel: meta.warnaLabel });
                     }
                     for (const ath of athletes) {
-                        await syncWithGas("students", "save", { id: ath.id, name: ath.nama, class: ath.kelas, house: ath.rumah, gender: ath.jantina, tahap: ath.kategori });
+                        await syncWithGas("students", "save", { id: ath.id, noAtlet: ath.noAtlet, name: ath.nama, class: ath.kelas, house: ath.rumah, gender: ath.jantina, tahap: ath.kategori });
                     }
                     for (const ev of events) {
                         await syncWithGas("events", "save", { id: ev.id, name: ev.nama, category: ev.jenis, level: ev.kategori, date: ev.tarikh, time: ev.masa });
@@ -731,7 +705,7 @@
                     message: "Tindakan ini akan memadamkan semua rekod murid (atlet), senarai acara, rekod saringan larian, dan keputusan pingat semasa. Adakah anda pasti?",
                     onConfirm: async () => {
                         try {
-                            if (isCloudActive && typeof firebase !== 'undefined') {
+                            if (isCloudActive && typeof firebase !== 'undefined' && firebaseConfig.apiKey !== "mock-api-key-sps-skb") {
                                 const athletesRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('athletes');
                                 const eventsRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('events');
                                 const resultsRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('results');
@@ -1195,12 +1169,17 @@
             const handleAthleteSubmit = async (e) => {
                 e.preventDefault();
                 if (!checkAuthority()) return;
+
+                if (!athleteForm.rumah) {
+                    showToastMessage("Ralat: Sila pastikan sekurang-kurangnya satu Rumah Sukan didaftarkan terlebih dahulu.", "error");
+                    return;
+                }
                 
                 const docId = athleteForm.id || "A_" + Date.now();
                 const updatedAthlete = { ...athleteForm, id: docId };
 
                 try {
-                    if (isCloudActive && typeof firebase !== 'undefined') {
+                    if (isCloudActive && typeof firebase !== 'undefined' && firebaseConfig.apiKey !== "mock-api-key-sps-skb") {
                         await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('athletes').doc(docId).set(updatedAthlete);
                         await syncWithGas("students", "save", { id: docId, noAtlet: athleteForm.noAtlet, name: athleteForm.nama, class: athleteForm.kelas, house: athleteForm.rumah, gender: athleteForm.jantina, tahap: athleteForm.kategori });
                     } else {
@@ -1211,7 +1190,7 @@
                         }
                     }
                     showToastMessage(isEditingAthlete ? "Ahli berjaya dikemaskini!" : "Ahli berjaya didaftarkan!");
-                    setAthleteForm({ id: "", noAtlet: "", nama: "", kelas: "", rumah: "Merah", jantina: "Lelaki", kategori: "L12" });
+                    setAthleteForm({ id: "", noAtlet: "", nama: "", kelas: "", rumah: Object.keys(housesMetadata)[0] || "", jantina: "Lelaki", kategori: "L12" });
                     setIsEditingAthlete(false);
                 } catch (err) {
                     showToastMessage("Ralat menulis ke pangkalan data.", "error");
@@ -1226,7 +1205,7 @@
                 const updatedEvent = { ...eventForm, id: docId };
 
                 try {
-                    if (isCloudActive && typeof firebase !== 'undefined') {
+                    if (isCloudActive && typeof firebase !== 'undefined' && firebaseConfig.apiKey !== "mock-api-key-sps-skb") {
                         await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('events').doc(docId).set(updatedEvent);
                         await syncWithGas("events", "save", { id: docId, name: eventForm.nama, category: eventForm.jenis, level: eventForm.kategori, date: eventForm.tarikh, time: eventForm.masa });
                     } else {
@@ -1252,7 +1231,7 @@
                     message: "Tindakan ini akan memadamkan acara sukan ini beserta segala catatan pemenang keputusan pingat di bawahnya.",
                     onConfirm: async () => {
                         try {
-                            if (isCloudActive && typeof firebase !== 'undefined') {
+                            if (isCloudActive && typeof firebase !== 'undefined' && firebaseConfig.apiKey !== "mock-api-key-sps-skb") {
                                 await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('events').doc(eventId).delete();
                                 await syncWithGas("events", "delete", { id: eventId });
                             } else {
@@ -1286,7 +1265,7 @@
                 const newHeat = { id: docId, ...heatForm };
 
                 try {
-                    if (isCloudActive && typeof firebase !== 'undefined') {
+                    if (isCloudActive && typeof firebase !== 'undefined' && firebaseConfig.apiKey !== "mock-api-key-sps-skb") {
                         await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('heats').doc(docId).set(newHeat);
                     } else {
                         setHeats([...heats, newHeat]);
@@ -1306,7 +1285,7 @@
                     message: "Tindakan ini akan memadamkan catatan kelayakan saringan atlet ini.",
                     onConfirm: async () => {
                         try {
-                            if (isCloudActive && typeof firebase !== 'undefined') {
+                            if (isCloudActive && typeof firebase !== 'undefined' && firebaseConfig.apiKey !== "mock-api-key-sps-skb") {
                                 await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('heats').doc(heatId).delete();
                             } else {
                                 setHeats(heats.filter(h => h.id !== heatId));
@@ -1339,7 +1318,7 @@
                 const newResult = { id: docId, ...resultForm };
 
                 try {
-                    if (isCloudActive && typeof firebase !== 'undefined') {
+                    if (isCloudActive && typeof firebase !== 'undefined' && firebaseConfig.apiKey !== "mock-api-key-sps-skb") {
                         await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('results').doc(docId).set(newResult);
                         await syncWithGas("results", "save", { id: docId, eventId: resultForm.eventId, gold: resultForm.athleteId, goldRecord: resultForm.catatan });
                     } else {
@@ -1360,7 +1339,7 @@
                     message: "Tindakan ini akan melaras semula mata rumah sukan berkaitan secara automatik.",
                     onConfirm: async () => {
                         try {
-                            if (isCloudActive && typeof firebase !== 'undefined') {
+                            if (isCloudActive && typeof firebase !== 'undefined' && firebaseConfig.apiKey !== "mock-api-key-sps-skb") {
                                 await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('results').doc(resId).delete();
                                 await syncWithGas("results", "delete", { id: resId });
                             } else {
@@ -1396,7 +1375,7 @@
                 };
 
                 try {
-                  if (isCloudActive && typeof firebase !== 'undefined') {
+                  if (isCloudActive && typeof firebase !== 'undefined' && firebaseConfig.apiKey !== "mock-api-key-sps-skb") {
                     await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('metadata').doc('houses').set(updated);
                     await syncWithGas("houses", "save", { id: cleanName, name: `Rumah ${cleanName}`, slogan: houseForm.slogan, guruPenasihat: "", bonusPoints: parseInt(houseForm.bonusPoints) || 0, warnaLabel: houseForm.warnaLabel });
                   } else {
@@ -1434,7 +1413,7 @@
                 };
 
                 try {
-                  if (isCloudActive && typeof firebase !== 'undefined') {
+                  if (isCloudActive && typeof firebase !== 'undefined' && firebaseConfig.apiKey !== "mock-api-key-sps-skb") {
                     await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('metadata').doc('houses').set(updatedMeta);
                     await syncWithGas("houses", "save", { id: houseName, name: `Rumah ${houseName}`, slogan: currentMeta.slogan, guruPenasihat: existingAdvisors.join(', '), bonusPoints: currentMeta.bonusPoints, warnaLabel: currentMeta.warnaLabel });
                   } else {
@@ -1463,7 +1442,7 @@
                 };
 
                 try {
-                  if (isCloudActive && typeof firebase !== 'undefined') {
+                  if (isCloudActive && typeof firebase !== 'undefined' && firebaseConfig.apiKey !== "mock-api-key-sps-skb") {
                     await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('metadata').doc('houses').set(updatedMeta);
                     await syncWithGas("houses", "save", { id: houseName, name: `Rumah ${houseName}`, slogan: currentMeta.slogan, guruPenasihat: filtered.join(', '), bonusPoints: currentMeta.bonusPoints, warnaLabel: currentMeta.warnaLabel });
                   } else {
@@ -1495,7 +1474,7 @@
                 };
 
                 try {
-                  if (isCloudActive && typeof firebase !== 'undefined') {
+                  if (isCloudActive && typeof firebase !== 'undefined' && firebaseConfig.apiKey !== "mock-api-key-sps-skb") {
                     await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('metadata').doc('houses').set(updatedMeta);
                     await syncWithGas("houses", "save", { id: houseName, name: `Rumah ${houseName}`, slogan: currentMeta.slogan, guruPenasihat: updated.join(', '), bonusPoints: currentMeta.bonusPoints, warnaLabel: currentMeta.warnaLabel });
                   } else {
@@ -1512,7 +1491,7 @@
                 if (!checkAuthority() || !editingMember) return;
                 
                 try {
-                    if (isCloudActive && typeof firebase !== 'undefined') {
+                    if (isCloudActive && typeof firebase !== 'undefined' && firebaseConfig.apiKey !== "mock-api-key-sps-skb") {
                         await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('athletes').doc(editingMember.id).set(editingMember);
                         await syncWithGas("students", "save", { 
                             id: editingMember.id, 
@@ -1565,7 +1544,7 @@
                     message: "Apakah anda yakin ingin menghapus ahli ini daripada senarai peserta kejohanan sekolah?",
                     onConfirm: async () => {
                         try {
-                            if (isCloudActive && typeof firebase !== 'undefined') {
+                            if (isCloudActive && typeof firebase !== 'undefined' && firebaseConfig.apiKey !== "mock-api-key-sps-skb") {
                                 await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('athletes').doc(athleteId).delete();
                                 await syncWithGas("students", "delete", { id: athleteId });
                             } else {
@@ -1796,42 +1775,50 @@
                         </div>
                     </div>
 
+                    {}
                     <main className="max-w-7xl mx-auto px-4 py-6 flex-grow w-full">
                         {/* DASHBOARD TAB */}
                         {activeTab === "dashboard" && (
                             <div className="space-y-6">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                                    {houseStandings.map((h, idx) => (
-                                        <div key={h.nama} className={`rounded-2xl p-5 border border-slate-100 shadow-sm relative overflow-hidden bg-white transition-all duration-300 hover:-translate-y-2 cursor-pointer ${h.glow || 'hover:shadow-xl'}`}>
-                                            <div className={`absolute top-0 left-0 w-full h-1.5 ${h.warna}`}></div>
-                                            <div className="flex justify-between items-start">
-                                                <div>
-                                                    <span className="text-[10px] font-black uppercase text-slate-400">Kedudukan #{idx+1}</span>
-                                                    <h3 className="text-lg font-black text-slate-800">{h.nama}</h3>
+                                {houseStandings.length === 0 ? (
+                                    <div className="bg-white p-8 rounded-2xl border text-center shadow-sm">
+                                        <p className="text-sm text-slate-500 font-semibold">⚠️ Tiada Pasukan Rumah Sukan didaftarkan lagi.</p>
+                                        <p className="text-xs text-slate-400 mt-1">Urus Setia Guru boleh mula mendaftarkan pasukan di bawah Tab "🏠 Rumah Sukan".</p>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                        {houseStandings.map((h, idx) => (
+                                            <div key={h.nama} className={`rounded-2xl p-5 border border-slate-100 shadow-sm relative overflow-hidden bg-white transition-all duration-300 hover:-translate-y-2 cursor-pointer ${h.glow || 'hover:shadow-xl'}`}>
+                                                <div className={`absolute top-0 left-0 w-full h-1.5 ${h.warna}`}></div>
+                                                <div className="flex justify-between items-start">
+                                                    <div>
+                                                        <span className="text-[10px] font-black uppercase text-slate-400">Kedudukan #{idx+1}</span>
+                                                        <h3 className="text-lg font-black text-slate-800">{h.nama}</h3>
+                                                    </div>
+                                                    <span className={`text-3xl font-black ${h.teks}`}>{h.mata} <span className="text-xs font-bold text-slate-400">mata</span></span>
                                                 </div>
-                                                <span className={`text-3xl font-black ${h.teks}`}>{h.mata} <span className="text-xs font-bold text-slate-400">mata</span></span>
+                                                <div className="grid grid-cols-4 gap-2 mt-6 text-center text-sm font-bold bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                                    <div className="flex flex-col items-center">
+                                                        <span className="text-5xl drop-shadow-md mb-2 transform hover:scale-110 transition-transform">🥇</span>
+                                                        <p className="text-xl font-extrabold text-slate-800">{h.emas}</p>
+                                                    </div>
+                                                    <div className="flex flex-col items-center">
+                                                        <span className="text-5xl drop-shadow-md mb-2 transform hover:scale-110 transition-transform">🥈</span>
+                                                        <p className="text-xl font-extrabold text-slate-800">{h.perak}</p>
+                                                    </div>
+                                                    <div className="flex flex-col items-center">
+                                                        <span className="text-5xl drop-shadow-md mb-2 transform hover:scale-110 transition-transform">🥉</span>
+                                                        <p className="text-xl font-extrabold text-slate-800">{h.gangsa}</p>
+                                                    </div>
+                                                    <div className="flex flex-col items-center">
+                                                        <span className="text-5xl drop-shadow-md mb-2 transform hover:scale-110 transition-transform">🏅</span>
+                                                        <p className="text-xl font-extrabold text-slate-800">{h.keempat}</p>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div className="grid grid-cols-4 gap-2 mt-6 text-center text-sm font-bold bg-slate-50 p-4 rounded-xl border border-slate-100">
-                                                <div className="flex flex-col items-center">
-                                                    <span className="text-5xl drop-shadow-md mb-2 transform hover:scale-110 transition-transform">🥇</span>
-                                                    <p className="text-xl font-extrabold text-slate-800">{h.emas}</p>
-                                                </div>
-                                                <div className="flex flex-col items-center">
-                                                    <span className="text-5xl drop-shadow-md mb-2 transform hover:scale-110 transition-transform">🥈</span>
-                                                    <p className="text-xl font-extrabold text-slate-800">{h.perak}</p>
-                                                </div>
-                                                <div className="flex flex-col items-center">
-                                                    <span className="text-5xl drop-shadow-md mb-2 transform hover:scale-110 transition-transform">🥉</span>
-                                                    <p className="text-xl font-extrabold text-slate-800">{h.gangsa}</p>
-                                                </div>
-                                                <div className="flex flex-col items-center">
-                                                    <span className="text-5xl drop-shadow-md mb-2 transform hover:scale-110 transition-transform">🏅</span>
-                                                    <p className="text-xl font-extrabold text-slate-800">{h.keempat}</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
+                                        ))}
+                                    </div>
+                                )}
 
                                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                                     <div className="lg:col-span-2 bg-white rounded-2xl p-6 border border-slate-100 shadow-sm relative">
@@ -1866,22 +1853,26 @@
                                         )}
 
                                         <div className="space-y-4">
-                                            {announcements.map((announce) => (
-                                                <div key={announce.id} className="relative group bg-amber-50/50 border border-amber-100 rounded-xl p-4 flex items-start gap-3">
-                                                    <div className="bg-amber-100 text-amber-800 p-2 rounded-lg text-lg">📢</div>
-                                                    <div className="flex-1">
-                                                        <p className="text-xs font-medium text-slate-800 leading-relaxed">{announce.text}</p>
-                                                        <div className="flex items-center gap-3 text-[10px] text-slate-400 font-bold mt-1">
-                                                            <span>👤 {announce.author}</span>
-                                                            <span>•</span>
-                                                            <span>📅 {announce.date}</span>
+                                            {announcements.length === 0 ? (
+                                                <p className="text-xs text-slate-450 italic py-4">{t.noAnnounce}</p>
+                                            ) : (
+                                                announcements.map((announce) => (
+                                                    <div key={announce.id} className="relative group bg-amber-50/50 border border-amber-100 rounded-xl p-4 flex items-start gap-3">
+                                                        <div className="bg-amber-100 text-amber-800 p-2 rounded-lg text-lg">📢</div>
+                                                        <div className="flex-1">
+                                                            <p className="text-xs font-medium text-slate-800 leading-relaxed">{announce.text}</p>
+                                                            <div className="flex items-center gap-3 text-[10px] text-slate-400 font-bold mt-1">
+                                                                <span>👤 {announce.author}</span>
+                                                                <span>•</span>
+                                                                <span>📅 {announce.date}</span>
+                                                            </div>
                                                         </div>
+                                                        {userRole !== "pelawat" && (
+                                                            <button onClick={() => handleDeleteAnnouncement(announce.id)} className="text-slate-400 hover:text-red-500 text-xs" title="Hapus Hebahan">❌</button>
+                                                        )}
                                                     </div>
-                                                    {userRole !== "pelawat" && (
-                                                        <button onClick={() => handleDeleteAnnouncement(announce.id)} className="text-slate-400 hover:text-red-500 text-xs" title="Hapus Hebahan">❌</button>
-                                                    )}
-                                                </div>
-                                            ))}
+                                                ))
+                                            )}
                                         </div>
                                     </div>
 
@@ -1982,179 +1973,186 @@
                                 </div>
 
                                 <div className="lg:col-span-2 space-y-6">
-                                    {Object.keys(housesMetadata).map(houseName => {
-                                        const meta = housesMetadata[houseName];
-                                        const colorClasses = {
-                                            Merah: { bg: "bg-red-50", border: "border-red-100", text: "text-red-600", accent: "bg-red-500" },
-                                            Biru: { bg: "bg-blue-50", border: "border-blue-100", text: "text-blue-600", accent: "bg-blue-500" },
-                                            Hijau: { bg: "bg-emerald-50", border: "border-emerald-100", text: "text-emerald-600", accent: "bg-emerald-500" },
-                                            Kuning: { bg: "bg-amber-50", border: "border-amber-100", text: "text-amber-500", accent: "bg-amber-400" },
-                                            Ungu: { bg: "bg-purple-50", border: "border-purple-100", text: "text-purple-600", accent: "bg-purple-500" },
-                                            Oren: { bg: "bg-orange-50", border: "border-orange-100", text: "text-orange-600", accent: "bg-orange-500" },
-                                            "Merah Jambu": { bg: "bg-pink-50", border: "border-pink-100", text: "text-pink-600", accent: "bg-pink-500" },
-                                            Coklat: { bg: "bg-amber-100/40", border: "border-amber-200", text: "text-amber-900", accent: "bg-amber-800" },
-                                            Hitam: { bg: "bg-slate-100", border: "border-slate-200", text: "text-slate-800", accent: "bg-slate-900" }
-                                        };
-                                        const cls = colorClasses[meta.warnaLabel] || colorClasses.Merah;
-                                        const advisors = meta.guruPenasihat ? meta.guruPenasihat.split(',').map(s => s.trim()).filter(Boolean) : [];
-                                        const houseMembers = groupedByClass[houseName] || {};
+                                    {Object.keys(housesMetadata).length === 0 ? (
+                                        <div className="bg-white p-8 rounded-2xl border text-center shadow-sm">
+                                            <p className="text-sm text-slate-500 font-semibold">🏠 Tiada Pasukan Rumah Sukan Didaftarkan.</p>
+                                            <p className="text-xs text-slate-400 mt-1">Sila gunakan borang di bahagian kiri untuk mendaftar pasukan kejohanan yang pertama.</p>
+                                        </div>
+                                    ) : (
+                                        Object.keys(housesMetadata).map(houseName => {
+                                            const meta = housesMetadata[houseName];
+                                            const colorClasses = {
+                                                Merah: { bg: "bg-red-50", border: "border-red-100", text: "text-red-600", accent: "bg-red-500" },
+                                                Biru: { bg: "bg-blue-50", border: "border-blue-100", text: "text-blue-600", accent: "bg-blue-500" },
+                                                Hijau: { bg: "bg-emerald-50", border: "border-emerald-100", text: "text-emerald-600", accent: "bg-emerald-500" },
+                                                Kuning: { bg: "bg-amber-50", border: "border-amber-100", text: "text-amber-500", accent: "bg-amber-400" },
+                                                Ungu: { bg: "bg-purple-50", border: "border-purple-100", text: "text-purple-600", accent: "bg-purple-500" },
+                                                Oren: { bg: "bg-orange-50", border: "border-orange-100", text: "text-orange-600", accent: "bg-orange-500" },
+                                                "Merah Jambu": { bg: "bg-pink-50", border: "border-pink-100", text: "text-pink-600", accent: "bg-pink-500" },
+                                                Coklat: { bg: "bg-amber-100/40", border: "border-amber-200", text: "text-amber-900", accent: "bg-amber-800" },
+                                                Hitam: { bg: "bg-slate-100", border: "border-slate-200", text: "text-slate-800", accent: "bg-slate-900" }
+                                            };
+                                            const cls = colorClasses[meta.warnaLabel] || colorClasses.Merah;
+                                            const advisors = meta.guruPenasihat ? meta.guruPenasihat.split(',').map(s => s.trim()).filter(Boolean) : [];
+                                            const houseMembers = groupedByClass[houseName] || {};
 
-                                        return (
-                                            <div key={houseName} className={`bg-white rounded-2xl border ${cls.border} p-6 shadow-sm relative overflow-hidden transition-all duration-300 hover:shadow-md`}>
-                                                <div className={`absolute top-0 left-0 w-full h-1.5 ${cls.accent}`}></div>
-                                                
-                                                <div className="flex justify-between items-start mb-2">
-                                                    <div>
-                                                        <h3 className="text-xl font-extrabold text-slate-800 flex items-center gap-2">
-                                                            Rumah {houseName}
-                                                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${cls.bg} ${cls.text}`}>
-                                                                {meta.warnaLabel}
-                                                            </span>
-                                                        </h3>
-                                                        <p className="text-xs font-semibold text-slate-400 italic">"{meta.slogan || 'Tiada Slogan'}"</p>
+                                            return (
+                                                <div key={houseName} className={`bg-white rounded-2xl border ${cls.border} p-6 shadow-sm relative overflow-hidden transition-all duration-300 hover:shadow-md`}>
+                                                    <div className={`absolute top-0 left-0 w-full h-1.5 ${cls.accent}`}></div>
+                                                    
+                                                    <div className="flex justify-between items-start mb-2">
+                                                        <div>
+                                                            <h3 className="text-xl font-extrabold text-slate-800 flex items-center gap-2">
+                                                                Rumah {houseName}
+                                                                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${cls.bg} ${cls.text}`}>
+                                                                    {meta.warnaLabel}
+                                                                </span>
+                                                            </h3>
+                                                            <p className="text-xs font-semibold text-slate-400 italic">"{meta.slogan || 'Tiada Slogan'}"</p>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <span className="text-[10px] font-bold text-slate-400 uppercase">Mata Bonus</span>
+                                                            <p className="text-lg font-black text-slate-800">+{meta.bonusPoints} mata</p>
+                                                        </div>
                                                     </div>
-                                                    <div className="text-right">
-                                                        <span className="text-[10px] font-bold text-slate-400 uppercase">Mata Bonus</span>
-                                                        <p className="text-lg font-black text-slate-800">+{meta.bonusPoints} mata</p>
-                                                    </div>
-                                                </div>
 
-                                                <div className="mt-4 border-t pt-4">
-                                                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">🏫 Guru Penasihat</h4>
-                                                    <div className="flex flex-wrap gap-1.5 mb-3">
-                                                        {advisors.length === 0 ? (
-                                                            <span className="text-[11px] text-slate-400 italic font-medium">Tiada guru penasihat berdaftar.</span>
-                                                        ) : (
-                                                            advisors.map(adv => {
-                                                                const isEditingThis = editingAdvisor && editingAdvisor.houseName === houseName && editingAdvisor.oldName === adv;
-                                                                if (isEditingThis) {
-                                                                    return (
-                                                                        <div key={adv} className="inline-flex items-center gap-1.5 bg-white border border-indigo-300 p-1 rounded-lg">
-                                                                            <input 
-                                                                                type="text"
-                                                                                value={editingAdvisor.newName}
-                                                                                onChange={(e) => setEditingAdvisor({ ...editingAdvisor, newName: e.target.value })}
-                                                                                className="text-[10px] font-bold px-1.5 py-0.5 border rounded focus:outline-none focus:ring-1 focus:ring-indigo-500 w-28 text-slate-800"
-                                                                            />
-                                                                            <button 
-                                                                                type="button"
-                                                                                onClick={() => {
-                                                                                    handleEditAdvisor(houseName, adv, editingAdvisor.newName);
-                                                                                    setEditingAdvisor(null);
-                                                                                }}
-                                                                                className="text-emerald-600 hover:text-emerald-800 text-[11px] font-extrabold px-1"
-                                                                            >
-                                                                                ✓
-                                                                            </button>
-                                                                            <button 
-                                                                                type="button"
-                                                                                onClick={() => setEditingAdvisor(null)}
-                                                                                className="text-red-500 hover:text-red-700 text-[11px] font-extrabold px-1"
-                                                                            >
-                                                                                ✕
-                                                                            </button>
-                                                                        </div>
-                                                                    );
-                                                                }
-                                                                return (
-                                                                    <span 
-                                                                        key={adv} 
-                                                                        className="inline-flex items-center gap-1.5 bg-slate-100 text-slate-700 text-[10px] font-bold px-2.5 py-1 rounded-lg border border-slate-200 transition-all" 
-                                                                    >
-                                                                        <span>👤 {adv}</span>
-                                                                        {userRole !== "pelawat" && (
-                                                                            <div className="flex items-center gap-1 ml-1.5 border-l pl-1.5 border-slate-200 shrink-0">
-                                                                                <button
+                                                    <div className="mt-4 border-t pt-4">
+                                                        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">🏫 Guru Penasihat</h4>
+                                                        <div className="flex flex-wrap gap-1.5 mb-3">
+                                                            {advisors.length === 0 ? (
+                                                                <span className="text-[11px] text-slate-400 italic font-medium">Tiada guru penasihat berdaftar.</span>
+                                                            ) : (
+                                                                advisors.map(adv => {
+                                                                    const isEditingThis = editingAdvisor && editingAdvisor.houseName === houseName && editingAdvisor.oldName === adv;
+                                                                    if (isEditingThis) {
+                                                                        return (
+                                                                            <div key={adv} className="inline-flex items-center gap-1.5 bg-white border border-indigo-300 p-1 rounded-lg">
+                                                                                <input 
+                                                                                    type="text"
+                                                                                    value={editingAdvisor.newName}
+                                                                                    onChange={(e) => setEditingAdvisor({ ...editingAdvisor, newName: e.target.value })}
+                                                                                    className="text-[10px] font-bold px-1.5 py-0.5 border rounded focus:outline-none focus:ring-1 focus:ring-indigo-500 w-28 text-slate-800"
+                                                                                />
+                                                                                <button 
                                                                                     type="button"
-                                                                                    onClick={() => setEditingAdvisor({ houseName, oldName: adv, newName: adv })}
-                                                                                    className="text-indigo-600 hover:text-indigo-800 transition-colors"
-                                                                                    title="Edit Nama Guru"
+                                                                                    onClick={() => {
+                                                                                        handleEditAdvisor(houseName, adv, editingAdvisor.newName);
+                                                                                        setEditingAdvisor(null);
+                                                                                    }}
+                                                                                    className="text-emerald-600 hover:text-emerald-800 text-[11px] font-extrabold px-1"
                                                                                 >
-                                                                                    ✏️
+                                                                                    ✓
                                                                                 </button>
-                                                                                <button
+                                                                                <button 
                                                                                     type="button"
-                                                                                    onClick={() => handleRemoveAdvisor(houseName, adv)}
-                                                                                    className="text-red-500 hover:text-red-700 transition-colors"
-                                                                                    title="Keluarkan Guru"
+                                                                                    onClick={() => setEditingAdvisor(null)}
+                                                                                    className="text-red-500 hover:text-red-700 text-[11px] font-extrabold px-1"
                                                                                 >
                                                                                     ✕
                                                                                 </button>
                                                                             </div>
-                                                                        )}
-                                                                    </span>
-                                                                );
-                                                            })
+                                                                        );
+                                                                    }
+                                                                    return (
+                                                                        <span 
+                                                                            key={adv} 
+                                                                            className="inline-flex items-center gap-1.5 bg-slate-100 text-slate-700 text-[10px] font-bold px-2.5 py-1 rounded-lg border border-slate-200 transition-all" 
+                                                                        >
+                                                                            <span>👤 {adv}</span>
+                                                                            {userRole !== "pelawat" && (
+                                                                                <div className="flex items-center gap-1 ml-1.5 border-l pl-1.5 border-slate-200 shrink-0">
+                                                                                    <button
+                                                                                        type="button"
+                                                                                        onClick={() => setEditingAdvisor({ houseName, oldName: adv, newName: adv })}
+                                                                                        className="text-indigo-600 hover:text-indigo-800 transition-colors"
+                                                                                        title="Edit Nama Guru"
+                                                                                    >
+                                                                                        ✏️
+                                                                                    </button>
+                                                                                    <button
+                                                                                        type="button"
+                                                                                        onClick={() => handleRemoveAdvisor(houseName, adv)}
+                                                                                        className="text-red-500 hover:text-red-700 transition-colors"
+                                                                                        title="Keluarkan Guru"
+                                                                                    >
+                                                                                        ✕
+                                                                                    </button>
+                                                                                </div>
+                                                                            )}
+                                                                        </span>
+                                                                    );
+                                                                })
+                                                            )}
+                                                        </div>
+                                                        
+                                                        {userRole !== "pelawat" && (
+                                                            <div className="flex gap-2 max-w-sm">
+                                                                <input 
+                                                                    type="text"
+                                                                    placeholder="Nama guru baru..."
+                                                                    value={newAdvisorText[houseName] || ""}
+                                                                    onChange={(e) => setNewAdvisorText({ ...newAdvisorText, [houseName]: e.target.value })}
+                                                                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddAdvisor(houseName); } }}
+                                                                    className="p-2 text-xs rounded-lg border border-slate-200 flex-1 focus:ring-1 focus:ring-indigo-500 focus:outline-none bg-slate-50"
+                                                                />
+                                                                <button 
+                                                                    type="button"
+                                                                    onClick={() => handleAddAdvisor(houseName)}
+                                                                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-3 py-1 rounded-lg shadow"
+                                                                >
+                                                                    + Tambah Guru
+                                                                </button>
+                                                            </div>
                                                         )}
                                                     </div>
-                                                    
-                                                    {userRole !== "pelawat" && (
-                                                        <div className="flex gap-2 max-w-sm">
-                                                            <input 
-                                                                type="text"
-                                                                placeholder="Nama guru baru..."
-                                                                value={newAdvisorText[houseName] || ""}
-                                                                onChange={(e) => setNewAdvisorText({ ...newAdvisorText, [houseName]: e.target.value })}
-                                                                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddAdvisor(houseName); } }}
-                                                                className="p-2 text-xs rounded-lg border border-slate-200 flex-1 focus:ring-1 focus:ring-indigo-500 focus:outline-none bg-slate-50"
-                                                            />
-                                                            <button 
-                                                                type="button"
-                                                                onClick={() => handleAddAdvisor(houseName)}
-                                                                className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-3 py-1 rounded-lg shadow"
-                                                            >
-                                                                + Tambah Guru
-                                                            </button>
-                                                        </div>
-                                                    )}
-                                                </div>
 
-                                                <div className="mt-5 border-t pt-4">
-                                                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">👥 Senarai Ahli Sukan (Mengikut Kelas)</h4>
-                                                    {Object.keys(houseMembers).length === 0 ? (
-                                                        <p className="text-[11px] text-slate-400 italic">Tiada murid didaftarkan di bawah rumah sukan ini.</p>
-                                                    ) : (
-                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-56 overflow-y-auto pr-1">
-                                                            {Object.keys(houseMembers).sort().map(className => (
-                                                                <div key={className} className="bg-slate-50 p-3 rounded-xl border border-slate-150 flex flex-col gap-1.5">
-                                                                    <span className="text-[10px] font-black text-indigo-700 uppercase bg-indigo-50 px-2 py-0.5 rounded w-fit">{className}</span>
-                                                                    <div className="flex flex-wrap gap-1.5">
-                                                                        {houseMembers[className].map(ath => (
-                                                                            <span key={ath.id} className="bg-white text-[10px] pl-2 pr-1.5 py-1 rounded-lg border border-slate-200 text-slate-700 font-bold shadow-xs flex items-center justify-between gap-2 hover:border-indigo-200 transition-all">
-                                                                                <span className="truncate max-w-[120px]" title={`${ath.nama} (${ath.noAtlet || 'N/A'})`}>
-                                                                                    🏃‍♂️ {ath.nama} <span className="text-[9px] text-slate-400 font-mono font-normal">#{ath.noAtlet || '-'}</span>
+                                                    <div className="mt-5 border-t pt-4">
+                                                        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">👥 Senarai Ahli Sukan (Mengikut Kelas)</h4>
+                                                        {Object.keys(houseMembers).length === 0 ? (
+                                                            <p className="text-[11px] text-slate-400 italic">Tiada murid didaftarkan di bawah rumah sukan ini.</p>
+                                                        ) : (
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-56 overflow-y-auto pr-1">
+                                                                {Object.keys(houseMembers).sort().map(className => (
+                                                                    <div key={className} className="bg-slate-50 p-3 rounded-xl border border-slate-150 flex flex-col gap-1.5">
+                                                                        <span className="text-[10px] font-black text-indigo-700 uppercase bg-indigo-50 px-2 py-0.5 rounded w-fit">{className}</span>
+                                                                        <div className="flex flex-wrap gap-1.5">
+                                                                            {houseMembers[className].map(ath => (
+                                                                                <span key={ath.id} className="bg-white text-[10px] pl-2 pr-1.5 py-1 rounded-lg border border-slate-200 text-slate-700 font-bold shadow-xs flex items-center justify-between gap-2 hover:border-indigo-200 transition-all">
+                                                                                    <span className="truncate max-w-[120px]" title={`${ath.nama} (${ath.noAtlet || 'N/A'})`}>
+                                                                                        🏃‍♂️ {ath.nama} <span className="text-[9px] text-slate-400 font-mono font-normal">#{ath.noAtlet || '-'}</span>
+                                                                                    </span>
+                                                                                    {userRole !== "pelawat" && isEditMode && (
+                                                                                        <div className="flex items-center gap-1 border-l pl-1 border-slate-100 shrink-0">
+                                                                                            <button
+                                                                                                type="button"
+                                                                                                onClick={() => setEditingMember(ath)}
+                                                                                                className="text-indigo-600 hover:text-indigo-800 hover:bg-slate-50 p-0.5 rounded transition-all"
+                                                                                                title="Edit Ahli Sukan"
+                                                                                            >
+                                                                                                ✏️
+                                                                                            </button>
+                                                                                            <button
+                                                                                                type="button"
+                                                                                                onClick={() => handleDeleteAthlete(ath.id)}
+                                                                                                className="text-red-500 hover:text-red-700 hover:bg-slate-50 p-0.5 rounded transition-all"
+                                                                                                title="Padam Ahli Sukan"
+                                                                                            >
+                                                                                                ✕
+                                                                                            </button>
+                                                                                        </div>
+                                                                                    )}
                                                                                 </span>
-                                                                                {userRole !== "pelawat" && isEditMode && (
-                                                                                    <div className="flex items-center gap-1 border-l pl-1 border-slate-100 shrink-0">
-                                                                                        <button
-                                                                                            type="button"
-                                                                                            onClick={() => setEditingMember(ath)}
-                                                                                            className="text-indigo-600 hover:text-indigo-800 hover:bg-slate-50 p-0.5 rounded transition-all animate-in fade-in zoom-in-75 duration-150"
-                                                                                            title="Edit Ahli Sukan"
-                                                                                        >
-                                                                                            ✏️
-                                                                                        </button>
-                                                                                        <button
-                                                                                            type="button"
-                                                                                            onClick={() => handleDeleteAthlete(ath.id)}
-                                                                                            className="text-red-500 hover:text-red-700 hover:bg-slate-50 p-0.5 rounded transition-all animate-in fade-in zoom-in-75 duration-150"
-                                                                                            title="Padam Ahli Sukan"
-                                                                                        >
-                                                                                            ✕
-                                                                                        </button>
-                                                                                    </div>
-                                                                                )}
-                                                                            </span>
-                                                                        ))}
+                                                                            ))}
+                                                                        </div>
                                                                     </div>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    )}
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        );
-                                    })}
+                                            );
+                                        })
+                                    )}
                                 </div>
                             </div>
                         )}
@@ -2168,6 +2166,10 @@
                                     {userRole === "pelawat" ? (
                                         <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 text-xs text-amber-800 font-semibold">
                                             🔒 <strong>Mod Baca Sahaja Aktif:</strong> Pendaftaran atau pengemaskinian rekod ahli tidak dibenarkan bagi pelawat. Sila daftar masuk menggunakan akaun DELIMa KPM.
+                                        </div>
+                                    ) : Object.keys(housesMetadata).length === 0 ? (
+                                        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs text-amber-800 font-bold leading-relaxed">
+                                            ⚠️ <strong>Pasukan Belum Tersedia:</strong> Sila daftar sekurang-kurangnya satu Rumah Sukan di Tab "🏠 Rumah Sukan" sebelum memulakan pendaftaran ahli baharu.
                                         </div>
                                     ) : (
                                         <form onSubmit={handleAthleteSubmit} className="space-y-4 text-xs font-semibold">
@@ -2204,6 +2206,7 @@
                                                         value={athleteForm.kelas}
                                                         onChange={(e) => setAthleteForm({ ...athleteForm, kelas: e.target.value })}
                                                         className="w-full p-2.5 rounded-xl border border-slate-200 bg-white font-bold"
+                                                        placeholder="Cth: 6 Bestari"
                                                     />
                                                 </div>
                                                 <div>
@@ -2253,38 +2256,42 @@
                                         </div>
                                     </div>
 
-                                    <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
-                                        <table className="w-full text-left border-collapse text-xs">
-                                            <thead>
-                                                <tr className="border-b text-slate-400 font-bold uppercase">
-                                                    <th className="py-3 px-2">No. Atlet</th>
-                                                    <th className="py-3 px-2">Nama</th>
-                                                    <th className="py-3 px-2">Kelas</th>
-                                                    <th className="py-3 px-2">Rumah Sukan</th>
-                                                    <th className="py-3 px-2">Pingat</th>
-                                                    {userRole !== "pelawat" && <th className="py-3 px-2 text-right">Tindakan</th>}
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {filteredAthletes.map(ath => {
-                                                    const achievement = filterEvent !== "Semua" ? getAthleteAchievementForEvent(ath.id, filterEvent) : null;
-                                                    return (
-                                                        <tr key={ath.id} className="hover:bg-slate-50 border-b">
-                                                            <td className="py-3 px-2 font-mono font-bold text-slate-600">{ath.noAtlet || "-"}</td>
-                                                            <td className="py-3 px-2 font-bold text-slate-800">{ath.nama}</td>
-                                                            <td className="py-3 px-2 text-slate-500">{ath.kelas}</td>
-                                                            <td className="py-3 px-2 font-bold text-indigo-600">{ath.rumah}</td>
-                                                            <td className="py-3 px-2">{achievement || "Tiada"}</td>
-                                                            {userRole !== "pelawat" && (
-                                                                <td className="py-3 px-2 text-right">
-                                                                    <button onClick={() => handleDeleteAthlete(ath.id)} className="text-red-500 p-1" title="Hapus Rekod"><TrashIcon className="h-4 w-4" /></button>
-                                                                </td>
-                                                            )}
-                                                        </tr>
-                                                    );
-                                                })}
-                                            </tbody>
-                                        </table>
+                                    <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm overflow-x-auto">
+                                        {filteredAthletes.length === 0 ? (
+                                            <p className="text-xs text-slate-400 italic py-6 text-center">Tiada rekod ahli sukan ditemui.</p>
+                                        ) : (
+                                            <table className="w-full text-left border-collapse text-xs min-w-[500px]">
+                                                <thead>
+                                                    <tr className="border-b text-slate-400 font-bold uppercase">
+                                                        <th className="py-3 px-2">No. Atlet</th>
+                                                        <th className="py-3 px-2">Nama</th>
+                                                        <th className="py-3 px-2">Kelas</th>
+                                                        <th className="py-3 px-2">Rumah Sukan</th>
+                                                        <th className="py-3 px-2">Pingat</th>
+                                                        {userRole !== "pelawat" && <th className="py-3 px-2 text-right">Tindakan</th>}
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {filteredAthletes.map(ath => {
+                                                        const achievement = filterEvent !== "Semua" ? getAthleteAchievementForEvent(ath.id, filterEvent) : null;
+                                                        return (
+                                                            <tr key={ath.id} className="hover:bg-slate-50 border-b">
+                                                                <td className="py-3 px-2 font-mono font-bold text-slate-600">{ath.noAtlet || "-"}</td>
+                                                                <td className="py-3 px-2 font-bold text-slate-800">{ath.nama}</td>
+                                                                <td className="py-3 px-2 text-slate-500">{ath.kelas}</td>
+                                                                <td className="py-3 px-2 font-bold text-indigo-600">{ath.rumah}</td>
+                                                                <td className="py-3 px-2">{achievement || "Tiada"}</td>
+                                                                {userRole !== "pelawat" && (
+                                                                    <td className="py-3 px-2 text-right">
+                                                                        <button onClick={() => handleDeleteAthlete(ath.id)} className="text-red-500 p-1" title="Hapus Rekod"><TrashIcon className="h-4 w-4" /></button>
+                                                                    </td>
+                                                                )}
+                                                            </tr>
+                                                        );
+                                                    })}
+                                                </tbody>
+                                            </table>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -2822,28 +2829,32 @@
                                         <div className="bg-slate-50/50 p-4 rounded-2xl border">
                                             <h4 className="text-xs font-black text-amber-800 uppercase tracking-wider mb-3">🔥 Rekod Kejohanan Terdahulu (Penanda Aras SK Bikang)</h4>
                                             <div className="space-y-2 max-h-60 overflow-y-auto pr-1 text-xs">
-                                                {HISTORICAL_CHAMPIONSHIP_RECORDS.map((rec, i) => {
-                                                    const matchingResult = results.find(r => {
-                                                        const ev = events.find(e => e.id === r.eventId);
-                                                        return ev && ev.nama.toLowerCase().trim() === rec.eventName.toLowerCase().trim() && ev.kategori === rec.category && r.kedudukan === "1";
-                                                    });
-                                                    const isBroken = matchingResult ? checkRecordBreakStatus(rec.eventName, rec.category, matchingResult.catatan) : null;
+                                                {HISTORICAL_CHAMPIONSHIP_RECORDS.length === 0 ? (
+                                                    <p className="text-xs text-slate-400 italic text-center py-6">Tiada rekod kejohanan lama diletakkan.</p>
+                                                ) : (
+                                                    HISTORICAL_CHAMPIONSHIP_RECORDS.map((rec, i) => {
+                                                        const matchingResult = results.find(r => {
+                                                            const ev = events.find(e => e.id === r.eventId);
+                                                            return ev && ev.nama.toLowerCase().trim() === rec.eventName.toLowerCase().trim() && ev.kategori === rec.category && r.kedudukan === "1";
+                                                        });
+                                                        const isBroken = matchingResult ? checkRecordBreakStatus(rec.eventName, rec.category, matchingResult.catatan) : null;
 
-                                                    return (
-                                                        <div key={i} className={`flex justify-between items-center p-2.5 rounded-xl border ${isBroken ? 'bg-red-50 border-red-200' : 'bg-white border-slate-100'}`}>
-                                                            <div>
-                                                                <p className="font-extrabold text-slate-800">{rec.eventName} ({rec.category})</p>
-                                                                <p className="text-[10px] text-slate-400">👤 {rec.athlete} (Tahun {rec.year})</p>
+                                                        return (
+                                                            <div key={i} className={`flex justify-between items-center p-2.5 rounded-xl border ${isBroken ? 'bg-red-50 border-red-200' : 'bg-white border-slate-100'}`}>
+                                                                <div>
+                                                                    <p className="font-extrabold text-slate-800">{rec.eventName} ({rec.category})</p>
+                                                                    <p className="text-[10px] text-slate-400">👤 {rec.athlete} (Tahun {rec.year})</p>
+                                                                </div>
+                                                                <div className="text-right">
+                                                                    <span className="font-mono font-bold text-slate-500 block">{rec.recordText}</span>
+                                                                    {isBroken && (
+                                                                        <span className="text-[8px] bg-red-100 text-red-600 font-black px-1.5 py-0.5 rounded uppercase animate-pulse">Pecah 🚫</span>
+                                                                    )}
+                                                                </div>
                                                             </div>
-                                                            <div className="text-right">
-                                                                <span className="font-mono font-bold text-slate-500 block">{rec.recordText}</span>
-                                                                {isBroken && (
-                                                                    <span className="text-[8px] bg-red-100 text-red-600 font-black px-1.5 py-0.5 rounded uppercase animate-pulse">Pecah 🚫</span>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })}
+                                                        );
+                                                    })
+                                                )}
                                             </div>
                                         </div>
                                     </div>
@@ -2852,6 +2863,7 @@
                         )}
                     </main>
 
+                    {}
                     {/* Modals Pentadbir */}
                     {showDiagModal && (
                         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[10000]">
@@ -3019,17 +3031,21 @@
                                     </div>
                                     <div className="md:col-span-2 bg-slate-50 p-4 rounded-xl overflow-y-auto max-h-[50vh]">
                                         <h4 className="font-bold text-slate-800 text-xs mb-3">Pilih Penerima Sijil:</h4>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px]">
-                                            {athletes.map(ath => (
-                                                <button 
-                                                    key={ath.id}
-                                                    onClick={() => executeBypassPrint('sijil', ath)}
-                                                    className="p-3 bg-white hover:bg-indigo-50 border rounded-lg text-left font-bold"
-                                                >
-                                                    {ath.nama.toUpperCase()} ({ath.kelas})
-                                                </button>
-                                            ))}
-                                        </div>
+                                        {athletes.length === 0 ? (
+                                            <p className="text-xs text-slate-400 italic">Tiada ahli berdaftar lagi.</p>
+                                        ) : (
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px]">
+                                                {athletes.map(ath => (
+                                                    <button 
+                                                        key={ath.id}
+                                                        onClick={() => executeBypassPrint('sijil', ath)}
+                                                        className="p-3 bg-white hover:bg-indigo-50 border rounded-lg text-left font-bold"
+                                                    >
+                                                        {ath.nama.toUpperCase()} ({ath.kelas})
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>

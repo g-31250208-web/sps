@@ -332,13 +332,30 @@
 
             const handleGoogleLogin = async () => {
                 try {
+                    // Padam flag sesi log keluar eksplisit untuk membolehkan pengesahan akaun baharu
+                    sessionStorage.removeItem('explicit_logout');
+                    
                     if (typeof firebase !== 'undefined' && firebase.auth && firebaseConfig.apiKey !== "mock-api-key-sps-skb") {
                         const provider = new firebase.auth.GoogleAuthProvider();
+                        // Memaksa paparan tetingkap pilihan akaun Google (Force Account Selection)
+                        provider.setCustomParameters({ prompt: 'select_account' });
                         await auth.signInWithPopup(provider);
                     } else {
-                        setUserRole("admin");
-                        setCurrentUser({ displayName: "Cikgu Administrator", email: "sekolah-7608@moe-dl.edu.my", isAnonymous: false });
-                        showToastMessage("Akses Pentadbir Utama Diterima (Mock Offline Mode)!", "success");
+                        // Mod Simulasi Tempatan (Membolehkan pengujian tanpa API key Firebase aktif)
+                        const choice = window.confirm(
+                            "Firebase sedang beroperasi dalam Mod Simulasi Tempatan.\n\n" +
+                            "Klik [OK] untuk simulasi LOG MASUK GURU DELIMa (g-123456@moe-dl.edu.my)\n" +
+                            "Klik [Cancel] untuk simulasi LOG MASUK PENTADBIR UTAMA (sekolah-7608@moe-dl.edu.my)"
+                        );
+                        if (choice) {
+                            setUserRole("guru");
+                            setCurrentUser({ displayName: "Cikgu Ahmad (DELIMa)", email: "g-123456@moe-dl.edu.my", isAnonymous: false });
+                            showToastMessage("Sesi Sukan Aktif: Urus Setia Guru (Simulasi)!", "success");
+                        } else {
+                            setUserRole("admin");
+                            setCurrentUser({ displayName: "Cikgu Administrator", email: "sekolah-7608@moe-dl.edu.my", isAnonymous: false });
+                            showToastMessage("Akses Pentadbir Utama Diterima (Simulasi)!", "success");
+                        }
                     }
                     setIsAdminMenuOpen(false);
                 } catch (error) {
@@ -346,36 +363,65 @@
                 }
             };
 
+            // Rule 3 - Jalankan Autentikasi terlebih dahulu
             useEffect(() => {
-                const unsubscribe = auth.onAuthStateChanged(async (user) => {
+                const initAuth = async () => {
+                    if (typeof firebase === 'undefined' || firebaseConfig.apiKey === "mock-api-key-sps-skb") {
+                        // Jika dalam mode mock/offline, set user simulasi agar aplikasi tetap berjalan
+                        setCurrentUser({ displayName: "Pelawat", isAnonymous: true });
+                        setIsCloudActive(false);
+                        return;
+                    }
+
+                    // Jika pengguna telah menekan butang Log Keluar secara manual, sekat log masuk automatik token sistem
+                    if (sessionStorage.getItem('explicit_logout') === 'true') {
+                        try {
+                            await auth.signInAnonymously();
+                        } catch (e) {
+                            console.warn("Ralat masuk tanpa nama pasca log keluar.", e);
+                        }
+                        return;
+                    }
+
+                    try {
+                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                            await auth.signInWithCustomToken(__initial_auth_token);
+                        } else {
+                            await auth.signInAnonymously();
+                        }
+                    } catch (e) {
+                        console.warn("Autentikasi token gagal, mencoba masuk tanpa nama...", e);
+                        try {
+                            await auth.signInAnonymously();
+                        } catch (err) {
+                            console.error("Gagal total masuk tanpa nama.", err);
+                        }
+                    }
+                };
+                
+                initAuth();
+
+                const unsubscribe = auth.onAuthStateChanged((user) => {
                     if (user) {
                         setCurrentUser(user);
                         setIsCloudActive(true);
-                        const email = user.email || "";
+                        const email = (user.email || "").toLowerCase();
                         if (email === "sekolah-7608@moe-dl.edu.my") {
                             setUserRole("admin");
                             showToastMessage("Akses Pentadbir Utama Diterima!", "success");
-                        } else if (email.endsWith("@moe-dl.edu.my") || email.endsWith("@moe.edu.my")) {
+                        } else if (email.startsWith("g-") && (email.endsWith("@moe-dl.edu.my") || email.endsWith("@moe.edu.my"))) {
                             setUserRole("guru");
-                            showToastMessage("Akses Urus Setia Guru Diterima!", "success");
+                            showToastMessage("Akses Urus Setia Guru (DELIMa) Diterima!", "success");
                         } else {
                             setUserRole("pelawat");
-                            showToastMessage("Akaun Peribadi: Sesi Sukan Aktif sebagai Pembaca (Lihat Sahaja).", "warning");
+                            if (!user.isAnonymous) {
+                                showToastMessage("Sesi Sukan Aktif: Pembaca Sahaja (Sila log masuk dengan e-mel guru DELIMa bermula dengan 'g-').", "warning");
+                            }
                         }
                     } else {
                         setCurrentUser(null);
                         setUserRole("pelawat");
-                        try {
-                            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                                await auth.signInWithCustomToken(__initial_auth_token);
-                            } else {
-                                await auth.signInAnonymously();
-                            }
-                            setIsCloudActive(true);
-                        } catch (e) {
-                            console.warn("Firestore offline fallback.", e);
-                            setIsCloudActive(false);
-                        }
+                        setIsCloudActive(false);
                     }
                 });
                 return () => unsubscribe();
@@ -388,8 +434,10 @@
                 }
             }, [housesMetadata]);
 
+            // Rule 3 - Lindungi kueri Firestore dengan status login aktif (currentUser)
             useEffect(() => {
-                if (!isCloudActive || typeof firebase === 'undefined' || firebaseConfig.apiKey === "mock-api-key-sps-skb") return;
+                if (!currentUser) return; // Lindungi agar tidak terjadi error hak akses
+                if (typeof firebase === 'undefined' || firebaseConfig.apiKey === "mock-api-key-sps-skb") return;
 
                 const pathAthletes = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('athletes');
                 const pathEvents = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('events');
@@ -449,7 +497,7 @@
                     unsubGas();
                     unsubConfig();
                 };
-            }, [isCloudActive]);
+            }, [currentUser]); // Rule 3 - currentUser di dalam dependency array
 
             const houseStandings = useMemo(() => {
                 const COLOR_PRESETS = {
@@ -605,6 +653,9 @@
 
             const handleLogout = async () => {
                 try {
+                    // Tetapkan nilai flag di sessionStorage sebelum melepaskan sesi Firebase
+                    sessionStorage.setItem('explicit_logout', 'true');
+                    
                     await auth.signOut();
                     setCurrentUser(null);
                     setUserRole("pelawat");
@@ -744,7 +795,7 @@
                     const achievement = getAthleteAchievement(targetData.id);
                     const achievementText = achievement 
                         ? `Telah berjaya mendapat kedudukan <strong style="color:#b45309;">${achievement.kedudukan.toUpperCase()}</strong> dalam acara <strong>${achievement.acara}</strong> ${achievement.catatan} semasa Kejohanan Sukan Tahunan SK Bikang ${activeYear}.`
-                        : `Telah mengambil bahagian dengan jayanya sebagai atlet sukan dan mempamerkan semangat kesukanan yang terpuji sepanjang Kejohanan Sukan Tahunan SK Bikang ${activeYear}.`;
+                        : `Telah mengambil bahagian dengan jayanya sebagai atlet sukan and mempamerkan semangat kesukanan yang terpuji sepanjang Kejohanan Sukan Tahunan SK Bikang ${activeYear}.`;
 
                     printContent = `
                         <div style="border: 12px double #1e3a8a; padding: 40px; text-align: center; font-family: 'Playfair Display', Georgia, serif; min-height: 250mm; box-sizing: border-box; position: relative;">
@@ -1985,7 +2036,7 @@
                                                 Merah: { bg: "bg-red-50", border: "border-red-100", text: "text-red-600", accent: "bg-red-500" },
                                                 Biru: { bg: "bg-blue-50", border: "border-blue-100", text: "text-blue-600", accent: "bg-blue-500" },
                                                 Hijau: { bg: "bg-emerald-50", border: "border-emerald-100", text: "text-emerald-600", accent: "bg-emerald-500" },
-                                                Kuning: { bg: "bg-amber-50", border: "border-amber-100", text: "text-amber-500", accent: "bg-amber-400" },
+                                                Kuning: { bg: "bg-amber-50", border: "border-amber-100", text: "text-amber-505", accent: "bg-amber-400" },
                                                 Ungu: { bg: "bg-purple-50", border: "border-purple-100", text: "text-purple-600", accent: "bg-purple-500" },
                                                 Oren: { bg: "bg-orange-50", border: "border-orange-100", text: "text-orange-600", accent: "bg-orange-500" },
                                                 "Merah Jambu": { bg: "bg-pink-50", border: "border-pink-100", text: "text-pink-600", accent: "bg-pink-500" },
@@ -2778,7 +2829,7 @@
                                             <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-2">
                                                 🏆 Pusat Rekod Sejarah & Dewan Kemasyhuran (Tahun {activeYear})
                                             </h3>
-                                            <p className="text-xs text-slate-400 mt-1">Simpan, arkib dan bandingkan rekod Johan Emas {activeYear} untuk mengesan pemecah rekod kejohanan lampau.</p>
+                                            <p className="text-xs text-slate-400 mt-1">Simpan, arkib and bandingkan rekod Johan Emas {activeYear} untuk mengesan pemecah rekod kejohanan lampau.</p>
                                         </div>
                                         {userRole !== "pelawat" && (
                                             <button

@@ -249,6 +249,7 @@
             const [confirmModal, setConfirmModal] = useState({ show: false, title: "", message: "", onConfirm: null });
             const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
             const adminMenuRef = useRef(null);
+            const fileInputRef = useRef(null);
 
             // Modals Pentadbir
             const [showDiagModal, setShowDiagModal] = useState(false);
@@ -742,6 +743,57 @@
                 downloadAnchor.click();
                 downloadAnchor.remove();
                 showToastMessage("Fail sandaran JSON berjaya dimuat turun!");
+            };
+
+            const handleRestore = (e) => {
+                if (!checkAuthority()) return;
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = async (event) => {
+                    try {
+                        const data = JSON.parse(event.target.result);
+                        if (!data || typeof data !== 'object') {
+                            throw new Error("Format fail JSON tidak sah.");
+                        }
+
+                        showToastMessage("Memulakan pemulihan data...", "info");
+
+                        if (isCloudActive) {
+                            const batchWrite = async (collectionName, items) => {
+                                if (!items || !Array.isArray(items)) return;
+                                for (const item of items) {
+                                    if (item.id) {
+                                        await db.collection('artifacts').doc(appId).collection('public').doc('data').collection(collectionName).doc(item.id).set(item);
+                                    }
+                                }
+                            };
+
+                            if (data.athletes) await batchWrite('athletes', data.athletes);
+                            if (data.events) await batchWrite('events', data.events);
+                            if (data.results) await batchWrite('results', data.results);
+                            if (data.heats) await batchWrite('heats', data.heats);
+                            if (data.registrations) await batchWrite('registrations', data.registrations);
+                            if (data.housesMetadata) {
+                                await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('metadata').doc('houses').set(data.housesMetadata);
+                            }
+                        }
+
+                        if (data.athletes) setAthletes(data.athletes);
+                        if (data.events) setEvents(data.events);
+                        if (data.results) setResults(data.results);
+                        if (data.heats) setHeats(data.heats);
+                        if (data.registrations) setRegistrations(data.registrations);
+                        if (data.housesMetadata) setHousesMetadata(data.housesMetadata);
+
+                        showToastMessage("Data sandaran berjaya dipulihkan sepenuhnya!", "success");
+                    } catch (err) {
+                        showToastMessage("Gagal membaca fail JSON: " + err.message, "error");
+                    }
+                };
+                reader.readAsText(file);
+                e.target.value = "";
             };
 
             const handleResetDatabase = () => {
@@ -1657,6 +1709,7 @@
                                                 <button onClick={() => { setShowCertModal(true); setIsAdminMenuOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-yellow-50 text-xs font-bold text-yellow-700 flex items-center gap-2 font-bold">🏆 Cetak Sijil Atlet</button>
                                                 <div className="border-t border-slate-100 my-1"></div>
                                                 <button onClick={() => { handleBackup(); setIsAdminMenuOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-emerald-50 text-xs font-semibold text-emerald-700 flex items-center gap-2 font-bold">📥 Sandaran Data (JSON)</button>
+                                                <button onClick={() => { fileInputRef.current.click(); setIsAdminMenuOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-emerald-50 text-xs font-semibold text-emerald-700 flex items-center gap-2 font-bold">📤 Muat Naik Sandaran (JSON)</button>
                                                 <button onClick={() => { handleResetDatabase(); setIsAdminMenuOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-red-50 text-xs font-semibold text-red-600 flex items-center gap-2 font-bold">🔄 Tetapkan Semula DB</button>
                                             </div>
                                         )}
@@ -3084,6 +3137,14 @@
                             <button onClick={() => setToast({ ...toast, show: false })} className="text-slate-400 hover:text-slate-600 ml-2 font-bold">✕</button>
                         </div>
                     )}
+
+                    <input 
+                        type="file" 
+                        ref={fileInputRef} 
+                        onChange={handleRestore} 
+                        accept=".json" 
+                        className="hidden" 
+                    />
                 </div>
             );
         }

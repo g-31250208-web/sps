@@ -1140,7 +1140,7 @@
                             setAthletes([...athletes, updatedAthlete]);
                         }
                     }
-                    showToastMessage(isEditingAthlete ? "Atlet berjaya dikemaskini!" : "Atlet berjaya didaftarkan!");
+                    showToastMessage(isEditingAthlete ? "Ahli berjaya dikemaskini!" : "Ahli berjaya didaftarkan!");
                     setAthleteForm({ id: "", nama: "", kelas: "", rumah: "Merah", jantina: "Lelaki", kategori: "L12" });
                     setIsEditingAthlete(false);
                 } catch (err) {
@@ -1791,13 +1791,13 @@
                         {activeTab === "rumah_sukan" && (
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                                 <div className="lg:col-span-1 space-y-6">
-                                    {/* KAD 1: DAFTAR ATLET BARU */}
+                                    {/* KAD 1: DAFTAR AHLI BARU */}
                                     <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm h-fit">
-                                        <h3 className="text-sm font-bold text-slate-900 mb-4 uppercase tracking-wider">🏃‍♂️ Daftar Atlet</h3>
+                                        <h3 className="text-sm font-bold text-slate-900 mb-4 uppercase tracking-wider">🏃‍♂️ Daftar Ahli</h3>
                                         
                                         {userRole === "pelawat" ? (
                                             <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 text-xs text-amber-800 font-semibold">
-                                                🔒 <strong>Mod Baca Sahaja Aktif:</strong> Pendaftaran atau pengemaskinian rekod atlet tidak dibenarkan bagi pelawat. Sila daftar masuk menggunakan akaun DELIMa KPM.
+                                                🔒 <strong>Mod Baca Sahaja Aktif:</strong> Pendaftaran atau pengemaskinian rekod ahli tidak dibenarkan bagi pelawat. Sila daftar masuk menggunakan akaun DELIMa KPM.
                                             </div>
                                         ) : (
                                             <form onSubmit={handleAthleteSubmit} className="space-y-4 text-xs font-semibold">
@@ -1837,7 +1837,7 @@
                                                     </div>
                                                 </div>
                                                 <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl shadow-md transition-all">
-                                                    Simpan Atlet
+                                                    Simpan Ahli
                                                 </button>
                                             </form>
                                         )}

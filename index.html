@@ -270,6 +270,8 @@
 
             const [activeYear, setActiveYear] = useState(new Date().getFullYear().toString());
 
+            const [showSignatorySettings, setShowSignatorySettings] = useState(false);
+
             const [certSignatory1Name, setCertSignatory1Name] = useState("Cikgu Jabdi Bin Bikang");
             const [certSignatory1Title, setCertSignatory1Title] = useState("Guru Besar SK Bikang");
             const [certSignatory2Name, setCertSignatory2Name] = useState("Cikgu GPK Kokurikulum");
@@ -3316,6 +3318,16 @@
                                         </div>
                                         <div className="flex flex-wrap gap-2">
                                             <button 
+                                                onClick={() => setShowSignatorySettings(!showSignatorySettings)}
+                                                className={`font-bold text-xs px-4 py-2.5 rounded-xl border flex items-center gap-2 transition-all ${
+                                                    showSignatorySettings 
+                                                        ? "bg-amber-100 text-amber-800 border-amber-300" 
+                                                        : "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200"
+                                                }`}
+                                            >
+                                                <span>☰ {showSignatorySettings ? "Sembunyikan Penandatangan" : "Tetapan Penandatangan"}</span>
+                                            </button>
+                                            <button 
                                                 onClick={() => executeBypassPrint('kokum')}
                                                 className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl border border-indigo-200 flex items-center gap-2 shadow-md shadow-indigo-600/10"
                                             >
@@ -3334,53 +3346,55 @@
                                 </div>
 
                                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                    {/* Kolum Kiri - Parameter Tandatangan & Pencetakan Sijil */}
-                                    <div className="lg:col-span-1 space-y-6">
-                                        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
-                                            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">✍️ Penandatangan Sijil</h4>
-                                            <div className="space-y-4 text-xs font-semibold">
-                                                <div>
-                                                    <label className="block text-slate-500 mb-1">Nama Guru Besar (Kiri)</label>
-                                                    <input 
-                                                        type="text" 
-                                                        value={certSignatory1Name} 
-                                                        onChange={(e) => setCertSignatory1Name(e.target.value)} 
-                                                        className="w-full p-2.5 border rounded-xl font-bold bg-slate-50 focus:bg-white focus:ring-1 focus:ring-indigo-500 outline-none" 
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-slate-500 mb-1">Jawatan Guru Besar</label>
-                                                    <input 
-                                                        type="text" 
-                                                        value={certSignatory1Title} 
-                                                        onChange={(e) => setCertSignatory1Title(e.target.value)} 
-                                                        className="w-full p-2.5 border rounded-xl font-medium bg-slate-50 focus:bg-white focus:ring-1 focus:ring-indigo-500 outline-none" 
-                                                    />
-                                                </div>
-                                                <div className="border-t pt-3">
-                                                    <label className="block text-slate-500 mb-1">Nama GPK Kokurikulum (Kanan)</label>
-                                                    <input 
-                                                        type="text" 
-                                                        value={certSignatory2Name} 
-                                                        onChange={(e) => setCertSignatory2Name(e.target.value)} 
-                                                        className="w-full p-2.5 border rounded-xl font-bold bg-slate-50 focus:bg-white focus:ring-1 focus:ring-indigo-500 outline-none" 
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-slate-500 mb-1">Jawatan GPK Kokurikulum</label>
-                                                    <input 
-                                                        type="text" 
-                                                        value={certSignatory2Title} 
-                                                        onChange={(e) => setCertSignatory2Title(e.target.value)} 
-                                                        className="w-full p-2.5 border rounded-xl font-medium bg-slate-50 focus:bg-white focus:ring-1 focus:ring-indigo-500 outline-none" 
-                                                    />
+                                    {/* Kolum Kiri - Parameter Tandatangan & Pencetakan Sijil (Hanya muncul apabila butang ditekan) */}
+                                    {showSignatorySettings && (
+                                        <div className="lg:col-span-1 space-y-6 animate-in slide-in-from-left duration-200">
+                                            <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+                                                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">✍ flyout Penandatangan Sijil</h4>
+                                                <div className="space-y-4 text-xs font-semibold">
+                                                    <div>
+                                                        <label className="block text-slate-500 mb-1">Nama Guru Besar (Kiri)</label>
+                                                        <input 
+                                                            type="text" 
+                                                            value={certSignatory1Name} 
+                                                            onChange={(e) => setCertSignatory1Name(e.target.value)} 
+                                                            className="w-full p-2.5 border rounded-xl font-bold bg-slate-50 focus:bg-white focus:ring-1 focus:ring-indigo-500 outline-none" 
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-slate-500 mb-1">Jawatan Guru Besar</label>
+                                                        <input 
+                                                            type="text" 
+                                                            value={certSignatory1Title} 
+                                                            onChange={(e) => setCertSignatory1Title(e.target.value)} 
+                                                            className="w-full p-2.5 border rounded-xl font-medium bg-slate-50 focus:bg-white focus:ring-1 focus:ring-indigo-500 outline-none" 
+                                                        />
+                                                    </div>
+                                                    <div className="border-t pt-3">
+                                                        <label className="block text-slate-500 mb-1">Nama GPK Kokurikulum (Kanan)</label>
+                                                        <input 
+                                                            type="text" 
+                                                            value={certSignatory2Name} 
+                                                            onChange={(e) => setCertSignatory2Name(e.target.value)} 
+                                                            className="w-full p-2.5 border rounded-xl font-bold bg-slate-50 focus:bg-white focus:ring-1 focus:ring-indigo-500 outline-none" 
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-slate-500 mb-1">Jawatan GPK Kokurikulum</label>
+                                                        <input 
+                                                            type="text" 
+                                                            value={certSignatory2Title} 
+                                                            onChange={(e) => setCertSignatory2Title(e.target.value)} 
+                                                            className="w-full p-2.5 border rounded-xl font-medium bg-slate-50 focus:bg-white focus:ring-1 focus:ring-indigo-500 outline-none" 
+                                                        />
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
+                                    )}
 
-                                    {/* Kolum Kanan - Cetakan Sijil Murid Terpilih */}
-                                    <div className="lg:col-span-2 space-y-6">
+                                    {/* Kolum Kanan - Cetakan Sijil Murid Terpilih (Keluasan fleksibel mengikut butang toggle) */}
+                                    <div className={`${showSignatorySettings ? "lg:col-span-2" : "lg:col-span-3"} space-y-6`}>
                                         <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
                                             <div className="flex justify-between items-center mb-2">
                                                 <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">🏅 Penjana Sijil Penghargaan Atlet</h4>

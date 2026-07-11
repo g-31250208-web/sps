@@ -220,6 +220,15 @@
             const [filterHouse, setFilterHouse] = useState("Semua");
             const [filterEvent, setFilterEvent] = useState("Semua");
 
+            // State Mod Kemaskini Rumah Sukan (Ahli/Guru)
+            const [isHouseEditMode, setIsHouseEditMode] = useState({});
+            const [editingAthleteId, setEditingAthleteId] = useState(null);
+            const [editingAthleteName, setEditingAthleteName] = useState("");
+            const [editingAthleteClass, setEditingAthleteClass] = useState("");
+            const [editingAdvisorIndex, setEditingAdvisorIndex] = useState(null);
+            const [editingAdvisorHouse, setEditingAdvisorHouse] = useState(null);
+            const [editingAdvisorName, setEditingAdvisorName] = useState("");
+
             // Form States
             const [athleteForm, setAthleteForm] = useState({ id: "", nama: "", kelas: "", rumah: "Merah", jantina: "Lelaki", kategori: "L12" });
             const [isEditingAthlete, setIsEditingAthlete] = useState(false);
@@ -1504,6 +1513,68 @@
                 }
             };
 
+            const handleSaveInlineAthlete = async (athId) => {
+                if (!checkAuthority()) return;
+                if (!editingAthleteName.trim()) {
+                    showToastMessage("Ralat: Nama ahli tidak boleh dikosongkan.", "error");
+                    return;
+                }
+                const currentAthlete = athletes.find(a => a.id === athId);
+                if (!currentAthlete) return;
+                
+                const updatedAthlete = { 
+                    ...currentAthlete, 
+                    nama: editingAthleteName.trim(), 
+                    kelas: editingAthleteClass.trim() || currentAthlete.kelas 
+                };
+
+                try {
+                    if (isCloudActive) {
+                        await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('athletes').doc(athId).set(updatedAthlete);
+                        await syncWithGas("students", "save", { id: athId, name: updatedAthlete.nama, class: updatedAthlete.kelas, house: currentAthlete.rumah, gender: currentAthlete.jantina, tahap: currentAthlete.kategori });
+                    } else {
+                        setAthletes(athletes.map(a => a.id === athId ? updatedAthlete : a));
+                    }
+                    showToastMessage("Maklumat ahli berjaya dikemaskini!");
+                    setEditingAthleteId(null);
+                } catch (e) {
+                    showToastMessage("Gagal mengemaskini maklumat ahli.", "error");
+                }
+            };
+
+            const handleSaveInlineAdvisor = async (houseName, idx) => {
+                if (!checkAuthority()) return;
+                if (!editingAdvisorName.trim()) {
+                    showToastMessage("Ralat: Nama guru tidak boleh dikosongkan.", "error");
+                    return;
+                }
+                const currentMeta = housesMetadata[houseName];
+                const existingAdvisors = currentMeta.guruPenasihat ? currentMeta.guruPenasihat.split(',').map(s => s.trim()).filter(Boolean) : [];
+                existingAdvisors[idx] = editingAdvisorName.trim();
+                
+                const updatedMeta = {
+                    ...housesMetadata,
+                    [houseName]: {
+                        ...currentMeta,
+                        guruPenasihat: existingAdvisors.join(', ')
+                    }
+                };
+
+                try {
+                    if (isCloudActive) {
+                        await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('metadata').doc('houses').set(updatedMeta);
+                        await syncWithGas("houses", "save", { id: houseName, name: `Rumah ${houseName}`, slogan: currentMeta.slogan, guruPenasihat: existingAdvisors.join(', '), bonusPoints: currentMeta.bonusPoints, warnaLabel: currentMeta.warnaLabel });
+                    } else {
+                        setHousesMetadata(updatedMeta);
+                    }
+                    showToastMessage("Nama guru penasihat berjaya dikemaskini!");
+                    setEditingAdvisorHouse(null);
+                    setEditingAdvisorIndex(null);
+                } catch (e) {
+                    showToastMessage("Gagal mengemaskini nama guru penasihat.", "error");
+                }
+            };
+
             const handleAddAnnouncement = (e) => {
                 e.preventDefault();
                 if (!checkAuthority()) return;
@@ -2053,9 +2124,27 @@
                                                         </h3>
                                                         <p className="text-xs font-semibold text-slate-400 italic">"{meta.slogan || 'Tiada Slogan'}"</p>
                                                     </div>
-                                                    <div className="text-right">
-                                                        <span className="text-[10px] font-bold text-slate-400 uppercase">Mata Bonus</span>
-                                                        <p className="text-lg font-black text-slate-800">+{meta.bonusPoints} mata</p>
+                                                    <div className="flex flex-col items-end gap-2">
+                                                        <div className="text-right">
+                                                            <span className="text-[10px] font-bold text-slate-400 uppercase">Mata Bonus</span>
+                                                            <p className="text-lg font-black text-slate-800">+{meta.bonusPoints} mata</p>
+                                                        </div>
+                                                        {userRole !== "pelawat" && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setIsHouseEditMode({
+                                                                    ...isHouseEditMode,
+                                                                    [houseName]: !isHouseEditMode[houseName]
+                                                                })}
+                                                                className={`text-[10px] px-2.5 py-1.5 rounded-xl font-bold transition-all border ${
+                                                                    isHouseEditMode[houseName] 
+                                                                        ? 'bg-amber-100 border-amber-300 text-amber-800 shadow-sm' 
+                                                                        : 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-700'
+                                                                }`}
+                                                            >
+                                                                {isHouseEditMode[houseName] ? "🔒 Tutup Kemaskini" : "🛠️ Kemaskini Ahli/Guru"}
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 </div>
 
@@ -2065,17 +2154,55 @@
                                                         {advisors.length === 0 ? (
                                                             <span className="text-[11px] text-slate-400 italic font-medium">Tiada guru penasihat berdaftar.</span>
                                                         ) : (
-                                                            advisors.map(adv => (
-                                                                <span 
-                                                                    key={adv} 
-                                                                    className="inline-flex items-center gap-1 bg-slate-100 hover:bg-red-50 text-slate-700 hover:text-red-700 text-[10px] font-bold px-2 py-1 rounded-lg border border-slate-200 transition-all cursor-pointer" 
-                                                                    onClick={() => handleRemoveAdvisor(houseName, adv)} 
-                                                                    title={userRole !== "pelawat" ? "Klik untuk buang" : "Sila log masuk untuk mengedit"}
-                                                                >
-                                                                    <span>👤 {adv}</span>
-                                                                    {userRole !== "pelawat" && <span className="text-slate-400 hover:text-red-500 font-normal ml-0.5">✕</span>}
-                                                                </span>
-                                                            ))
+                                                            advisors.map((adv, idx) => {
+                                                                const isEditingThisAdvisor = editingAdvisorHouse === houseName && editingAdvisorIndex === idx;
+                                                                if (isEditingThisAdvisor) {
+                                                                    return (
+                                                                        <div key={idx} className="flex items-center gap-1 bg-white border border-indigo-200 p-1 rounded-lg">
+                                                                            <input 
+                                                                                type="text" 
+                                                                                value={editingAdvisorName} 
+                                                                                onChange={(e) => setEditingAdvisorName(e.target.value)}
+                                                                                className="p-1 text-xs border rounded-md max-w-[120px] focus:outline-none" 
+                                                                            />
+                                                                            <button type="button" onClick={() => handleSaveInlineAdvisor(houseName, idx)} className="text-emerald-600 font-bold p-1">✔️</button>
+                                                                            <button type="button" onClick={() => { setEditingAdvisorHouse(null); setEditingAdvisorIndex(null); }} className="text-slate-400 p-1">✕</button>
+                                                                        </div>
+                                                                    );
+                                                                }
+                                                                return (
+                                                                    <span 
+                                                                        key={idx} 
+                                                                        className="inline-flex items-center gap-1 bg-slate-100 text-slate-700 text-[10px] font-bold px-2 py-1 rounded-lg border border-slate-200 transition-all" 
+                                                                    >
+                                                                        <span>👤 {adv}</span>
+                                                                        {isHouseEditMode[houseName] && (
+                                                                            <div className="flex items-center gap-1 ml-1.5 border-l pl-1.5 border-slate-300">
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => {
+                                                                                        setEditingAdvisorHouse(houseName);
+                                                                                        setEditingAdvisorIndex(idx);
+                                                                                        setEditingAdvisorName(adv);
+                                                                                    }}
+                                                                                    className="text-indigo-600 hover:text-indigo-800"
+                                                                                    title="Edit Nama Guru"
+                                                                                >
+                                                                                    ✏️
+                                                                                </button>
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => handleRemoveAdvisor(houseName, adv)}
+                                                                                    className="text-red-500 hover:text-red-700"
+                                                                                    title="Padam Guru"
+                                                                                >
+                                                                                    ✕
+                                                                                </button>
+                                                                            </div>
+                                                                        )}
+                                                                    </span>
+                                                                );
+                                                            })
                                                         )}
                                                     </div>
                                                     
@@ -2110,11 +2237,59 @@
                                                                 <div key={className} className="bg-slate-50 p-3 rounded-xl border border-slate-150 flex flex-col gap-1.5">
                                                                     <span className="text-[10px] font-black text-indigo-700 uppercase bg-indigo-50 px-2 py-0.5 rounded w-fit">{className}</span>
                                                                     <div className="flex flex-wrap gap-1">
-                                                                        {houseMembers[className].map(ath => (
-                                                                            <span key={ath.id} className="bg-white text-[10px] px-2 py-0.5 rounded-md border border-slate-200 text-slate-700 font-bold shadow-xs flex items-center gap-1">
-                                                                                🏃‍♂️ {ath.nama}
-                                                                            </span>
-                                                                        ))}
+                                                                        {houseMembers[className].map(ath => {
+                                                                            const isEditingThisAthlete = editingAthleteId === ath.id;
+                                                                            if (isEditingThisAthlete) {
+                                                                                return (
+                                                                                    <div key={ath.id} className="flex items-center gap-1 bg-white p-1 rounded-lg border border-indigo-200 w-full">
+                                                                                        <input 
+                                                                                            type="text" 
+                                                                                            value={editingAthleteName} 
+                                                                                            onChange={(e) => setEditingAthleteName(e.target.value)}
+                                                                                            className="p-1 text-[10px] border rounded-md flex-1 focus:outline-none" 
+                                                                                        />
+                                                                                        <input 
+                                                                                            type="text" 
+                                                                                            value={editingAthleteClass} 
+                                                                                            onChange={(e) => setEditingAthleteClass(e.target.value)}
+                                                                                            className="p-1 text-[10px] border rounded-md w-16 focus:outline-none" 
+                                                                                            placeholder="Kelas"
+                                                                                        />
+                                                                                        <button type="button" onClick={() => handleSaveInlineAthlete(ath.id)} className="text-emerald-600 font-bold p-1">✔️</button>
+                                                                                        <button type="button" onClick={() => setEditingAthleteId(null)} className="text-slate-400 p-1">✕</button>
+                                                                                    </div>
+                                                                                );
+                                                                            }
+                                                                            return (
+                                                                                <span key={ath.id} className="bg-white text-[10px] px-2 py-1 rounded-lg border border-slate-200 text-slate-700 font-bold shadow-sm flex items-center justify-between gap-2 w-full">
+                                                                                    <span>🏃‍♂️ {ath.nama}</span>
+                                                                                    {isHouseEditMode[houseName] && (
+                                                                                        <div className="flex items-center gap-1.5 ml-auto border-l pl-1.5 border-slate-200">
+                                                                                            <button 
+                                                                                                type="button"
+                                                                                                onClick={() => {
+                                                                                                    setEditingAthleteId(ath.id);
+                                                                                                    setEditingAthleteName(ath.nama);
+                                                                                                    setEditingAthleteClass(ath.kelas);
+                                                                                                }}
+                                                                                                className="text-indigo-600 hover:text-indigo-800"
+                                                                                                title="Edit Ahli"
+                                                                                            >
+                                                                                                ✏️
+                                                                                            </button>
+                                                                                            <button 
+                                                                                                type="button"
+                                                                                                onClick={() => handleDeleteAthlete(ath.id)}
+                                                                                                className="text-red-500 hover:text-red-700"
+                                                                                                title="Padam Ahli"
+                                                                                            >
+                                                                                                🗑️
+                                                                                            </button>
+                                                                                        </div>
+                                                                                    )}
+                                                                                </span>
+                                                                            );
+                                                                        })}
                                                                     </div>
                                                                 </div>
                                                             ))}

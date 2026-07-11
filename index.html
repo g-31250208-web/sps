@@ -273,6 +273,7 @@
             const [certSignatory2Name, setCertSignatory2Name] = useState("Cikgu GPK Kokurikulum");
             const [certSignatory2Title, setCertSignatory2Title] = useState("GPK Kokurikulum SK Bikang");
 
+            const fileInputRef = useRef(null);
             const logoUrl = "https://lh3.googleusercontent.com/d/1E8tjAd7j9DJaZgngDn38agUFCvwyUffa";
 
             // Generates an event code based on sorted date index and the event order on that day.
@@ -745,6 +746,76 @@
                 downloadAnchor.click();
                 downloadAnchor.remove();
                 showToastMessage("Fail sandaran JSON berjaya dimuat turun!");
+            };
+
+            const handleRestoreClick = () => {
+                if (!checkAuthority()) return;
+                if (fileInputRef.current) {
+                    fileInputRef.current.click();
+                }
+            };
+
+            const handleRestoreBackup = async (e) => {
+                if (!checkAuthority()) return;
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = async (event) => {
+                    try {
+                        const data = JSON.parse(event.target.result);
+                        
+                        // Validasi asas fail sandaran
+                        if (!data.athletes && !data.events && !data.results) {
+                            showToastMessage("Ralat: Fail JSON tidak mengandungi format data SPS-SK Bikang yang sah.", "error");
+                            return;
+                        }
+
+                        showToastMessage("Memulakan proses pemulihan data kejohanan...", "info");
+
+                        // Kemas kini state React dalam memori
+                        if (data.athletes) setAthletes(data.athletes);
+                        if (data.events) setEvents(data.events);
+                        if (data.results) setResults(data.results);
+                        if (data.heats) setHeats(data.heats);
+                        if (data.housesMetadata) setHousesMetadata(data.housesMetadata);
+
+                        // Sekiranya sambungan Firebase awan aktif, segerakkan data ke pelayan
+                        if (isCloudActive) {
+                            showToastMessage("Sedang menyelaraskan data sandaran ke storan awan...", "info");
+                            if (data.athletes) {
+                                for (const ath of data.athletes) {
+                                    await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('athletes').doc(ath.id).set(ath);
+                                }
+                            }
+                            if (data.events) {
+                                for (const ev of data.events) {
+                                    await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('events').doc(ev.id).set(ev);
+                                }
+                            }
+                            if (data.results) {
+                                for (const res of data.results) {
+                                    await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('results').doc(res.id).set(res);
+                                }
+                            }
+                            if (data.heats) {
+                                for (const h of data.heats) {
+                                    await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('heats').doc(h.id).set(h);
+                                }
+                            }
+                            if (data.housesMetadata) {
+                                await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('metadata').doc('houses').set(data.housesMetadata);
+                            }
+                        }
+
+                        showToastMessage("Pemulihan & Penyelarasan pangkalan data selesai sepenuhnya!", "success");
+                        e.target.value = ""; // Set semula input fail
+                    } catch (err) {
+                        console.error(err);
+                        showToastMessage("Gagal membaca atau memulihkan fail sandaran: " + err.message, "error");
+                    }
+                };
+                reader.readAsText(file);
             };
 
             const handleResetDatabase = () => {
@@ -1773,6 +1844,13 @@
 
             return (
                 <div className="min-h-screen flex flex-col bg-slate-50 print:hidden">
+                    <input 
+                        type="file" 
+                        ref={fileInputRef} 
+                        onChange={handleRestoreBackup} 
+                        accept=".json" 
+                        className="hidden" 
+                    />
                     {/* Header Premium */}
                     <header className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white shadow-md relative z-50">
                         <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
@@ -1817,10 +1895,10 @@
                                                 <button onClick={() => { setShowDiagModal(true); setIsAdminMenuOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-semibold flex items-center gap-2">ℹ️ Info Diag</button>
                                                 <button onClick={() => { setShowGasModal(true); setIsAdminMenuOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-semibold flex items-center gap-2">⚡ Setup GAS API</button>
                                                 <button onClick={() => { setShowPointsModal(true); setIsAdminMenuOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-semibold flex items-center gap-2">⚙️ Tetapan Mata & Tahun</button>
-                                                <button onClick={() => { setShowKokumModal(true); setIsAdminMenuOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-semibold flex items-center gap-2">📊 Laporan PK Kokum</button>
-                                                <button onClick={() => { setShowCertModal(true); setIsAdminMenuOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-yellow-50 text-xs font-bold text-yellow-700 flex items-center gap-2">🏆 Cetak Sijil Atlet</button>
+                                                {/* Fungsi Cetak Sijil & Laporan Kokum telah dipindahkan sepenuhnya ke tab Pasca Sukan */}
                                                 <div className="border-t border-slate-100 my-1"></div>
                                                 <button onClick={() => { handleBackup(); setIsAdminMenuOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-emerald-50 text-xs font-semibold text-emerald-700 flex items-center gap-2 font-bold">📥 Sandaran Data (JSON)</button>
+                                                <button onClick={() => { handleRestoreClick(); setIsAdminMenuOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-amber-50 text-xs font-semibold text-amber-700 flex items-center gap-2 font-bold">📤 Muat Naik Sandaran (JSON)</button>
                                                 <button onClick={() => { handleResetDatabase(); setIsAdminMenuOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-red-50 text-xs font-semibold text-red-600 flex items-center gap-2 font-bold">🔄 Tetapkan Semula DB</button>
                                             </div>
                                         )}
@@ -3227,12 +3305,12 @@
                                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                                         <div>
                                             <h3 className="text-lg font-black text-slate-900">🏆 Modul Dokumentasi Pasca Kejohanan Sukan</h3>
-                                            <p className="text-xs text-slate-400 mt-1">Pusat sehenti bagi menguruskan sijil atlet, laporan PK Kokurikulum, dan arkib pangkalan data selepas sukan tamat.</p>
+                                            <p className="text-xs text-slate-400 mt-1">Pusat sehenti bagi menguruskan sijil penghargaan atlet, laporan PK Kokurikulum, dan arkib pangkalan data selepas sukan tamat.</p>
                                         </div>
                                         <div className="flex flex-wrap gap-2">
                                             <button 
                                                 onClick={() => executeBypassPrint('kokum')}
-                                                className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs px-4 py-2.5 rounded-xl border border-indigo-200 flex items-center gap-2"
+                                                className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl border border-indigo-200 flex items-center gap-2 shadow-md shadow-indigo-600/10"
                                             >
                                                 <PrinterIcon className="h-4 w-4" />
                                                 <span>Cetak Laporan Rasmi Kokum</span>
@@ -3297,12 +3375,15 @@
                                     {/* Kolum Kanan - Cetakan Sijil Murid Terpilih */}
                                     <div className="lg:col-span-2 space-y-6">
                                         <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
-                                            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">🏅 Penjana Sijil Penghargaan Atlet</h4>
-                                            <p className="text-[11px] text-slate-400 mb-4">Sila klik pada mana-mana nama atlet berdaftar di bawah untuk mencetak Sijil Penghargaan khas (A4 Potret) secara automatik.</p>
+                                            <div className="flex justify-between items-center mb-2">
+                                                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">🏅 Penjana Sijil Penghargaan Atlet</h4>
+                                                <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded font-bold">Total: {athletes.length} Sijil</span>
+                                            </div>
+                                            <p className="text-[11px] text-slate-400 mb-4">Klik pada nama mana-mana atlet di bawah untuk menjana dan membuka paparan cetakan Sijil Penghargaan Kejohanan secara serta-merta.</p>
                                             
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 max-h-[420px] overflow-y-auto pr-1">
                                                 {athletes.length === 0 ? (
-                                                    <p className="text-xs text-slate-400 italic text-center py-8 col-span-2">Tiada atlet berdaftar untuk dijana sijil.</p>
+                                                    <p className="text-xs text-slate-400 italic text-center py-8 col-span-2">Tiada atlet berdaftar untuk didokumenkan.</p>
                                                 ) : (
                                                     athletes.map(ath => {
                                                         const ach = getAthleteAchievement(ath.id);
@@ -3310,18 +3391,18 @@
                                                             <button 
                                                                 key={ath.id}
                                                                 onClick={() => executeBypassPrint('sijil', ath)}
-                                                                className="p-3 bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-300 rounded-xl text-left font-bold transition-all flex flex-col justify-between gap-1.5 cursor-pointer"
+                                                                className="p-3 bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-300 rounded-xl text-left font-bold transition-all flex flex-col justify-between gap-1.5 cursor-pointer group"
                                                             >
                                                                 <div className="flex justify-between items-start w-full">
-                                                                    <span className="text-slate-800 uppercase font-black text-xs truncate max-w-[170px]">{ath.nama}</span>
-                                                                    <span className="text-[9px] bg-slate-200 text-slate-600 px-2 py-0.5 rounded-md font-bold">{ath.kelas}</span>
+                                                                    <span className="text-slate-800 uppercase font-black text-xs truncate max-w-[170px] group-hover:text-indigo-900">{ath.nama}</span>
+                                                                    <span className="text-[9px] bg-slate-200 text-slate-600 px-2 py-0.5 rounded-md font-bold shrink-0">{ath.kelas}</span>
                                                                 </div>
                                                                 <div className="flex justify-between items-center w-full text-[9px] text-slate-400 mt-1">
                                                                     <span>🏠 Rumah {ath.rumah}</span>
                                                                     {ach ? (
                                                                         <span className="text-amber-600 font-extrabold bg-amber-50 border border-amber-100 px-1.5 py-0.5 rounded-md">🏆 {ach.kedudukan}</span>
                                                                     ) : (
-                                                                        <span className="text-slate-400 italic font-medium">Penyertaan Umum</span>
+                                                                        <span className="text-slate-400 italic font-medium">Penyertaan</span>
                                                                     )}
                                                                 </div>
                                                             </button>
@@ -3332,7 +3413,16 @@
                                         </div>
 
                                         <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
-                                            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">📊 Jadual Markah PK Kokurikulum</h4>
+                                            <div className="flex justify-between items-center mb-3">
+                                                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">📊 Jadual Markah & Laporan PK Kokurikulum</h4>
+                                                <button 
+                                                    onClick={() => executeBypassPrint('kokum')}
+                                                    className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all"
+                                                >
+                                                    <PrinterIcon className="h-3 w-3" />
+                                                    <span>Cetak Lembaran</span>
+                                                </button>
+                                            </div>
                                             <div className="overflow-x-auto text-xs">
                                                 <table className="w-full text-left border-collapse">
                                                     <thead>
@@ -3374,7 +3464,6 @@
 
                     </main>
 
-                    {}
                     {/* Modals Pentadbir */}
                     {showDiagModal && (
                         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[10000]">
@@ -3515,65 +3604,6 @@
                                     >
                                         Simpan Tetapan Mata & Tahun
                                     </button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {showCertModal && (
-                        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[10000] overflow-y-auto">
-                            <div className="bg-white rounded-2xl w-full max-w-4xl p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
-                                <h3 className="text-sm font-bold text-slate-900 mb-4 border-b pb-3 flex justify-between items-center">
-                                    <span>🏆 Sijil Penghargaan (A4 Potret)</span>
-                                    <button onClick={() => setShowCertModal(false)} className="text-slate-400 hover:text-slate-600 text-xl font-bold">×</button>
-                                </h3>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6 text-xs">
-                                    <div className="md:col-span-1 bg-slate-50 p-4 rounded-xl space-y-4">
-                                        <h4 className="font-bold text-slate-800 mb-2">⚙️ Parameter Tandatangan</h4>
-                                        <div>
-                                            <label className="block font-bold text-slate-600 mb-1">Nama Guru Besar (Kiri)</label>
-                                            <input type="text" value={certSignatory1Name} onChange={(e) => setCertSignatory1Name(e.target.value)} className="w-full p-2 border rounded-lg bg-white font-bold" />
-                                        </div>
-                                        <div>
-                                            <label className="block font-bold text-slate-600 mb-1">Nama GPK Kokurikulum (Rujukan)</label>
-                                            <input type="text" value={certSignatory2Name} onChange={(e) => setCertSignatory2Name(e.target.value)} className="w-full p-2 border rounded-lg bg-white font-bold" />
-                                        </div>
-                                    </div>
-                                    <div className="md:col-span-2 bg-slate-50 p-4 rounded-xl overflow-y-auto max-h-[50vh]">
-                                        <h4 className="font-bold text-slate-800 text-xs mb-3">Pilih Penerima Sijil:</h4>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px]">
-                                            {athletes.map(ath => (
-                                                <button 
-                                                    key={ath.id}
-                                                    onClick={() => executeBypassPrint('sijil', ath)}
-                                                    className="p-3 bg-white hover:bg-indigo-50 border rounded-lg text-left font-bold"
-                                                >
-                                                    {ath.nama.toUpperCase()} ({ath.kelas})
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {showKokumModal && (
-                        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[10000]">
-                            <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl relative">
-                                <h3 className="text-sm font-bold text-slate-900 mb-4 flex justify-between items-center border-b pb-2">
-                                    <span>📊 Laporan PK Kokurikulum - Rasmi</span>
-                                    <button 
-                                        onClick={() => executeBypassPrint('kokum')} 
-                                        className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-3 py-1.5 rounded-lg flex items-center gap-1"
-                                    >
-                                        <PrinterIcon className="h-3.5 w-3.5" />
-                                        <span>Cetak Laporan</span>
-                                    </button>
-                                </h3>
-                                <p className="text-xs text-slate-500 leading-relaxed mb-6">Laporan PK Kokurikulum menjana statistik kedudukan rumah sukan, pungutan pingat emas/perak/gangsa secara rasmi.</p>
-                                <div className="flex justify-end">
-                                    <button onClick={() => setShowKokumModal(false)} className="bg-slate-900 text-white px-4 py-2 rounded-lg text-xs">Tutup</button>
                                 </div>
                             </div>
                         </div>

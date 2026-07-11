@@ -6,7 +6,7 @@
     <title>Sistem Pengurusan Sukan SPS-SK Bikang</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts (Inter & Playfair Display untuk Sijil Premium) -->
+    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet">
     
     <!-- Firebase Compat SDK -->
@@ -45,7 +45,6 @@
     <!-- Babel Standalone CDN -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-    <!-- Daftarkan preset klasik secara terprogram bagi mengelakkan ralat kompilasi modul -->
     <script>
         Babel.registerPreset('react-classic', {
             presets: [
@@ -284,7 +283,7 @@
                     return idx !== -1 ? idx + 1 : 1;
                 };
 
-                // Group by Day number only (ignoring sessions)
+                // Group by Day number only
                 const groups = {};
                 events.forEach(e => {
                     const day = getDayNum(e.tarikh);
@@ -499,7 +498,6 @@
                 const unsubAnnouncements = pathAnnouncements.onSnapshot((snapshot) => {
                     const data = [];
                     snapshot.forEach(doc => data.push({ id: doc.id, ...doc.data() }));
-                    // Susun hebahan mengikut masa (id) menurun supaya hebahan terbaharu sentiasa di atas
                     data.sort((a, b) => b.id.localeCompare(a.id));
                     setAnnouncements(data);
                 }, (e) => console.error("Ralat hebahan: ", e));
@@ -752,7 +750,7 @@
                 setConfirmModal({
                     show: true,
                     title: "Tetapkan Semula Pangkalan Data?",
-                    message: "Tindakan ini akan memadamkan semua rekod murid (atlet), senarai acara, rekod saringan larian, dan keputusan pingat semasa. Ambil Perhatian: REKOD ARKIB tahunan yang telah disimpan di Google Sheets atau Firestore TIDAK AKAN dipadamkan sekali-kali. Adakah anda pasti?",
+                    message: "Tindakan ini akan memadamkan semua rekod murid (atlet), senarai acara, rekod saringan larian, dan keputusan pingat semasa. Adakah anda pasti?",
                     onConfirm: async () => {
                         try {
                             if (isCloudActive) {
@@ -1256,14 +1254,12 @@
                     const rawNama = row[namaIdx]?.trim();
                     if (!rawNama) continue;
 
-                    // Nyah-sensitifkan/Normalize Jantina
                     let jantina = "Lelaki";
                     const rawJantina = row[jantinaIdx]?.trim().toLowerCase();
                     if (rawJantina && (rawJantina.startsWith('p') || rawJantina.includes('perempuan'))) {
                         jantina = "Perempuan";
                     }
 
-                    // Nyah-sensitifkan/Normalize Kategori
                     let kategori = "L12";
                     const rawKategori = row[kategoriIdx]?.trim().toUpperCase();
                     const validKategori = ["L12", "P12", "L9", "P9", "Prasekolah", "Terbuka"];
@@ -1277,7 +1273,6 @@
                         else if (rawKategori?.includes("P") && rawKategori?.includes("12")) kategori = "P12";
                     }
 
-                    // Padankan dengan rumah sukan sedia ada
                     let rumah = "Merah";
                     const rawRumah = row[rumahIdx]?.trim();
                     const matchedHouse = Object.keys(housesMetadata).find(
@@ -1688,7 +1683,6 @@
 
             const relevantAthletesForEventForm = useMemo(() => {
                 if (!selectedEventObject) return [];
-                // Hanya benarkan atlet yang telah didaftarkan dalam acara ini sahaja terpilih bertanding
                 return athletes.filter(a => 
                     a.kategori === selectedEventObject.kategori && 
                     a.acaraIds && 
@@ -1887,6 +1881,7 @@
                         </div>
                     </div>
 
+                    {}
                     <main className="max-w-7xl mx-auto px-4 py-6 flex-grow w-full">
                         
                         {/* DASHBOARD TAB */}
@@ -2245,6 +2240,7 @@
                                     </div>
                                 </div>
 
+                                {}
                                 <div className="lg:col-span-2 space-y-6">
                                     {Object.keys(housesMetadata).map(houseName => {
                                         const meta = housesMetadata[houseName];
@@ -2320,6 +2316,7 @@
                                                     )}
                                                 </div>
 
+                                                {}
                                                 <div className="mt-5 border-t pt-4">
                                                     <div className="flex justify-between items-center mb-2">
                                                         <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">👥 Senarai Ahli Sukan (Mengikut Kelas)</h4>
@@ -2477,7 +2474,7 @@
                                                     />
                                                 </div>
 
-                                                {/* Acara Diikuti */}
+                                                {}
                                                 <div>
                                                     <label className="block text-slate-500 mb-1">3. Pilih Acara Sukan Disertai</label>
                                                     <div className="border border-slate-200 rounded-xl p-2.5 max-h-32 overflow-y-auto bg-slate-50 space-y-1.5">
@@ -2512,9 +2509,9 @@
                                                 <button 
                                                     type="submit" 
                                                     disabled={!selectedStudentId}
-                                                    className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 disabled:text-slate-400 text-white font-bold px-6 py-2.5 rounded-xl shadow-md transition-all"
+                                                    className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 disabled:text-slate-400 text-white font-bold px-6 py-2.5 rounded-xl shadow-md transition-all flex items-center gap-2"
                                                 >
-                                                    ☁️ Simpan Pendaftaran Acara
+                                                    <span>☁️ Simpan Pendaftaran Acara</span>
                                                 </button>
                                             </div>
                                         </form>
@@ -2642,6 +2639,7 @@
                             </div>
                         )}
 
+                        {}
                         {/* ACARA SUKAN TAB */}
                         {activeTab === "acara" && (
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -2731,7 +2729,6 @@
                                                 eventsWithCode.map(ev => (
                                                     <div key={ev.id} className="flex justify-between items-center bg-slate-50 p-4 rounded-xl border border-slate-100 text-xs">
                                                         <div>
-                                                            {}
                                                             <span className="font-extrabold text-sm text-slate-800 flex items-center gap-2">
                                                                 <span className="bg-indigo-600 text-white font-mono px-2.5 py-1 rounded-lg text-xs tracking-wider shadow-sm shrink-0">
                                                                     {ev.kodAcara}
@@ -2847,7 +2844,7 @@
                                             </div>
                                         ) : selectedEventObject ? (
                                             <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs font-semibold text-slate-500 flex items-center gap-2">
-                                                <span>ℹ️ Acara berbentuk <strong>{selectedEventObject.jenis}</strong> dikategorikan sebagai acara terus. Keputusan akhir pingat boleh dikunci masuk secara terus.</span>
+                                                <span>ℹ️ Acara berbentuk <strong>{selectedEventObject.jenis}</strong> dikategorikan as acara terus. Keputusan akhir pingat boleh dikunci masuk secara terus.</span>
                                             </div>
                                         ) : null}
                                     </div>
@@ -2997,6 +2994,7 @@
                                         )}
                                     </div>
 
+                                    {}
                                     <div className="lg:col-span-2 space-y-6">
                                         {selectedEventObject && selectedEventObject.jenis === "Balapan" && activeStageTab === "saringan" ? (
                                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -3142,7 +3140,7 @@
                                             <button
                                                 onClick={handleArchiveAnnualRecords}
                                                 disabled={isArchiving}
-                                                className="bg-amber-500 hover:bg-amber-600 disabled:bg-amber-300 text-slate-950 font-black text-xs px-4 py-2.5 rounded-xl shadow-md transition-all flex items-center gap-2 animate-bounce"
+                                                className="bg-amber-500 hover:bg-amber-600 disabled:bg-amber-300 text-slate-950 font-black text-xs px-4 py-2.5 rounded-xl shadow-md transition-all flex items-center gap-2"
                                             >
                                                 <span>{isArchiving ? "⏳ Mengarkib..." : `📂 Simpan & Arkib Rekod ${activeYear} ke Google Sheets`}</span>
                                             </button>
@@ -3221,6 +3219,7 @@
 
                     </main>
 
+                    {}
                     {/* Modals Pentadbir */}
                     {showDiagModal && (
                         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[10000]">

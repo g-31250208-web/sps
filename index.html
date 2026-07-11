@@ -3316,6 +3316,7 @@
                                             <h3 className="text-lg font-black text-slate-900">🏆 Modul Dokumentasi Pasca Kejohanan Sukan</h3>
                                             <p className="text-xs text-slate-400 mt-1">Pusat sehenti bagi menguruskan sijil penghargaan atlet, laporan PK Kokurikulum, dan arkib pangkalan data selepas sukan tamat.</p>
                                         </div>
+                                        {}
                                         <div className="flex flex-wrap gap-2">
                                             <button 
                                                 onClick={() => setShowSignatorySettings(!showSignatorySettings)}
@@ -3327,19 +3328,21 @@
                                             >
                                                 <span>☰ {showSignatorySettings ? "Sembunyikan Penandatangan" : "Tetapan Penandatangan"}</span>
                                             </button>
-                                            <button 
-                                                onClick={() => executeBypassPrint('kokum')}
-                                                className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl border border-indigo-200 flex items-center gap-2 shadow-md shadow-indigo-600/10"
-                                            >
-                                                <PrinterIcon className="h-4 w-4" />
-                                                <span>Cetak Laporan Rasmi Kokum</span>
-                                            </button>
+                                            
                                             <button 
                                                 onClick={handleArchiveAnnualRecords}
                                                 disabled={isArchiving}
                                                 className="bg-amber-500 hover:bg-amber-600 disabled:bg-amber-300 text-slate-950 font-black text-xs px-4 py-2.5 rounded-xl shadow-md flex items-center gap-2"
                                             >
                                                 <span>📂 {isArchiving ? "Sedang Mengarkib..." : `Arkib Rekod Johan ${activeYear}`}</span>
+                                            </button>
+
+                                            <button 
+                                                onClick={() => executeBypassPrint('kokum')}
+                                                className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl border border-indigo-200 flex items-center gap-2 shadow-md shadow-indigo-600/10"
+                                            >
+                                                <PrinterIcon className="h-4 w-4" />
+                                                <span>Cetak Laporan Rasmi Kokum</span>
                                             </button>
                                         </div>
                                     </div>

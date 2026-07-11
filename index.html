@@ -348,6 +348,7 @@
                 const pathResults = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('results');
                 const pathHeats = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('heats');
                 const pathMeta = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('metadata');
+                const pathAnnouncements = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('announcements');
 
                 const unsubAthletes = pathAthletes.onSnapshot((snapshot) => {
                     const data = [];
@@ -391,6 +392,14 @@
                     }
                 }, (e) => console.error("Ralat config year:", e));
 
+                const unsubAnnouncements = pathAnnouncements.onSnapshot((snapshot) => {
+                    const data = [];
+                    snapshot.forEach(doc => data.push({ id: doc.id, ...doc.data() }));
+                    // Susun hebahan mengikut masa (id) menurun supaya hebahan terbaharu sentiasa di atas
+                    data.sort((a, b) => b.id.localeCompare(a.id));
+                    setAnnouncements(data);
+                }, (e) => console.error("Ralat hebahan: ", e));
+
                 return () => {
                     unsubAthletes();
                     unsubEvents();
@@ -400,6 +409,7 @@
                     unsubPoints();
                     unsubGas();
                     unsubConfig();
+                    unsubAnnouncements();
                 };
             }, [isCloudActive]);
 
@@ -1359,23 +1369,7 @@
                     [houseName]: {
                         ...currentMeta,
                         guruPenasihat: filtered.join(', ')
-                    }
-                };
-
-                try {
-                  if (isCloudActive) {
-                    await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('metadata').doc('houses').set(updatedMeta);
-                    await syncWithGas("houses", "save", { id: houseName, name: `Rumah ${houseName}`, slogan: currentMeta.slogan, guruPenasihat: filtered.join(', '), bonusPoints: currentMeta.bonusPoints, warnaLabel: currentMeta.warnaLabel });
-                  } else {
-                    setHousesMetadata(updatedMeta);
-                  }
-                  showToastMessage("Guru penasihat dikeluarkan.");
-                } catch (err) {
-                  showToastMessage("Ralat mengeluarkan guru penasihat.", "error");
-                }
-            };
-
-            const handleAddAnnouncement = (e) => {
+            const handleAddAnnouncement = async (e) => {
                 e.preventDefault();
                 if (!checkAuthority()) return;
                 if (!announceFormText.trim()) return;
@@ -1387,16 +1381,32 @@
                   author: userRole === "admin" ? "Pentadbir Sukan" : (currentUser?.displayName || "Urus Setia Guru")
                 };
 
-                setAnnouncements([newNotice, ...announcements]);
-                setAnnounceFormText("");
-                setShowAnnounceForm(false);
-                showToastMessage("Hebahan baharu berjaya diterbitkan!");
+                try {
+                    if (isCloudActive) {
+                        await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('announcements').doc(newNotice.id).set(newNotice);
+                    } else {
+                        setAnnouncements([newNotice, ...announcements]);
+                    }
+                    setAnnounceFormText("");
+                    setShowAnnounceForm(false);
+                    showToastMessage("Hebahan baharu berjaya diterbitkan!");
+                } catch (err) {
+                    showToastMessage("Ralat ketika memuat naik hebahan ke awan.", "error");
+                }
             };
 
-            const handleDeleteAnnouncement = (id) => {
+            const handleDeleteAnnouncement = async (id) => {
                 if (!checkAuthority()) return;
-                setAnnouncements(announcements.filter(a => a.id !== id));
-                showToastMessage("Hebahan berjaya dikeluarkan.");
+                try {
+                    if (isCloudActive) {
+                        await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('announcements').doc(id).delete();
+                    } else {
+                        setAnnouncements(announcements.filter(a => a.id !== id));
+                    }
+                    showToastMessage("Hebahan berjaya dikeluarkan.");
+                } catch (e) {
+                    showToastMessage("Ralat ketika memadamkan hebahan dari awan.", "error");
+                }
             };
 
             const handleDeleteAthlete = (athleteId) => {

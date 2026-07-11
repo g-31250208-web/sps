@@ -217,6 +217,7 @@
 
             const [athleteForm, setAthleteForm] = useState({ id: "", nama: "", kelas: "", rumah: "Merah", jantina: "Lelaki", kategori: "L12" });
             const [isEditingAthlete, setIsEditingAthlete] = useState(false);
+            const [isEditModeRumah, setIsEditModeRumah] = useState(false);
             const [regMode, setRegMode] = useState("tunggal"); // "tunggal" | "bundle"
             const [tsvInput, setTsvInput] = useState("");
 
@@ -2027,8 +2028,10 @@
                                     </div>
 
                                     {/* Panel 2: Daftar Ahli Baharu */}
-                                    <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm h-fit">
-                                        <h3 className="text-sm font-bold text-slate-900 mb-4 uppercase tracking-wider">🏃‍♂️ Daftar Ahli Baharu</h3>
+                                    <div id="athlete-form-container" className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm h-fit">
+                                        <h3 className="text-sm font-bold text-slate-900 mb-4 uppercase tracking-wider">
+                                            {isEditingAthlete ? "✏️ Kemas Kini Ahli" : "🏃‍♂️ Daftar Ahli Baharu"}
+                                        </h3>
                                         
                                         {userRole === "pelawat" ? (
                                             <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 text-xs text-amber-800 font-semibold">
@@ -2123,6 +2126,18 @@
                                                         <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl shadow-md transition-all">
                                                             {isEditingAthlete ? "Kemas Kini Rekod Ahli" : "Daftar Masuk Ahli"}
                                                         </button>
+                                                        {isEditingAthlete && (
+                                                            <button 
+                                                                type="button" 
+                                                                onClick={() => {
+                                                                    setAthleteForm({ id: "", nama: "", kelas: "", rumah: "Merah", jantina: "Lelaki", kategori: "L12" });
+                                                                    setIsEditingAthlete(false);
+                                                                }}
+                                                                className="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-2 rounded-xl text-xs transition-all"
+                                                            >
+                                                                ✕ Batal Suntingan
+                                                            </button>
+                                                        )}
                                                     </form>
                                                 ) : (
                                                     <form onSubmit={handleTsvSubmit} className="space-y-4 text-xs font-semibold">
@@ -2254,7 +2269,22 @@
                                                 </div>
 
                                                 <div className="mt-5 border-t pt-4">
-                                                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">👥 Senarai Ahli Sukan (Mengikut Kelas)</h4>
+                                                    <div className="flex justify-between items-center mb-2">
+                                                        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">👥 Senarai Ahli Sukan (Mengikut Kelas)</h4>
+                                                        {userRole !== "pelawat" && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setIsEditModeRumah(!isEditModeRumah)}
+                                                                className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border transition-all flex items-center gap-1 ${
+                                                                    isEditModeRumah 
+                                                                        ? "bg-amber-100 text-amber-800 border-amber-300" 
+                                                                        : "bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100"
+                                                                }`}
+                                                            >
+                                                                {isEditModeRumah ? "✕ Selesai" : "⚙️ Kemas Kini"}
+                                                            </button>
+                                                        )}
+                                                    </div>
                                                     {Object.keys(houseMembers).length === 0 ? (
                                                         <p className="text-[11px] text-slate-400 italic">Tiada murid/atlet didaftarkan di bawah rumah sukan ini.</p>
                                                     ) : (
@@ -2264,8 +2294,36 @@
                                                                     <span className="text-[10px] font-black text-indigo-700 uppercase bg-indigo-50 px-2 py-0.5 rounded w-fit">{className}</span>
                                                                     <div className="flex flex-wrap gap-1">
                                                                         {houseMembers[className].map(ath => (
-                                                                            <span key={ath.id} className="bg-white text-[10px] px-2 py-0.5 rounded-md border border-slate-200 text-slate-700 font-bold flex items-center gap-1">
-                                                                                🏃‍♂️ {ath.nama}
+                                                                            <span key={ath.id} className="bg-white text-[10px] px-2 py-1 rounded-md border border-slate-200 text-slate-700 font-bold flex items-center justify-between gap-1.5 min-w-[125px]">
+                                                                                <span className="truncate">🏃‍♂️ {ath.nama}</span>
+                                                                                {isEditModeRumah && userRole !== "pelawat" && (
+                                                                                    <div className="flex items-center gap-1 shrink-0 bg-slate-50 p-0.5 rounded border border-slate-100">
+                                                                                        <button
+                                                                                            type="button"
+                                                                                            onClick={() => {
+                                                                                                setAthleteForm(ath);
+                                                                                                setIsEditingAthlete(true);
+                                                                                                showToastMessage(`Sila kemas kini maklumat ${ath.nama} di borang "Daftar Ahli Baharu" di sebelah kiri.`, "info");
+                                                                                                const formElement = document.getElementById("athlete-form-container");
+                                                                                                if (formElement) {
+                                                                                                    formElement.scrollIntoView({ behavior: 'smooth' });
+                                                                                                }
+                                                                                            }}
+                                                                                            className="text-indigo-600 hover:bg-indigo-100 p-0.5 rounded text-[11px]"
+                                                                                            title="Sunting Ahli"
+                                                                                        >
+                                                                                            ✏️
+                                                                                        </button>
+                                                                                        <button
+                                                                                            type="button"
+                                                                                            onClick={() => handleDeleteAthlete(ath.id)}
+                                                                                            className="text-red-500 hover:bg-red-100 p-0.5 rounded text-[11px]"
+                                                                                            title="Hapus Ahli"
+                                                                                        >
+                                                                                            🗑️
+                                                                                        </button>
+                                                                                    </div>
+                                                                                )}
                                                                             </span>
                                                                         ))}
                                                                     </div>
@@ -2404,7 +2462,7 @@
                                                     disabled={!selectedStudentId}
                                                     className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 disabled:text-slate-400 text-white font-bold px-6 py-2.5 rounded-xl shadow-md transition-all"
                                                 >
-                                                    💾 Simpan Pendaftaran Acara
+                                                    ☁️ Simpan Pendaftaran Acara
                                                 </button>
                                             </div>
                                         </form>

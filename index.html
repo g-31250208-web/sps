@@ -1369,6 +1369,29 @@
                     [houseName]: {
                         ...currentMeta,
                         guruPenasihat: filtered.join(', ')
+                    }
+                };
+
+                try {
+                    if (isCloudActive) {
+                        await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('metadata').doc('houses').set(updatedMeta);
+                        await syncWithGas("houses", "save", { 
+                            id: houseName, 
+                            name: `Rumah ${houseName}`, 
+                            slogan: currentMeta.slogan, 
+                            guruPenasihat: filtered.join(', '), 
+                            bonusPoints: currentMeta.bonusPoints, 
+                            warnaLabel: currentMeta.warnaLabel 
+                        });
+                    } else {
+                        setHousesMetadata(updatedMeta);
+                    }
+                    showToastMessage(`Cikgu ${advisorName} berjaya dikeluarkan.`);
+                } catch (err) {
+                    showToastMessage("Ralat mengeluarkan guru penasihat.", "error");
+                }
+            };
+
             const handleAddAnnouncement = async (e) => {
                 e.preventDefault();
                 if (!checkAuthority()) return;

@@ -218,7 +218,7 @@
             const [editingAdvisorName, setEditingAdvisorName] = useState("");
 
             // Form States
-            const [athleteForm, setAthleteForm] = useState({ id: "", nama: "", kelas: "", rumah: "Merah", jantina: "Lelaki", kategori: "L12" });
+            const [athleteForm, setAthleteForm] = useState({ id: "", noAtlet: "", nama: "", kelas: "", rumah: "Merah", jantina: "Lelaki", kategori: "L12" });
             const [isEditingAthlete, setIsEditingAthlete] = useState(false);
             const [eventForm, setEventForm] = useState({ id: "", nama: "", kategori: "L12", jenis: "Balapan", tarikh: "", masa: "" });
             const [isEditingEvent, setIsEditingEvent] = useState(false);
@@ -1276,7 +1276,7 @@
                 try {
                     if (isCloudActive) {
                         await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('athletes').doc(docId).set(updatedAthlete);
-                        await syncWithGas("students", "save", { id: docId, name: athleteForm.nama, class: athleteForm.kelas, house: athleteForm.rumah, jantina: athleteForm.jantina, tahap: athleteForm.kategori });
+                        await syncWithGas("students", "save", { id: docId, name: athleteForm.nama, class: athleteForm.kelas, house: athleteForm.rumah, jantina: athleteForm.jantina, tahap: athleteForm.kategori, noPeserta: athleteForm.noAtlet || "" });
                     } else {
                         if (isEditingAthlete) {
                             setAthletes(athletes.map(a => a.id === docId ? updatedAthlete : a));
@@ -1285,7 +1285,7 @@
                         }
                     }
                     showToastMessage(isEditingAthlete ? "Ahli berjaya dikemaskini!" : "Ahli berjaya didaftarkan!");
-                    setAthleteForm({ id: "", nama: "", kelas: "", rumah: "Merah", jantina: "Lelaki", kategori: "L12" });
+                    setAthleteForm({ id: "", noAtlet: "", nama: "", kelas: "", rumah: "Merah", jantina: "Lelaki", kategori: "L12" });
                     setIsEditingAthlete(false);
                 } catch (err) {
                     showToastMessage("Ralat menulis ke pangkalan data awan.", "error");
@@ -1909,16 +1909,29 @@
                                             </div>
                                         ) : (
                                             <form onSubmit={handleAthleteSubmit} className="space-y-4 text-xs font-semibold">
-                                                <div>
-                                                    <label className="block text-slate-500 mb-1">Nama Penuh Ahli</label>
-                                                    <input 
-                                                        type="text"
-                                                        required
-                                                        value={athleteForm.nama}
-                                                        onChange={(e) => setAthleteForm({ ...athleteForm, nama: e.target.value })}
-                                                        className="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                                                        placeholder="Contoh: Muhammad Danish"
-                                                    />
+                                                {}
+                                                <div className="grid grid-cols-4 gap-2">
+                                                    <div className="col-span-1">
+                                                        <label className="block text-slate-500 mb-1">No. Atlet</label>
+                                                        <input 
+                                                            type="text"
+                                                            value={athleteForm.noAtlet || ""}
+                                                            onChange={(e) => setAthleteForm({ ...athleteForm, noAtlet: e.target.value })}
+                                                            className="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none font-bold bg-slate-50 text-indigo-700"
+                                                            placeholder="Opsional"
+                                                        />
+                                                    </div>
+                                                    <div className="col-span-3">
+                                                        <label className="block text-slate-500 mb-1">Nama Penuh Ahli</label>
+                                                        <input 
+                                                            type="text"
+                                                            required
+                                                            value={athleteForm.nama}
+                                                            onChange={(e) => setAthleteForm({ ...athleteForm, nama: e.target.value })}
+                                                            className="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                                            placeholder="Contoh: Muhammad Danish"
+                                                        />
+                                                    </div>
                                                 </div>
                                                 <div className="grid grid-cols-2 gap-2">
                                                     <div>
@@ -2217,7 +2230,7 @@
                                                                             }
                                                                             return (
                                                                                 <span key={ath.id} className="bg-white text-[10px] px-2 py-1 rounded-lg border border-slate-200 text-slate-700 font-bold shadow-sm flex items-center justify-between gap-2 w-full">
-                                                                                    <span>🏃‍♂️ {ath.nama}</span>
+                                                                                    <span>{ath.noAtlet ? <span className="bg-indigo-100 text-indigo-800 px-1 py-0.5 rounded mr-1 text-[8.5px]">#{ath.noAtlet}</span> : ""}🏃‍♂️ {ath.nama}</span>
                                                                                     {isHouseEditMode[houseName] && (
                                                                                         <div className="flex items-center gap-1.5 ml-auto border-l pl-1.5 border-slate-200">
                                                                                             <button 
@@ -2417,7 +2430,7 @@
                                                         return (
                                                             <tr key={ath.id} className="hover:bg-slate-50 border-b">
                                                                 <td className="py-3 px-2 font-bold text-slate-800">
-                                                                    <p>{ath.nama}</p>
+                                                                    <p>{ath.noAtlet ? <span className="bg-indigo-50 border border-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded mr-1.5 font-mono">#{ath.noAtlet}</span> : ""}{ath.nama}</p>
                                                                     <p className="text-[9px] text-slate-400 font-bold uppercase">{ath.jantina}</p>
                                                                 </td>
                                                                 <td className="py-3 px-2 text-slate-500 font-medium">

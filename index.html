@@ -274,6 +274,55 @@
 
             const logoUrl = "https://lh3.googleusercontent.com/d/1E8tjAd7j9DJaZgngDn38agUFCvwyUffa";
 
+            // Generates an event code based on sorted date index and the event order on that day.
+            const eventsWithCode = useMemo(() => {
+                const uniqueDates = Array.from(new Set(events.map(e => e.tarikh).filter(Boolean))).sort();
+                
+                const getDayNum = (date) => {
+                    if (!date) return 1;
+                    const idx = uniqueDates.indexOf(date);
+                    return idx !== -1 ? idx + 1 : 1;
+                };
+
+                // Group by Day number only (ignoring sessions)
+                const groups = {};
+                events.forEach(e => {
+                    const day = getDayNum(e.tarikh);
+                    if (!groups[day]) groups[day] = [];
+                    groups[day].push(e);
+                });
+
+                const eventCodeMap = {};
+                Object.keys(groups).forEach(day => {
+                    // Sort events of the day chronologically by time, then by name if same time
+                    groups[day].sort((a, b) => {
+                        const timeA = a.masa || "00:00";
+                        const timeB = b.masa || "00:00";
+                        if (timeA !== timeB) return timeA.localeCompare(timeB);
+                        return a.nama.localeCompare(b.nama);
+                    });
+
+                    // Assign DXX formatted code (e.g., 107 for Day 1, Event 7; 207 for Day 2, Event 7)
+                    groups[day].forEach((ev, index) => {
+                        const seq = String(index + 1).padStart(2, '0');
+                        eventCodeMap[ev.id] = `${day}${seq}`;
+                    });
+                });
+
+                return events.map(ev => ({
+                    ...ev,
+                    kodAcara: eventCodeMap[ev.id] || "101"
+                })).sort((a, b) => {
+                    const dateA = a.tarikh || "9999-12-31";
+                    const dateB = b.tarikh || "9999-12-31";
+                    if (dateA !== dateB) return dateA.localeCompare(dateB);
+                    const timeA = a.masa || "23:59";
+                    const timeB = b.masa || "23:59";
+                    if (timeA !== timeB) return timeA.localeCompare(timeB);
+                    return a.nama.localeCompare(b.nama);
+                });
+            }, [events]);
+
             const showToastMessage = (message, type = "success") => {
                 setToast({ show: true, message, type });
                 setTimeout(() => setToast({ show: false, message: "", type: "info" }), 4000);
@@ -528,10 +577,10 @@
 
                 const mapping = { "1": "Emas", "2": "Perak", "3": "Gangsa", "4": "Tempat Ke-4" };
                 const best = athleteResults.sort((a,b) => parseInt(a.kedudukan) - parseInt(b.kedudukan))[0];
-                const event = events.find(e => e.id === best.eventId);
+                const event = eventsWithCode.find(e => e.id === best.eventId);
                 return {
                     kedudukan: mapping[best.kedudukan] || "Kedudukan " + best.kedudukan,
-                    acara: event ? event.nama + " (" + event.kategori + ")" : "Acara Sukan",
+                    acara: event ? `[${event.kodAcara}] ${event.nama} (${event.kategori})` : "Acara Sukan",
                     catatan: best.catatan ? "dengan catatan " + best.catatan : ""
                 };
             };
@@ -548,14 +597,14 @@
                     const matchHouse = filterHouse === "Semua" || athlete.rumah === filterHouse;
                     let matchEvent = true;
                     if (filterEvent !== "Semua") {
-                        const event = events.find(e => e.id === filterEvent);
+                        const event = eventsWithCode.find(e => e.id === filterEvent);
                         if (event) {
                             matchEvent = athlete.kategori === event.kategori;
                         }
                     }
                     return matchHouse && matchEvent;
                 });
-            }, [athletes, filterHouse, filterEvent, events]);
+            }, [athletes, filterHouse, filterEvent, eventsWithCode]);
 
             const groupedByClass = useMemo(() => {
                 const groups = {};
@@ -672,7 +721,7 @@
                     for (const ath of athletes) {
                         await syncWithGas("students", "save", { id: ath.id, name: ath.nama, class: ath.kelas, house: ath.rumah, gender: ath.jantina, tahap: ath.kategori });
                     }
-                    for (const ev of events) {
+                    for (const ev of eventsWithCode) {
                         await syncWithGas("events", "save", { id: ev.id, name: ev.nama, category: ev.jenis, level: ev.kategori, date: ev.tarikh, time: ev.masa });
                     }
                     for (const res of results) {
@@ -688,7 +737,7 @@
 
             const handleBackup = () => {
                 if (!checkAuthority()) return;
-                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ athletes, events, results, heats, housesMetadata }));
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ athletes, events: eventsWithCode, results, heats, housesMetadata }));
                 const downloadAnchor = document.createElement('a');
                 downloadAnchor.setAttribute("href", dataStr);
                 downloadAnchor.setAttribute("download", `Sandaran_Data_SPS_SKB_${new Date().toISOString().slice(0,10)}.json`);
@@ -882,7 +931,7 @@
                             <div style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 20px;">
                                 <img src="${logoUrl}" style="height: 60px;" />
                                 <h2 style="margin: 5px 0 0 0;">LAPORAN KEPUTUSAN SARINGAN LARIAN</h2>
-                                <h3 style="margin: 2px 0 0 0; color: #475569; font-size:12px;">ACARA: ${targetData.nama.toUpperCase()} (${targetData.kategori})</h3>
+                                <h3 style="margin: 2px 0 0 0; color: #475569; font-size:12px;">ACARA: [${targetData.kodAcara}] ${targetData.nama.toUpperCase()} (${targetData.kategori})</h3>
                             </div>
 
                             <h3 style="font-size:13px; text-transform:uppercase; font-weight:bold; margin-bottom:5px;">A. Kedudukan Masa bagi Setiap Saringan</h3>
@@ -986,7 +1035,7 @@
                             </div>
 
                             <div style="background: #f1f5f9; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                                <div><strong>Acara Sukan:</strong> ${targetData.nama}</div>
+                                <div><strong>Acara Sukan:</strong> [${targetData.kodAcara}] ${targetData.nama}</div>
                                 <div><strong>Kategori:</strong> ${targetData.kategori} (${targetData.jenis})</div>
                                 <div><strong>Tarikh Kejohanan:</strong> ${targetData.tarikh || "Belum Ditetapkan"}</div>
                                 <div><strong>Masa Laporan:</strong> ${targetData.masa || "--:--"}</div>
@@ -1010,7 +1059,7 @@
                         </div>
                     `;
                 } else if (mode === 'keputusan_semua') {
-                    const eventBlocksHtml = events.map((event, idx) => {
+                    const eventBlocksHtml = eventsWithCode.map((event, idx) => {
                         const eventResults = results.filter(r => r.eventId === event.id)
                                                      .sort((a,b) => parseInt(a.kedudukan) - parseInt(b.kedudukan));
                         
@@ -1036,7 +1085,7 @@
                         return `
                             <div style="margin-bottom: 25px; page-break-inside: avoid;">
                                 <div style="background: #f1f5f9; padding: 8px; font-weight: 700; font-size: 12px; border-left: 5px solid #1e3a8a; display: flex; justify-content: space-between;">
-                                    <span>Acara #${idx+1}: ${event.nama} (${event.kategori})</span>
+                                    <span>Acara #${idx+1}: [${event.kodAcara}] ${event.nama} (${event.kategori})</span>
                                     <span>📅 ${event.tarikh || "N/A"}</span>
                                 </div>
                                 <table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 5px; text-align: left;">
@@ -1096,7 +1145,7 @@
                             </div>
 
                             <div style="background: #f1f5f9; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                                <div><strong>Acara Perlumbaan:</strong> ${targetData.nama}</div>
+                                <div><strong>Acara Perlumbaan:</strong> [${targetData.kodAcara}] ${targetData.nama}</div>
                                 <div><strong>Kategori:</strong> ${targetData.kategori} (${targetData.jenis})</div>
                                 <div><strong>Tarikh Rasmi Pelaksanaan:</strong> ${targetData.tarikh || "Belum Ditetapkan"}</div>
                                 <div><strong>Masa Ditamatkan:</strong> ${targetData.masa || "--:--"}</div>
@@ -1382,7 +1431,7 @@
                     showToastMessage("Masa larian saringan berjaya disimpan!");
                     setHeatForm({ ...heatForm, athleteId: "", catatan: "" });
                 } catch (e) {
-                    showToastMessage("Ralat menulis rekod saringan.", "error");
+                    showToastMessage("Ralat writing heat record.", "error");
                 }
             };
 
@@ -1634,8 +1683,8 @@
             };
 
             const selectedEventObject = useMemo(() => {
-                return events.find(e => e.id === resultForm.eventId || e.id === heatForm.eventId);
-            }, [events, resultForm.eventId, heatForm.eventId]);
+                return eventsWithCode.find(e => e.id === resultForm.eventId || e.id === heatForm.eventId);
+            }, [eventsWithCode, resultForm.eventId, heatForm.eventId]);
 
             const relevantAthletesForEventForm = useMemo(() => {
                 if (!selectedEventObject) return [];
@@ -1695,7 +1744,7 @@
                 try {
                     let successCount = 0;
                     for (const res of goldResults) {
-                        const event = events.find(e => e.id === res.eventId);
+                        const event = eventsWithCode.find(e => e.id === res.eventId);
                         const athlete = athletes.find(a => a.id === res.athleteId);
                         
                         if (event && athlete) {
@@ -1935,15 +1984,18 @@
                                     <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
                                         <h3 className="text-sm font-bold text-slate-900 mb-4 uppercase tracking-wider">{t.currentEvents}</h3>
                                         <div className="space-y-3">
-                                            {events.length === 0 ? (
+                                            {eventsWithCode.length === 0 ? (
                                                 <p className="text-xs text-slate-400 italic py-4">{t.noEvents}</p>
                                             ) : (
-                                                events.slice(0, 6).map(alert => {
+                                                eventsWithCode.slice(0, 6).map(alert => {
                                                     const isDone = results.some(r => r.eventId === alert.id);
                                                     return (
                                                         <div key={alert.id} className="flex justify-between items-center p-3 rounded-xl bg-slate-50 text-xs">
                                                             <div>
-                                                                <span className="font-bold text-slate-800 block">{alert.nama}</span>
+                                                                <span className="font-bold text-slate-800 block">
+                                                                    <span className="font-mono bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded mr-1.5 text-[10px]">{alert.kodAcara}</span>
+                                                                    {alert.nama}
+                                                                </span>
                                                                 <span className="text-[10px] text-slate-400">Kategori: {alert.kategori} | ⏱️ {alert.masa || "--:--"}</span>
                                                             </div>
                                                             <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${isDone ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800 animate-pulse"}`}>
@@ -2430,7 +2482,7 @@
                                                     <label className="block text-slate-500 mb-1">3. Pilih Acara Sukan Disertai</label>
                                                     <div className="border border-slate-200 rounded-xl p-2.5 max-h-32 overflow-y-auto bg-slate-50 space-y-1.5">
                                                         {selectedStudentId ? (
-                                                            events
+                                                            eventsWithCode
                                                                 .filter(ev => ev.kategori === athletes.find(a => a.id === selectedStudentId)?.kategori || ev.kategori === "Terbuka")
                                                                 .map(ev => (
                                                                     <label key={ev.id} className="flex items-center gap-2 cursor-pointer p-1 rounded hover:bg-white">
@@ -2446,7 +2498,7 @@
                                                                             }}
                                                                             className="rounded text-indigo-600 focus:ring-indigo-500"
                                                                         />
-                                                                        <span className="font-bold text-slate-700">{ev.nama} ({ev.kategori})</span>
+                                                                        <span className="font-bold text-slate-700">[{ev.kodAcara}] {ev.nama} ({ev.kategori})</span>
                                                                     </label>
                                                                 ))
                                                         ) : (
@@ -2475,7 +2527,7 @@
                                         {filterEvent !== "Semua" && (
                                             <button 
                                                 onClick={() => {
-                                                    const targetEvent = events.find(e => e.id === filterEvent);
+                                                    const targetEvent = eventsWithCode.find(e => e.id === filterEvent);
                                                     executeBypassPrint('panggilan', targetEvent);
                                                 }}
                                                 className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow"
@@ -2492,7 +2544,7 @@
                                         </select>
                                         <select value={filterEvent} onChange={(e) => setFilterEvent(e.target.value)} className="p-2.5 border rounded-xl text-xs font-semibold bg-white">
                                             <option value="Semua">Semua Acara Lumba</option>
-                                            {events.map(ev => <option key={ev.id} value={ev.id}>{ev.nama} ({ev.kategori})</option>)}
+                                            {eventsWithCode.map(ev => <option key={ev.id} value={ev.id}>[{ev.kodAcara}] {ev.nama} ({ev.kategori})</option>)}
                                         </select>
                                     </div>
                                 </div>
@@ -2543,10 +2595,10 @@
                                                                     <div className="flex flex-wrap gap-1">
                                                                         {ath.acaraIds && ath.acaraIds.length > 0 ? (
                                                                             ath.acaraIds.map(id => {
-                                                                                const ev = events.find(e => e.id === id);
+                                                                                const ev = eventsWithCode.find(e => e.id === id);
                                                                                 return ev ? (
                                                                                     <span key={id} className="bg-indigo-50 text-indigo-700 text-[9px] font-bold px-2 py-0.5 rounded-md border border-indigo-150">
-                                                                                        {ev.nama}
+                                                                                        [{ev.kodAcara}] {ev.nama}
                                                                                     </span>
                                                                                 ) : null;
                                                                             })
@@ -2673,14 +2725,20 @@
                                     <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
                                         <h3 className="text-sm font-bold text-slate-900 mb-4 uppercase tracking-wider">📋 Senarai Acara Sukan Terjadual</h3>
                                         <div className="space-y-3">
-                                            {events.length === 0 ? (
+                                            {eventsWithCode.length === 0 ? (
                                                 <p className="text-xs text-slate-400 italic text-center py-6">Tiada acara sukan didaftarkan lagi.</p>
                                             ) : (
-                                                events.map(ev => (
+                                                eventsWithCode.map(ev => (
                                                     <div key={ev.id} className="flex justify-between items-center bg-slate-50 p-4 rounded-xl border border-slate-100 text-xs">
                                                         <div>
-                                                            <span className="font-extrabold text-sm text-slate-800 block">{ev.nama}</span>
-                                                            <div className="flex gap-2 mt-1">
+                                                            {}
+                                                            <span className="font-extrabold text-sm text-slate-800 flex items-center gap-2">
+                                                                <span className="bg-indigo-600 text-white font-mono px-2.5 py-1 rounded-lg text-xs tracking-wider shadow-sm shrink-0">
+                                                                    {ev.kodAcara}
+                                                                </span>
+                                                                <span>{ev.nama}</span>
+                                                            </span>
+                                                            <div className="flex gap-2 mt-2">
                                                                 <span className="bg-indigo-100 text-indigo-800 text-[9px] font-black px-2 py-0.5 rounded-full uppercase">{ev.kategori}</span>
                                                                 <span className="bg-slate-200 text-slate-700 text-[9px] font-black px-2 py-0.5 rounded-full uppercase">{ev.jenis}</span>
                                                             </div>
@@ -2763,8 +2821,8 @@
                                                 className="w-full p-3 border rounded-xl bg-white text-xs font-semibold focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                                             >
                                                 <option value="">-- Sila Pilih Acara --</option>
-                                                {events.map(ev => (
-                                                    <option key={ev.id} value={ev.id}>{ev.nama} ({ev.kategori}) - {ev.jenis}</option>
+                                                {eventsWithCode.map(ev => (
+                                                    <option key={ev.id} value={ev.id}>[{ev.kodAcara}] {ev.nama} ({ev.kategori}) - {ev.jenis}</option>
                                                 ))}
                                             </select>
                                         </div>
@@ -3011,8 +3069,11 @@
                                                     <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
                                                         <div className="flex justify-between items-center border-b pb-3 mb-4">
                                                             <div>
-                                                                <h3 className="text-lg font-black text-slate-800">{selectedEventObject.nama}</h3>
-                                                                <p className="text-xs text-slate-400">Kategori: {selectedEventObject.kategori} | Jenis: {selectedEventObject.jenis}</p>
+                                                                <h3 className="text-lg font-black text-slate-800">
+                                                                    <span className="font-mono bg-indigo-100 text-indigo-800 px-2 py-1 rounded-lg text-sm tracking-wider shadow-sm mr-2">{selectedEventObject.kodAcara}</span>
+                                                                    {selectedEventObject.nama}
+                                                                </h3>
+                                                                <p className="text-xs text-slate-400 mt-1">Kategori: {selectedEventObject.kategori} | Jenis: {selectedEventObject.jenis}</p>
                                                             </div>
                                                             <button 
                                                                 onClick={() => executeBypassPrint('keputusan_tunggal', selectedEventObject)}
@@ -3099,7 +3160,7 @@
                                                     <p className="text-xs text-slate-400 italic text-center py-6">Kunci masuk pemenang Emas dahulu untuk dipaparkan di sini.</p>
                                                 ) : (
                                                     results.filter(r => r.kedudukan === "1").map(res => {
-                                                        const ev = events.find(e => e.id === res.eventId);
+                                                        const ev = eventsWithCode.find(e => e.id === res.eventId);
                                                         const ath = athletes.find(a => a.id === res.athleteId);
                                                         if (!ev || !ath) return null;
                                                         const recordBreak = checkRecordBreakStatus(ev.nama, ev.kategori, res.catatan);
@@ -3107,7 +3168,10 @@
                                                         return (
                                                             <div key={res.id} className="flex justify-between items-center bg-white p-2.5 rounded-xl border border-slate-100 shadow-xs">
                                                                 <div>
-                                                                    <p className="font-extrabold text-slate-800">{ev.nama} ({ev.kategori})</p>
+                                                                    <p className="font-extrabold text-slate-800">
+                                                                        <span className="font-mono bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded text-[10px] mr-1.5">{ev.kodAcara}</span>
+                                                                        {ev.nama} ({ev.kategori})
+                                                                    </p>
                                                                     <p className="text-[10px] text-slate-400">🥇 {ath.nama} ({ath.rumah})</p>
                                                                 </div>
                                                                 <div className="text-right">
@@ -3128,7 +3192,7 @@
                                             <div className="space-y-2 max-h-60 overflow-y-auto pr-1 text-xs">
                                                 {HISTORICAL_CHAMPIONSHIP_RECORDS.map((rec, i) => {
                                                     const matchingResult = results.find(r => {
-                                                        const ev = events.find(e => e.id === r.eventId);
+                                                        const ev = eventsWithCode.find(e => e.id === r.eventId);
                                                         return ev && ev.nama.toLowerCase().trim() === rec.eventName.toLowerCase().trim() && ev.kategori === rec.category && r.kedudukan === "1";
                                                     });
                                                     const isBroken = matchingResult ? checkRecordBreakStatus(rec.eventName, rec.category, matchingResult.catatan) : null;

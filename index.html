@@ -1779,67 +1779,151 @@
                         {/* RUMAH SUKAN TAB */}
                         {activeTab === "rumah_sukan" && (
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                <div className="lg:col-span-1 bg-white rounded-2xl p-5 border border-slate-100 shadow-sm h-fit">
-                                    <h3 className="text-sm font-bold text-slate-900 mb-4 uppercase tracking-wider">🏠 Urus Rumah Sukan</h3>
-                                    
-                                    {userRole === "pelawat" ? (
-                                        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 text-xs text-amber-800 font-semibold mb-3">
-                                            🔒 <strong>Mod Baca Sahaja Aktif:</strong> Sila log masuk dengan ID DELIMa KPM Guru atau Admin untuk mendaftar rumah sukan.
-                                        </div>
-                                    ) : (
-                                        <form onSubmit={handleAddHouseSubmitDirect} className="space-y-4 text-xs font-semibold mb-4 pb-4 border-b">
-                                            <p className="text-[10.5px] text-slate-400">Tambah Rumah Sukan Tersuai Baharu:</p>
-                                            <div>
-                                                <label className="block text-slate-500 mb-1">Nama Rumah Sukan</label>
-                                                <input 
-                                                    type="text" 
-                                                    required
-                                                    value={houseForm.nama}
-                                                    onChange={(e) => setHouseForm({ ...houseForm, nama: e.target.value })}
-                                                    placeholder="Contoh: Merah, Biru, Hijau, Kuning"
-                                                    className="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                                                />
+                                <div className="lg:col-span-1 space-y-6">
+                                    {/* Panel 1: Urus Rumah Sukan */}
+                                    <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm h-fit">
+                                        <h3 className="text-sm font-bold text-slate-900 mb-4 uppercase tracking-wider">🏠 Urus Rumah Sukan</h3>
+                                        
+                                        {userRole === "pelawat" ? (
+                                            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 text-xs text-amber-800 font-semibold mb-3">
+                                                🔒 <strong>Mod Baca Sahaja Aktif:</strong> Sila log masuk dengan ID DELIMa KPM Guru atau Admin untuk mendaftar rumah sukan.
                                             </div>
-                                            <div>
-                                                <label className="block text-slate-500 mb-1">Slogan Rumah Sukan</label>
-                                                <input 
-                                                    type="text" 
-                                                    required
-                                                    value={houseForm.slogan}
-                                                    onChange={(e) => setHouseForm({ ...houseForm, slogan: e.target.value })}
-                                                    placeholder="Contoh: Merah Membara Harapan Bangsa"
-                                                    className="w-full p-2.5 rounded-xl border border-slate-200"
-                                                />
+                                        ) : (
+                                            <form onSubmit={handleAddHouseSubmitDirect} className="space-y-4 text-xs font-semibold mb-4 pb-4 border-b">
+                                                <p className="text-[10.5px] text-slate-400">Tambah Rumah Sukan Tersuai Baharu:</p>
+                                                <div>
+                                                    <label className="block text-slate-500 mb-1">Nama Rumah Sukan</label>
+                                                    <input 
+                                                        type="text" 
+                                                        required
+                                                        value={houseForm.nama}
+                                                        onChange={(e) => setHouseForm({ ...houseForm, nama: e.target.value })}
+                                                        placeholder="Contoh: Merah, Biru, Hijau, Kuning"
+                                                        className="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-slate-500 mb-1">Slogan Rumah Sukan</label>
+                                                    <input 
+                                                        type="text" 
+                                                        required
+                                                        value={houseForm.slogan}
+                                                        onChange={(e) => setHouseForm({ ...houseForm, slogan: e.target.value })}
+                                                        placeholder="Contoh: Merah Membara Harapan Bangsa"
+                                                        className="w-full p-2.5 rounded-xl border border-slate-200"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-slate-500 mb-1">Tema Warna Label</label>
+                                                    <select
+                                                        value={houseForm.warnaLabel}
+                                                        onChange={(e) => setHouseForm({ ...houseForm, warnaLabel: e.target.value })}
+                                                        className="w-full p-2.5 rounded-xl border border-slate-200 bg-white"
+                                                    >
+                                                        <option value="Merah">🔴 Merah (Red)</option>
+                                                        <option value="Biru">🔵 Biru (Blue)</option>
+                                                        <option value="Hijau">🟢 Hijau (Green)</option>
+                                                        <option value="Kuning">🟡 Kuning (Yellow)</option>
+                                                        <option value="Ungu">🔮 Ungu (Purple)</option>
+                                                        <option value="Oren">🍊 Oren (Orange)</option>
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-slate-500 mb-1">Mata Bonus Permulaan</label>
+                                                    <input 
+                                                        type="number" 
+                                                        value={houseForm.bonusPoints}
+                                                        onChange={(e) => setHouseForm({ ...houseForm, bonusPoints: parseInt(e.target.value) || 0 })}
+                                                        className="w-full p-2.5 rounded-xl border border-slate-200"
+                                                    />
+                                                </div>
+                                                <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl shadow-md transition-all">
+                                                    Daftar Pasukan Rumah Sukan
+                                                </button>
+                                            </form>
+                                        )}
+                                    </div>
+
+                                    {/* Panel 2: Daftar Atlet (Dipindahkan dari Tab Atlet) */}
+                                    <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm h-fit">
+                                        <h3 className="text-sm font-bold text-slate-900 mb-4 uppercase tracking-wider">🏃‍♂️ Daftar Atlet Baru</h3>
+                                        
+                                        {userRole === "pelawat" ? (
+                                            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 text-xs text-amber-800 font-semibold">
+                                                🔒 <strong>Mod Baca Sahaja Aktif:</strong> Pendaftaran atau pengemaskinian rekod atlet tidak dibenarkan bagi pelawat. Sila daftar masuk menggunakan akaun DELIMa KPM.
                                             </div>
-                                            <div>
-                                                <label className="block text-slate-500 mb-1">Tema Warna Label</label>
-                                                <select
-                                                    value={houseForm.warnaLabel}
-                                                    onChange={(e) => setHouseForm({ ...houseForm, warnaLabel: e.target.value })}
-                                                    className="w-full p-2.5 rounded-xl border border-slate-200 bg-white"
-                                                >
-                                                    <option value="Merah">🔴 Merah (Red)</option>
-                                                    <option value="Biru">🔵 Biru (Blue)</option>
-                                                    <option value="Hijau">🟢 Hijau (Green)</option>
-                                                    <option value="Kuning">🟡 Kuning (Yellow)</option>
-                                                    <option value="Ungu">🔮 Ungu (Purple)</option>
-                                                    <option value="Oren">🍊 Oren (Orange)</option>
-                                                </select>
-                                            </div>
-                                            <div>
-                                                <label className="block text-slate-500 mb-1">Mata Bonus Permulaan</label>
-                                                <input 
-                                                    type="number" 
-                                                    value={houseForm.bonusPoints}
-                                                    onChange={(e) => setHouseForm({ ...houseForm, bonusPoints: parseInt(e.target.value) || 0 })}
-                                                    className="w-full p-2.5 rounded-xl border border-slate-200"
-                                                />
-                                            </div>
-                                            <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl shadow-md transition-all">
-                                                Daftar Pasukan Rumah Sukan
-                                            </button>
-                                        </form>
-                                    )}
+                                        ) : (
+                                            <form onSubmit={handleAthleteSubmit} className="space-y-4 text-xs font-semibold">
+                                                <div>
+                                                    <label className="block text-slate-500 mb-1">Nama Penuh Murid</label>
+                                                    <input 
+                                                        type="text"
+                                                        required
+                                                        value={athleteForm.nama}
+                                                        onChange={(e) => setAthleteForm({ ...athleteForm, nama: e.target.value })}
+                                                        className="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                                        placeholder="Contoh: Muhammad Danish"
+                                                    />
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    <div>
+                                                        <label className="block text-slate-500 mb-1">Kelas</label>
+                                                        <input 
+                                                            type="text"
+                                                            required
+                                                            value={athleteForm.kelas}
+                                                            onChange={(e) => setAthleteForm({ ...athleteForm, kelas: e.target.value })}
+                                                            className="w-full p-2.5 rounded-xl border border-slate-200"
+                                                            placeholder="6 Cemerlang"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-slate-500 mb-1">Rumah Sukan</label>
+                                                        <select 
+                                                            value={athleteForm.rumah}
+                                                            onChange={(e) => setAthleteForm({ ...athleteForm, rumah: e.target.value })}
+                                                            className="w-full p-2.5 rounded-xl border border-slate-200 bg-white"
+                                                        >
+                                                            {Object.keys(housesMetadata).map(houseName => (
+                                                                <option key={houseName} value={houseName}>{houseName}</option>
+                                                            ))}
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    <div>
+                                                        <label className="block text-slate-500 mb-1">Jantina</label>
+                                                        <select 
+                                                            value={athleteForm.jantina}
+                                                            onChange={(e) => setAthleteForm({ ...athleteForm, jantina: e.target.value })}
+                                                            className="w-full p-2.5 rounded-xl border border-slate-200 bg-white"
+                                                        >
+                                                            <option value="Lelaki">Lelaki</option>
+                                                            <option value="Perempuan">Perempuan</option>
+                                                        </select>
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-slate-500 mb-1">Kategori Had Umur</label>
+                                                        <select 
+                                                            value={athleteForm.kategori}
+                                                            onChange={(e) => setAthleteForm({ ...athleteForm, kategori: e.target.value })}
+                                                            className="w-full p-2.5 rounded-xl border border-slate-200 bg-white"
+                                                        >
+                                                            <option value="L12">Lelaki B12 (L12)</option>
+                                                            <option value="P12">Perempuan B12 (P12)</option>
+                                                            <option value="L9">Lelaki B9 (L9)</option>
+                                                            <option value="P9">Perempuan B9 (P9)</option>
+                                                            <option value="Prasekolah">Prasekolah</option>
+                                                            <option value="Terbuka">Terbuka</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                                <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl shadow-md transition-all">
+                                                    {isEditingAthlete ? "Kemas Kini Rekod Atlet" : "Daftar Masuk Atlet"}
+                                                </button>
+                                            </form>
+                                        )}
+                                    </div>
                                 </div>
 
                                 <div className="lg:col-span-2 space-y-6">
@@ -1947,113 +2031,102 @@
 
                         {/* ATLET TAB */}
                         {activeTab === "atlit" && (
-                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                <div className="lg:col-span-1 bg-white rounded-2xl p-5 border border-slate-100 shadow-sm h-fit">
-                                    <h3 className="text-sm font-bold text-slate-900 mb-4 uppercase tracking-wider">🏃‍♂️ Daftar Atlet</h3>
-                                    
-                                    {userRole === "pelawat" ? (
-                                        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 text-xs text-amber-800 font-semibold">
-                                            🔒 <strong>Mod Baca Sahaja Aktif:</strong> Pendaftaran atau pengemaskinian rekod atlet tidak dibenarkan bagi pelawat. Sila daftar masuk menggunakan akaun DELIMa KPM.
-                                        </div>
-                                    ) : (
-                                        <form onSubmit={handleAthleteSubmit} className="space-y-4 text-xs font-semibold">
-                                            <div>
-                                                <label className="block text-slate-500 mb-1">Nama Penuh Murid</label>
-                                                <input 
-                                                    type="text"
-                                                    required
-                                                    value={athleteForm.nama}
-                                                    onChange={(e) => setAthleteForm({ ...athleteForm, nama: e.target.value })}
-                                                    className="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                                                    placeholder="Contoh: Muhammad Danish"
-                                                />
-                                            </div>
-                                            <div className="grid grid-cols-2 gap-2">
-                                                <div>
-                                                    <label className="block text-slate-500 mb-1">Kelas</label>
-                                                    <input 
-                                                        type="text"
-                                                        required
-                                                        value={athleteForm.kelas}
-                                                        onChange={(e) => setAthleteForm({ ...athleteForm, kelas: e.target.value })}
-                                                        className="w-full p-2.5 rounded-xl border border-slate-200"
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-slate-500 mb-1">Rumah Sukan</label>
-                                                    <select 
-                                                        value={athleteForm.rumah}
-                                                        onChange={(e) => setAthleteForm({ ...athleteForm, rumah: e.target.value })}
-                                                        className="w-full p-2.5 rounded-xl border border-slate-200 bg-white"
-                                                    >
-                                                        {Object.keys(housesMetadata).map(houseName => (
-                                                            <option key={houseName} value={houseName}>{houseName}</option>
-                                                        ))}
-                                                    </select>
-                                                </div>
-                                            </div>
-                                            <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl">Simpan Atlet</button>
-                                        </form>
-                                    )}
+                            <div className="space-y-6">
+                                <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+                                    <div className="flex justify-between items-center mb-3">
+                                        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">⚡ Saringan & Carian Dinamik Atlet</h3>
+                                        {filterEvent !== "Semua" && (
+                                            <button 
+                                                onClick={() => {
+                                                    const targetEvent = events.find(e => e.id === filterEvent);
+                                                    executeBypassPrint('panggilan', targetEvent);
+                                                }}
+                                                className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow"
+                                            >
+                                                <PrinterIcon className="h-3 w-3" />
+                                                <span>Cetak Borang Panggilan Acara</span>
+                                            </button>
+                                        )}
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <select value={filterHouse} onChange={(e) => setFilterHouse(e.target.value)} className="p-2.5 border rounded-xl text-xs font-semibold bg-white">
+                                            <option value="Semua">Semua Rumah Sukan</option>
+                                            {Object.keys(housesMetadata).map(name => <option key={name} value={name}>{name}</option>)}
+                                        </select>
+                                        <select value={filterEvent} onChange={(e) => setFilterEvent(e.target.value)} className="p-2.5 border rounded-xl text-xs font-semibold bg-white">
+                                            <option value="Semua">Semua Acara Lumba</option>
+                                            {events.map(ev => <option key={ev.id} value={ev.id}>{ev.nama} ({ev.kategori})</option>)}
+                                        </select>
+                                    </div>
                                 </div>
 
-                                <div className="lg:col-span-2 space-y-4">
-                                    <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
-                                        <div className="flex justify-between items-center mb-3">
-                                            <h3 className="text-xs font-bold text-slate-400 uppercase">Saringan Atlet</h3>
-                                            {filterEvent !== "Semua" && (
-                                                <button 
-                                                    onClick={() => {
-                                                        const targetEvent = events.find(e => e.id === filterEvent);
-                                                        executeBypassPrint('panggilan', targetEvent);
-                                                    }}
-                                                    className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow"
-                                                >
-                                                    <PrinterIcon className="h-3 w-3" />
-                                                    <span>Cetak Borang Panggilan Acara</span>
-                                                </button>
-                                            )}
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <select value={filterHouse} onChange={(e) => setFilterHouse(e.target.value)} className="p-2 border rounded-xl text-xs font-semibold bg-white">
-                                                <option value="Semua">Semua Rumah Sukan</option>
-                                                {Object.keys(housesMetadata).map(name => <option key={name} value={name}>{name}</option>)}
-                                            </select>
-                                            <select value={filterEvent} onChange={(e) => setFilterEvent(e.target.value)} className="p-2 border rounded-xl text-xs font-semibold bg-white">
-                                                <option value="Semua">Semua Acara Lumba</option>
-                                                {events.map(ev => <option key={ev.id} value={ev.id}>{ev.nama} ({ev.kategori})</option>)}
-                                            </select>
-                                        </div>
+                                <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
+                                    <div className="flex justify-between items-center border-b pb-3 mb-4">
+                                        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">📋 Senarai Rasmi Atlet Berdaftar ({filteredAthletes.length} Murid)</h4>
+                                        <p className="text-[11px] text-slate-400 italic">Untuk mendaftarkan atlet baru, sila layari tab <strong>🏠 Rumah Sukan</strong>.</p>
                                     </div>
-
-                                    <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+                                    <div className="overflow-x-auto">
                                         <table className="w-full text-left border-collapse text-xs">
                                             <thead>
-                                                <tr className="border-b text-slate-400 font-bold uppercase">
-                                                    <th className="py-3 px-2">Nama</th>
-                                                    <th className="py-3 px-2">Kelas</th>
-                                                    <th className="py-3 px-2">Rumah Sukan</th>
-                                                    <th className="py-3 px-2">Pingat</th>
-                                                    {userRole !== "pelawat" && <th className="py-3 px-2 text-right">Tindakan</th>}
+                                                <tr className="border-b text-slate-400 font-bold uppercase bg-slate-50">
+                                                    <th className="py-3 px-3">Nama Penuh Atlet</th>
+                                                    <th className="py-3 px-3">Kelas</th>
+                                                    <th className="py-3 px-3">Rumah Sukan</th>
+                                                    <th className="py-3 px-3">Jantina</th>
+                                                    <th className="py-3 px-3">Kategori Khas</th>
+                                                    <th className="py-3 px-3">Pingat / Pencapaian</th>
+                                                    {userRole !== "pelawat" && <th className="py-3 px-3 text-right">Tindakan</th>}
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {filteredAthletes.map(ath => {
-                                                    const achievement = filterEvent !== "Semua" ? getAthleteAchievementForEvent(ath.id, filterEvent) : null;
-                                                    return (
-                                                        <tr key={ath.id} className="hover:bg-slate-50 border-b">
-                                                            <td className="py-3 px-2 font-bold text-slate-800">{ath.nama}</td>
-                                                            <td className="py-3 px-2 text-slate-500">{ath.kelas}</td>
-                                                            <td className="py-3 px-2 font-bold text-indigo-600">{ath.rumah}</td>
-                                                            <td className="py-3 px-2">{achievement || "Tiada"}</td>
-                                                            {userRole !== "pelawat" && (
-                                                                <td className="py-3 px-2 text-right">
-                                                                    <button onClick={() => handleDeleteAthlete(ath.id)} className="text-red-500 p-1" title="Hapus Rekod"><TrashIcon className="h-4 w-4" /></button>
+                                                {filteredAthletes.length === 0 ? (
+                                                    <tr>
+                                                        <td colSpan={7} className="py-8 text-center text-slate-400 italic">
+                                                            Tiada atlet ditemui berdasarkan saringan semasa.
+                                                        </td>
+                                                    </tr>
+                                                ) : (
+                                                    filteredAthletes.map(ath => {
+                                                        const achievement = filterEvent !== "Semua" ? getAthleteAchievementForEvent(ath.id, filterEvent) : null;
+                                                        return (
+                                                            <tr key={ath.id} className="hover:bg-slate-50 border-b">
+                                                                <td className="py-3 px-3 font-bold text-slate-800 uppercase">{ath.nama}</td>
+                                                                <td className="py-3 px-3 text-slate-500 font-medium">{ath.kelas}</td>
+                                                                <td className="py-3 px-3 font-extrabold text-indigo-600">{ath.rumah}</td>
+                                                                <td className="py-3 px-3 text-slate-500">{ath.jantina || "Lelaki"}</td>
+                                                                <td className="py-3 px-3">
+                                                                    <span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded font-bold text-[10px]">
+                                                                        {ath.kategori || "L12"}
+                                                                    </span>
                                                                 </td>
-                                                            )}
-                                                        </tr>
-                                                    );
-                                                })}
+                                                                <td className="py-3 px-3">{achievement || <span className="text-slate-300">-</span>}</td>
+                                                                {userRole !== "pelawat" && (
+                                                                    <td className="py-3 px-3 text-right flex justify-end gap-1.5">
+                                                                        <button 
+                                                                            onClick={() => {
+                                                                                setAthleteForm(ath);
+                                                                                setIsEditingAthlete(true);
+                                                                                setActiveTab("rumah_sukan");
+                                                                                showToastMessage("Borang atlet sedia disunting di tab Rumah Sukan!", "info");
+                                                                            }} 
+                                                                            className="text-indigo-600 hover:bg-indigo-50 p-1.5 rounded-lg border border-indigo-100 transition-colors"
+                                                                            title="Sunting Rekod"
+                                                                        >
+                                                                            ✏️
+                                                                        </button>
+                                                                        <button 
+                                                                            onClick={() => handleDeleteAthlete(ath.id)} 
+                                                                            className="text-red-500 hover:bg-red-50 p-1.5 rounded-lg border border-red-100 transition-colors" 
+                                                                            title="Hapus Rekod"
+                                                                        >
+                                                                            <TrashIcon className="h-3.5 w-3.5" />
+                                                                        </button>
+                                                                    </td>
+                                                                )}
+                                                            </tr>
+                                                        );
+                                                    })
+                                                )}
                                             </tbody>
                                         </table>
                                     </div>

@@ -300,6 +300,15 @@
                 }
             };
 
+            const handleLogout = async () => {
+                try {
+                    await auth.signOut();
+                    showToastMessage("Log keluar berjaya!", "success");
+                } catch (error) {
+                    showToastMessage("Ralat ketika log keluar: " + error.message, "error");
+                }
+            };
+
             useEffect(() => {
                 const unsubscribe = auth.onAuthStateChanged(async (user) => {
                     if (user) {

@@ -45,6 +45,7 @@
     <!-- Babel Standalone CDN -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
+    <!-- Daftarkan preset klasik secara terprogram bagi mengelakkan ralat kompilasi modul -->
     <script>
         Babel.registerPreset('react-classic', {
             presets: [
@@ -65,7 +66,7 @@
             appId: "1:322634427088:web:7f6858760d588e49190cd5"
         };
 
-        // Inisialisasi Firebase secara aman
+        // Inisialisasi Firebase secara selamat
         if (!firebase.apps.length) {
             firebase.initializeApp(firebaseConfig);
         }
@@ -73,7 +74,7 @@
         const db = firebase.firestore();
         const appId = "sps-skb-d8256";
 
-        // DIJAMIN 100% BERSIH TANPA SEBARANG DATA DEMO HARDCODED
+        // Pembersihan Data Demo
         const INITIAL_ATHLETES = [];
         const INITIAL_EVENTS = [];
         const INITIAL_RESULTS = [];
@@ -81,10 +82,10 @@
         const DEFAULT_ANNOUNCEMENTS = [];
 
         const INITIAL_HOUSES_METADATA = {
-            Merah: { slogan: "Saga Membara Selamanya Juara", guruPenasihat: "", bonusPoints: 0, warnaLabel: "Merah" },
-            Biru: { slogan: "Biru Gagah Juara Sepanjang Zaman", guruPenasihat: "", bonusPoints: 0, warnaLabel: "Biru" },
-            Hijau: { slogan: "Hijau Perkasa Sentiasa Di Puncak", guruPenasihat: "", bonusPoints: 0, warnaLabel: "Hijau" },
-            Kuning: { slogan: "Kuning Diraja Mewarisi Kegemilangan", guruPenasihat: "", bonusPoints: 0, warnaLabel: "Kuning" }
+            Merah: { slogan: "Saga Membara Selamanya Juara", guruPenasihat: "Cikgu Rosli, Ustazah Aminah", bonusPoints: 0, warnaLabel: "Merah" },
+            Biru: { slogan: "Biru Gagah Juara Sepanjang Zaman", guruPenasihat: "Cikgu Sarah, Ustaz Fahmi", bonusPoints: 0, warnaLabel: "Biru" },
+            Hijau: { slogan: "Hijau Perkasa Sentiasa Di Puncak", guruPenasihat: "Cikgu Lim, Cikgu Azhar", bonusPoints: 0, warnaLabel: "Hijau" },
+            Kuning: { slogan: "Kuning Diraja Mewarisi Kegemilangan", guruPenasihat: "Cikgu Tan, Ustazah Nor", bonusPoints: 0, warnaLabel: "Kuning" }
         };
 
         const TrendingUpIcon = () => (
@@ -446,6 +447,51 @@
                     nama, ...data
                 })).sort((a, b) => b.mata - a.mata);
             }, [results, athletes, pointsConfig, housesMetadata]);
+
+            const getAthleteAchievement = (athleteId) => {
+                const athleteResults = results.filter(r => r.athleteId === athleteId);
+                if (athleteResults.length === 0) return null;
+
+                const mapping = { "1": "Emas", "2": "Perak", "3": "Gangsa", "4": "Tempat Ke-4" };
+                const best = athleteResults.sort((a,b) => parseInt(a.kedudukan) - parseInt(b.kedudukan))[0];
+                const event = events.find(e => e.id === best.eventId);
+                return {
+                    kedudukan: mapping[best.kedudukan] || "Kedudukan " + best.kedudukan,
+                    acara: event ? event.nama + " (" + event.kategori + ")" : "Acara Sukan",
+                    catatan: best.catatan ? "dengan catatan " + best.catatan : ""
+                };
+            };
+
+            const getAthleteAchievementForEvent = (athleteId, eventId) => {
+                const res = results.find(r => r.athleteId === athleteId && r.eventId === eventId);
+                if (!res) return null;
+                const mapping = { "1": "🥇 Emas", "2": "🥈 Perak", "3": "🥉 Gangsa", "4": "🏅₄ Ke-4" };
+                return mapping[res.kedudukan];
+            };
+
+            const filteredAthletes = useMemo(() => {
+                return athletes.filter(athlete => {
+                    const matchHouse = filterHouse === "Semua" || athlete.rumah === filterHouse;
+                    let matchEvent = true;
+                    if (filterEvent !== "Semua") {
+                        const event = events.find(e => e.id === filterEvent);
+                        if (event) {
+                            matchEvent = athlete.kategori === event.kategori;
+                        }
+                    }
+                    return matchHouse && matchEvent;
+                });
+            }, [athletes, filterHouse, filterEvent, events]);
+
+            const groupedByClass = useMemo(() => {
+                const groups = {};
+                athletes.forEach(ath => {
+                    if (!groups[ath.rumah]) groups[ath.rumah] = {};
+                    if (!groups[ath.rumah][ath.kelas]) groups[ath.rumah][ath.kelas] = [];
+                    groups[ath.rumah][ath.kelas].push(ath);
+                });
+                return groups;
+            }, [athletes]);
 
             const qualifiedRunnersFromHeats = useMemo(() => {
                 if (!resultForm.eventId) return [];
@@ -1688,7 +1734,6 @@
                             </div>
                         )}
 
-                        {}
                         {/* RUMAH SUKAN TAB */}
                         {activeTab === "rumah_sukan" && (
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -2105,8 +2150,7 @@
                             </div>
                         )}
 
-                        {}
-                        {/* KEPUTUSAN TAB (TIRU 100% DARIPADA FAIL INDEX.HTML DISEDIAKAN) */}
+                        {/* KEPUTUSAN TAB */}
                         {activeTab === "keputusan" && (
                             <div className="space-y-6">
                                 <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
@@ -2319,7 +2363,6 @@
                                         )}
                                     </div>
 
-                                    {}
                                     <div className="lg:col-span-2 space-y-6">
                                         {selectedEventObject && selectedEventObject.jenis === "Balapan" && activeStageTab === "saringan" ? (
                                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -2449,8 +2492,7 @@
                                     </div>
                                 </div>
 
-                                {}
-                                {/* PUSAT REKOD SEJARAH & DEWAN KEMASYHURAN (HALL OF FAME) */}
+                                {/* PUSAT REKOD SEJARAH & DEWAN KEMASYHURAN */}
                                 <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm mt-6">
                                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b pb-4 mb-4">
                                         <div>
@@ -2524,7 +2566,7 @@
                                                             <div className="text-right">
                                                                 <span className="font-mono font-bold text-slate-500 block">{rec.recordText}</span>
                                                                 {isBroken && (
-                                                                    <span className="text-[8px] bg-red-100 text-red-600 font-black px-1.5 py-0.5 rounded uppercase animate-pulse">Pecah 🚫</span>
+                                                                    <span className="text-[8px] bg-red-100 text-red-600 font-black px-1.5 py-0.5 rounded uppercase">Pecah 🚫</span>
                                                                 )}
                                                             </div>
                                                         </div>
@@ -2539,7 +2581,6 @@
 
                     </main>
 
-                    {}
                     {/* Modals Pentadbir */}
                     {showDiagModal && (
                         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[10000]">

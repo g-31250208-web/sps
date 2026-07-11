@@ -208,6 +208,12 @@
             const [filterHouse, setFilterHouse] = useState("Semua");
             const [filterEvent, setFilterEvent] = useState("Semua");
 
+            // State Pendaftaran Bundle
+            const [regMode, setRegMode] = useState("single"); // "single" | "bundle"
+            const [bundleText, setBundleText] = useState("");
+            const [bundlePreview, setBundlePreview] = useState([]);
+            const [bundleClassDefault, setBundleClassDefault] = useState("6 Cemerlang");
+
             // State Mod Kemaskini Rumah Sukan (Ahli/Guru)
             const [isHouseEditMode, setIsHouseEditMode] = useState({});
             const [editingAthleteId, setEditingAthleteId] = useState(null);
@@ -1292,6 +1298,124 @@
                 }
             };
 
+            // Logika Mengurai Data Ahli Secara Bundle (Excel / CSV)
+            const handleParseBundle = () => {
+                if (!bundleText.trim()) {
+                    showToastMessage("Sila masukkan data bundle terlebih dahulu.", "error");
+                    return;
+                }
+                try {
+                    const lines = bundleText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+                    if (lines.length < 2) {
+                        showToastMessage("Data mestilah sekurang-kurangnya mempunyai 1 baris tajuk (header) dan 1 baris data.", "error");
+                        return;
+                    }
+
+                    const headerLine = lines[0];
+                    const delimiter = headerLine.includes('\t') ? '\t' : (headerLine.includes(';') ? ';' : ',');
+                    const headers = headerLine.split(delimiter).map(h => h.trim().toLowerCase());
+                    
+                    const idxNama = headers.findIndex(h => h.includes('nama'));
+                    const idxJantina = headers.findIndex(h => h.includes('jantina'));
+                    const idxRumah = headers.findIndex(h => h.includes('rumah'));
+                    const idxKategori = headers.findIndex(h => h.includes('kategori') || h.includes('umur'));
+                    const idxKelas = headers.findIndex(h => h.includes('kelas'));
+                    const idxNoAtlet = headers.findIndex(h => h.includes('no') && (h.includes('atlet') || h.includes('peserta')));
+
+                    if (idxNama === -1 || idxJantina === -1 || idxRumah === -1 || idxKategori === -1) {
+                        showToastMessage("Ralat: Tajuk lajur mestilah mengandungi 'Nama', 'Jantina', 'Rumah Sukan', dan 'Kategori Umur'.", "error");
+                        return;
+                    }
+
+                    const parsed = [];
+                    for (let i = 1; i < lines.length; i++) {
+                        const columns = lines[i].split(delimiter).map(c => c.trim());
+                        if (columns.length < 4) continue;
+
+                        const namaVal = columns[idxNama] || "";
+                        if (!namaVal) continue;
+
+                        let jantinaVal = columns[idxJantina] || "Lelaki";
+                        if (jantinaVal.toLowerCase().startsWith('p') || jantinaVal.toLowerCase().includes('perempuan') || jantinaVal.toLowerCase().includes('wanita') || jantinaVal.toLowerCase().includes('girl')) {
+                            jantinaVal = "Perempuan";
+                        } else {
+                            jantinaVal = "Lelaki";
+                        }
+
+                        let rumahVal = columns[idxRumah] || "Merah";
+                        const matchedHouse = Object.keys(housesMetadata).find(
+                            key => key.toLowerCase() === rumahVal.toLowerCase()
+                        ) || "Merah";
+
+                        let katVal = columns[idxKategori] || "L12";
+                        const validKats = ["L12", "P12", "L9", "P9", "Prasekolah", "Terbuka"];
+                        let matchedKat = validKats.find(k => k.toLowerCase() === katVal.toLowerCase());
+                        if (!matchedKat) {
+                            if (jantinaVal === "Lelaki") {
+                                matchedKat = katVal.includes('9') ? 'L9' : 'L12';
+                            } else {
+                                matchedKat = katVal.includes('9') ? 'P9' : 'P12';
+                            }
+                        }
+
+                        const kelasVal = idxKelas !== -1 && columns[idxKelas] ? columns[idxKelas] : bundleClassDefault;
+                        const noAtletVal = idxNoAtlet !== -1 && columns[idxNoAtlet] ? columns[idxNoAtlet] : "";
+
+                        parsed.push({
+                            noAtlet: noAtletVal,
+                            nama: namaVal,
+                            kelas: kelasVal,
+                            rumah: matchedHouse,
+                            jantina: jantinaVal,
+                            kategori: matchedKat
+                        });
+                    }
+
+                    if (parsed.length === 0) {
+                        showToastMessage("Tiada data ahli yang sah berjaya diurai.", "error");
+                    } else {
+                        setBundlePreview(parsed);
+                        showToastMessage(`Berjaya mengurai ${parsed.length} ahli sukan! Sila semak senarai di bawah.`);
+                    }
+                } catch (err) {
+                    showToastMessage("Ralat membaca data: " + err.message, "error");
+                }
+            };
+
+            // Menyimpan keseluruhan data ahli secara bundle ke dalam Firestore / Tempatan
+            const handleSaveBundle = async () => {
+                if (!checkAuthority()) return;
+                if (bundlePreview.length === 0) return;
+
+                showToastMessage(`Mendaftarkan ${bundlePreview.length} ahli sukan secara bundle...`, "info");
+                try {
+                    const newAthletes = [...athletes];
+                    for (let i = 0; i < bundlePreview.length; i++) {
+                        const row = bundlePreview[i];
+                        const docId = "A_" + (Date.now() + i);
+                        const updatedAthlete = { ...row, id: docId };
+
+                        if (isCloudActive) {
+                            await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('athletes').doc(docId).set(updatedAthlete);
+                            await syncWithGas("students", "save", { id: docId, name: row.nama, class: row.kelas, house: row.rumah, jantina: row.jantina, tahap: row.kategori, noPeserta: row.noAtlet || "" });
+                        } else {
+                            newAthletes.push(updatedAthlete);
+                        }
+                    }
+
+                    if (!isCloudActive) {
+                        setAthletes(newAthletes);
+                    }
+
+                    showToastMessage(`Tahniah! ${bundlePreview.length} ahli sukan berjaya didaftarkan.`);
+                    setBundlePreview([]);
+                    setBundleText("");
+                    setRegMode("single");
+                } catch (err) {
+                    showToastMessage("Gagal mendaftar secara bundle: " + err.message, "error");
+                }
+            };
+
             const handleEventSubmit = async (e) => {
                 e.preventDefault();
                 if (!checkAuthority()) return;
@@ -1908,87 +2032,191 @@
                                                 🔒 <strong>Mod Baca Sahaja Aktif:</strong> Pendaftaran atau pengemaskinian rekod ahli tidak dibenarkan bagi pelawat. Sila daftar masuk menggunakan akaun DELIMa KPM.
                                             </div>
                                         ) : (
-                                            <form onSubmit={handleAthleteSubmit} className="space-y-4 text-xs font-semibold">
-                                                {}
-                                                <div className="grid grid-cols-4 gap-2">
-                                                    <div className="col-span-1">
-                                                        <label className="block text-slate-500 mb-1">No. Atlet</label>
-                                                        <input 
-                                                            type="text"
-                                                            value={athleteForm.noAtlet || ""}
-                                                            onChange={(e) => setAthleteForm({ ...athleteForm, noAtlet: e.target.value })}
-                                                            className="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none font-bold bg-slate-50 text-indigo-700"
-                                                            placeholder="Opsyenal"
-                                                        />
-                                                    </div>
-                                                    <div className="col-span-3">
-                                                        <label className="block text-slate-500 mb-1">Nama Penuh Ahli</label>
-                                                        <input 
-                                                            type="text"
-                                                            required
-                                                            value={athleteForm.nama}
-                                                            onChange={(e) => setAthleteForm({ ...athleteForm, nama: e.target.value })}
-                                                            className="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                                                            placeholder="Contoh: Muhammad Danish"
-                                                        />
-                                                    </div>
+                                            <div className="space-y-4">
+                                                {/* Pilihan Mod Pendaftaran */}
+                                                <div className="flex bg-slate-100 p-1 rounded-xl text-xs font-semibold">
+                                                    <button 
+                                                        type="button" 
+                                                        onClick={() => setRegMode("single")}
+                                                        className={`flex-1 py-1.5 rounded-lg text-center transition-all ${regMode === "single" ? "bg-white text-slate-950 font-bold shadow-sm" : "text-slate-500 hover:text-slate-800"}`}
+                                                    >
+                                                        Tunggal
+                                                    </button>
+                                                    <button 
+                                                        type="button" 
+                                                        onClick={() => setRegMode("bundle")}
+                                                        className={`flex-1 py-1.5 rounded-lg text-center transition-all ${regMode === "bundle" ? "bg-white text-slate-950 font-bold shadow-sm" : "text-slate-500 hover:text-slate-800"}`}
+                                                    >
+                                                        Bundle (Kelompok)
+                                                    </button>
                                                 </div>
-                                                <div className="grid grid-cols-2 gap-2">
-                                                    <div>
-                                                        <label className="block text-slate-500 mb-1">Kelas</label>
-                                                        <input 
-                                                            type="text"
-                                                            required
-                                                            value={athleteForm.kelas}
-                                                            onChange={(e) => setAthleteForm({ ...athleteForm, kelas: e.target.value })}
-                                                            className="w-full p-2.5 rounded-xl border border-slate-200"
-                                                        />
+
+                                                {/* MOD TUNGGAL */}
+                                                {regMode === "single" && (
+                                                    <form onSubmit={handleAthleteSubmit} className="space-y-4 text-xs font-semibold">
+                                                        <div className="grid grid-cols-4 gap-2">
+                                                            <div className="col-span-1">
+                                                                <label className="block text-slate-500 mb-1">No. Atlet</label>
+                                                                <input 
+                                                                    type="text"
+                                                                    value={athleteForm.noAtlet || ""}
+                                                                    onChange={(e) => setAthleteForm({ ...athleteForm, noAtlet: e.target.value })}
+                                                                    className="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none font-bold bg-slate-50 text-indigo-700"
+                                                                    placeholder="Opsyenal"
+                                                                />
+                                                            </div>
+                                                            <div className="col-span-3">
+                                                                <label className="block text-slate-500 mb-1">Nama Penuh Ahli</label>
+                                                                <input 
+                                                                    type="text"
+                                                                    required
+                                                                    value={athleteForm.nama}
+                                                                    onChange={(e) => setAthleteForm({ ...athleteForm, nama: e.target.value })}
+                                                                    className="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                                                    placeholder="Contoh: Muhammad Danish"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                        <div className="grid grid-cols-2 gap-2">
+                                                            <div>
+                                                                <label className="block text-slate-500 mb-1">Kelas</label>
+                                                                <input 
+                                                                    type="text"
+                                                                    required
+                                                                    value={athleteForm.kelas}
+                                                                    onChange={(e) => setAthleteForm({ ...athleteForm, kelas: e.target.value })}
+                                                                    className="w-full p-2.5 rounded-xl border border-slate-200"
+                                                                />
+                                                            </div>
+                                                            <div>
+                                                                <label className="block text-slate-500 mb-1">Rumah Sukan</label>
+                                                                <select 
+                                                                    value={athleteForm.rumah}
+                                                                    onChange={(e) => setAthleteForm({ ...athleteForm, rumah: e.target.value })}
+                                                                    className="w-full p-2.5 rounded-xl border border-slate-200 bg-white"
+                                                                >
+                                                                    {Object.keys(housesMetadata).map(houseName => (
+                                                                        <option key={houseName} value={houseName}>{houseName}</option>
+                                                                    ))}
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                        <div className="grid grid-cols-2 gap-2">
+                                                            <div>
+                                                                <label className="block text-slate-500 mb-1">Jantina</label>
+                                                                <select 
+                                                                    value={athleteForm.jantina}
+                                                                    onChange={(e) => setAthleteForm({ ...athleteForm, jantina: e.target.value })}
+                                                                    className="w-full p-2.5 rounded-xl border border-slate-200 bg-white"
+                                                                >
+                                                                    <option value="Lelaki">Lelaki</option>
+                                                                    <option value="Perempuan">Perempuan</option>
+                                                                </select>
+                                                            </div>
+                                                            <div>
+                                                                <label className="block text-slate-500 mb-1">Kategori Umur</label>
+                                                                <select 
+                                                                    value={athleteForm.kategori}
+                                                                    onChange={(e) => setAthleteForm({ ...athleteForm, kategori: e.target.value })}
+                                                                    className="w-full p-2.5 rounded-xl border border-slate-200 bg-white"
+                                                                >
+                                                                    <option value="L12">Lelaki L12</option>
+                                                                    <option value="P12">Perempuan P12</option>
+                                                                    <option value="L9">Lelaki L9</option>
+                                                                    <option value="P9">Perempuan P9</option>
+                                                                    <option value="Prasekolah">Prasekolah</option>
+                                                                    <option value="Terbuka">Terbuka</option>
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                        <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl shadow-md transition-all">
+                                                            Simpan Ahli
+                                                        </button>
+                                                    </form>
+                                                )}
+
+                                                {/* MOD BUNDLE (KELOMPOK) */}
+                                                {regMode === "bundle" && (
+                                                    <div className="space-y-4 text-xs font-semibold">
+                                                        <div className="bg-blue-50 text-blue-800 border border-blue-100 p-3 rounded-xl leading-relaxed text-[11px]">
+                                                            <p className="font-bold mb-1">💡 Panduan Pendaftaran Bundle:</p>
+                                                            <p>Salin lajur daripada <b>Excel / Google Sheets</b> dan tampal di dalam ruangan di bawah. Baris pertama mestilah tajuk lajur seperti:</p>
+                                                            <div className="bg-white/80 font-mono text-[9.5px] p-1.5 rounded border border-blue-200 my-1.5 font-bold">
+                                                                Nama [Tab] Jantina [Tab] Rumah Sukan [Tab] Kategori Umur
+                                                            </div>
+                                                            <p className="text-[10px]">*Lajur tambahan <b>Kelas</b> dan <b>No. Atlet</b> juga disokong secara opsyenal.</p>
+                                                        </div>
+
+                                                        <div>
+                                                            <label className="block text-slate-500 mb-1">Kelas Lalai (Jika lajur kelas tiada)</label>
+                                                            <input 
+                                                                type="text"
+                                                                value={bundleClassDefault}
+                                                                onChange={(e) => setBundleClassDefault(e.target.value)}
+                                                                className="w-full p-2.5 rounded-xl border border-slate-200"
+                                                                placeholder="Contoh: 6 Cemerlang"
+                                                            />
+                                                        </div>
+
+                                                        <div>
+                                                            <label className="block text-slate-500 mb-1">Tampal Data Sukan (TSV / Tab-Separated)</label>
+                                                            <textarea 
+                                                                rows="6"
+                                                                value={bundleText}
+                                                                onChange={(e) => setBundleText(e.target.value)}
+                                                                placeholder="Nama	Jantina	Rumah Sukan	Kategori Umur&#10;Muhammad Ali	Lelaki	Merah	L12&#10;Siti Aminah	Perempuan	Biru	P12"
+                                                                className="w-full p-3 rounded-xl border border-slate-200 font-mono text-[10.5px] focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                                            />
+                                                        </div>
+
+                                                        <div className="flex gap-2">
+                                                            <button 
+                                                                type="button" 
+                                                                onClick={handleParseBundle}
+                                                                className="bg-slate-900 hover:bg-slate-950 text-white font-bold py-2.5 rounded-xl flex-1 text-center"
+                                                            >
+                                                                🔍 Urai Data Ahli
+                                                            </button>
+                                                            {bundlePreview.length > 0 && (
+                                                                <button 
+                                                                    type="button" 
+                                                                    onClick={() => { setBundlePreview([]); setBundleText(""); }}
+                                                                    className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-2.5 rounded-xl px-3"
+                                                                >
+                                                                    ✕ Batal
+                                                                </button>
+                                                            )}
+                                                        </div>
+
+                                                        {bundlePreview.length > 0 && (
+                                                            <div className="space-y-3 pt-3 border-t">
+                                                                <p className="text-slate-500 font-bold">Pratinjau Kemasukan ({bundlePreview.length} Ahli):</p>
+                                                                <div className="max-h-48 overflow-y-auto border rounded-xl divide-y bg-slate-50 text-[10.5px]">
+                                                                    {bundlePreview.map((item, idx) => (
+                                                                        <div key={idx} className="p-2 flex justify-between items-center bg-white">
+                                                                            <div>
+                                                                                <p className="font-extrabold text-slate-800">{idx+1}. {item.nama}</p>
+                                                                                <p className="text-[9.5px] text-slate-400">Jantina: {item.jantina} | Kelas: {item.kelas}</p>
+                                                                            </div>
+                                                                            <div className="text-right">
+                                                                                <span className="bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded font-black mr-1 text-[9px]">{item.rumah}</span>
+                                                                                <span className="bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded font-black text-[9px]">{item.kategori}</span>
+                                                                            </div>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                                <button 
+                                                                    type="button" 
+                                                                    onClick={handleSaveBundle}
+                                                                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-3 rounded-xl shadow-md transition-all text-xs"
+                                                                >
+                                                                    ✔️ Sahkan & Daftar Semua ({bundlePreview.length} Ahli)
+                                                                </button>
+                                                            </div>
+                                                        )}
                                                     </div>
-                                                    <div>
-                                                        <label className="block text-slate-500 mb-1">Rumah Sukan</label>
-                                                        <select 
-                                                            value={athleteForm.rumah}
-                                                            onChange={(e) => setAthleteForm({ ...athleteForm, rumah: e.target.value })}
-                                                            className="w-full p-2.5 rounded-xl border border-slate-200 bg-white"
-                                                        >
-                                                            {Object.keys(housesMetadata).map(houseName => (
-                                                                <option key={houseName} value={houseName}>{houseName}</option>
-                                                            ))}
-                                                        </select>
-                                                    </div>
-                                                </div>
-                                                <div className="grid grid-cols-2 gap-2">
-                                                    <div>
-                                                        <label className="block text-slate-500 mb-1">Jantina</label>
-                                                        <select 
-                                                            value={athleteForm.jantina}
-                                                            onChange={(e) => setAthleteForm({ ...athleteForm, jantina: e.target.value })}
-                                                            className="w-full p-2.5 rounded-xl border border-slate-200 bg-white"
-                                                        >
-                                                            <option value="Lelaki">Lelaki</option>
-                                                            <option value="Perempuan">Perempuan</option>
-                                                        </select>
-                                                    </div>
-                                                    <div>
-                                                        <label className="block text-slate-500 mb-1">Kategori Umur</label>
-                                                        <select 
-                                                            value={athleteForm.kategori}
-                                                            onChange={(e) => setAthleteForm({ ...athleteForm, kategori: e.target.value })}
-                                                            className="w-full p-2.5 rounded-xl border border-slate-200 bg-white"
-                                                        >
-                                                            <option value="L12">Lelaki L12</option>
-                                                            <option value="P12">Perempuan P12</option>
-                                                            <option value="L9">Lelaki L9</option>
-                                                            <option value="P9">Perempuan P9</option>
-                                                            <option value="Prasekolah">Prasekolah</option>
-                                                            <option value="Terbuka">Terbuka</option>
-                                                        </select>
-                                                    </div>
-                                                </div>
-                                                <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl shadow-md transition-all">
-                                                    Simpan Ahli
-                                                </button>
-                                            </form>
+                                                )}
+                                            </div>
                                         )}
                                     </div>
 

@@ -266,6 +266,9 @@
             const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
             const adminMenuRef = useRef(null);
 
+            const [isPrintMenuOpen, setIsPrintMenuOpen] = useState(false);
+            const printMenuRef = useRef(null);
+
             const [showDiagModal, setShowDiagModal] = useState(false);
             const [showGasModal, setShowGasModal] = useState(false);
             const [showPointsModal, setShowPointsModal] = useState(false);
@@ -808,6 +811,9 @@
                 function handleClickOutside(event) {
                     if (adminMenuRef.current && !adminMenuRef.current.contains(event.target)) {
                         setIsAdminMenuOpen(false);
+                    }
+                    if (printMenuRef.current && !printMenuRef.current.contains(event.target)) {
+                        setIsPrintMenuOpen(false);
                     }
                 }
                 document.addEventListener("mousedown", handleClickOutside);
@@ -1682,7 +1688,7 @@
                         <div style="font-family: sans-serif; padding: 20px; color: #1e293b;">
                             <div style="text-align: center; border-bottom: 3px double #0f172a; padding-bottom: 15px; margin-bottom: 30px; position: relative;">
                                 <img src="${logoUrl}" style="height: 70px; position: absolute; left: 10px; top: 0;" />
-                                <h2 style="margin: 0; font-size: 20px; text-transform: uppercase; font-weight: 800; color: #1e3a8a;">DOKUMEN REKOD KEPUTUSAN & PENCAPAIAN RASMI</h2>
+                                <h2 style="margin: 0; font-size: 20px; text-transform: uppercase; font-weight: 800; color: #1e3a8a;">REKOD KEPUTUSAN & PENCAPAIAN RASMI</h2>
                                 <h3 style="margin: 5px 0 0 0; font-size: 14px; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">KEJOHANAN SUKAN TAHUNAN SK BIKANG TAHUN ${activeYear}</h3>
                                 <p style="margin: 5px 0 0 0; font-size: 10px; color: #94a3b8;">Diarkibkan secara digital untuk Fail Simpanan Rekod Kokurikulum Sekolah</p>
                             </div>
@@ -2298,99 +2304,6 @@
                 });
             };
 
-            const selectedEventObject = useMemo(() => {
-                return eventsWithCode.find(e => e.id === resultForm.eventId || e.id === heatForm.eventId);
-            }, [eventsWithCode, resultForm.eventId, heatForm.eventId]);
-
-            const relevantAthletesForEventForm = useMemo(() => {
-                if (!selectedEventObject) return [];
-                return athletes.filter(a => 
-                    a.kategori === selectedEventObject.kategori && 
-                    a.acaraIds && 
-                    a.acaraIds.includes(selectedEventObject.id)
-                );
-            }, [athletes, selectedEventObject]);
-
-            const checkRecordBreakStatus = (eventName, category, currentRecordText) => {
-                if (!currentRecordText) return null;
-                
-                const history = HISTORICAL_CHAMPIONSHIP_RECORDS.find(
-                    r => (r.eventName || "").toLowerCase().trim() === (eventName || "").toLowerCase().trim() && r.category === category
-                );
-                
-                if (!history) return null;
-
-                const curVal = parseTimeToSeconds(currentRecordText);
-                const histVal = parseTimeToSeconds(history.recordText);
-
-                if (curVal === Infinity || histVal === Infinity) return null;
-
-                if (history.isTrack) {
-                    if (curVal < histVal) {
-                        return { broken: true, oldRecord: history.recordText, oldHolder: `${history.athlete} (${history.year})` };
-                    }
-                } else {
-                    const curFloat = parseFloat(currentRecordText.replace(/[^\d.]/g, '')) || 0;
-                    const histFloat = parseFloat(history.recordText.replace(/[^\d.]/g, '')) || 0;
-                    if (curFloat > histFloat) {
-                        return { broken: true, oldRecord: history.recordText, oldHolder: `${history.athlete} (${history.year})` };
-                    }
-                }
-                return null;
-            };
-
-            const handleArchiveAnnualRecords = async () => {
-                if (!checkAuthority()) return;
-                if (!gasUrl) {
-                    showToastMessage("Sila kunci masuk pautan GAS URL yang sah di menu setup pentadbir terlebih dahulu.", "error");
-                    return;
-                }
-
-                const goldResults = results.filter(r => r.kedudukan === "1");
-
-                if (goldResults.length === 0) {
-                    showToastMessage(`Tiada rekod keputusan Johan (Emas) ditemui untuk diarkibkan bagi tahun ${activeYear} buat masa ini.`, "error");
-                    return;
-                }
-
-                setIsArchiving(true);
-                showToastMessage(`Memulakan proses mengarkibkan rekod emas ${activeYear} ke Google Sheets...`, "info");
-
-                try {
-                    let successCount = 0;
-                    for (const res of goldResults) {
-                        const event = eventsWithCode.find(e => e.id === res.eventId);
-                        const athlete = athletes.find(a => a.id === res.athleteId);
-                        
-                        if (event && athlete) {
-                            const archiveData = {
-                                id: `${activeYear}_${event.id}`, 
-                                tahun: activeYear,
-                                acara: event.nama,
-                                kategori: event.kategori,
-                                jenis: event.jenis,
-                                namaPemenang: (athlete.nama || "").toUpperCase(),
-                                kelas: athlete.kelas,
-                                rumah: athlete.rumah,
-                                catatanRekod: res.catatan,
-                                tarikhKemaskini: new Date().toLocaleDateString('ms-MY')
-                            };
-
-                            await syncWithGas(`rekod_kejohanan_${activeYear}`, "save", archiveData);
-                            successCount++;
-                        }
-                    }
-
-                    createLog("Arkib Rekod Sukan", `Mengarkibkan ${successCount} rekod pencapaian Emas tahun ${activeYear} ke dalam Google Sheets`);
-                    showToastMessage(`Berjaya mengarkibkan ${successCount} rekod johan ${activeYear} ke dalam lembaran 'rekod_kejohanan_${activeYear}'!`, "success");
-                } catch (e) {
-                    showToastMessage("Sistem ralat ketika menghantar data rekod ke Sheets.", "error");
-                    console.error(e);
-                } finally {
-                    setIsArchiving(false);
-                }
-            };
-
             return (
                 <div className="min-h-screen flex flex-col bg-slate-50 print:hidden">
                     <input 
@@ -2419,7 +2332,7 @@
                                 <h1 className="text-xl font-extrabold tracking-tight flex flex-wrap items-center gap-2">
                                         {t.title}
                                         <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold ${isCloudActive ? "bg-emerald-500/20 text-emerald-300" : "bg-amber-500/20 text-amber-300"}`}>
-                                            ● {isCloudActive ? "Awan Aktif 🟢" : "Mod Lokal 🟡"}
+                                            ● {isCloudActive ? "Awan Aksif 🟢" : "Mod Lokal 🟡"}
                                         </span>
                                     </h1>
                                     <p className="text-xs text-indigo-200 font-medium">{t.subtitle} ({activeYear})</p>
@@ -2453,7 +2366,6 @@
                                                 <button onClick={() => { setShowGasModal(true); setIsAdminMenuOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-semibold flex items-center gap-2">⚡ Setup GAS API</button>
                                                 <button onClick={() => { setShowPointsModal(true); setIsAdminMenuOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-semibold flex items-center gap-2">⚙️ Tetapan Mata & Tahun</button>
                                                 
-                                                {}
                                                 {userRole === "admin" && (
                                                     <button onClick={() => { setShowAdminsModal(true); setIsAdminMenuOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-semibold flex items-center gap-2">👥 Urus Admin Utama</button>
                                                 )}
@@ -2648,6 +2560,7 @@
                             </div>
                         )}
 
+                        {}
                         {/* RUMAH SUKAN TAB */}
                         {activeTab === "rumah_sukan" && (
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -2724,7 +2637,7 @@
                                         
                                         {userRole === "pelawat" ? (
                                             <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 text-xs text-amber-800 font-semibold">
-                                                🔒 <strong>Mod Baca Sahaja Aktif:</strong> Pendaftaran atau pengemaskinian rekod ahli tidak dibenarkan bagi pelawat. Sila daftar masuk menggunakan akaun DELIMa KPM.
+                                                🔒 <strong>Mod Baca Sahaja Aksif:</strong> Pendaftaran atau pengemaskinian rekod ahli tidak dibenarkan bagi pelawat. Sila daftar masuk menggunakan akaun DELIMa KPM.
                                             </div>
                                         ) : (
                                             <div className="space-y-4">
@@ -2916,7 +2829,6 @@
                                                         </h3>
                                                         <p className="text-xs font-semibold text-slate-400 italic">"{meta.slogan || 'Tiada Slogan'}"</p>
                                                     </div>
-                                                    {}
                                                     <div className="text-right flex flex-col items-end gap-1.5">
                                                         <span className="text-[10px] font-bold text-slate-400 uppercase">Mata Bonus</span>
                                                         <p className="text-lg font-black text-slate-800">+{meta.bonusPoints} mata</p>
@@ -3087,6 +2999,7 @@
                             </div>
                         )}
 
+                        {}
                         {/* ATLET TAB */}
                         {activeTab === "atlit" && (
                             <div className="space-y-6">
@@ -3361,6 +3274,7 @@
                             </div>
                         )}
 
+                        {}
                         {/* ACARA SUKAN TAB */}
                         {activeTab === "acara" && (
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -3382,8 +3296,6 @@
                                                     onChange={(e) => {
                                                         const val = e.target.value;
                                                         const cleanVal = val.trim().toLowerCase();
-                                                        // Mengesan corak nombor diikuti dengan simbol jarak larian (m, meter, mtr, metre)
-                                                        // Serta kata kunci tipikal larian
                                                         const isBalapan = /\b\d+\s*(meter|m|mtr|metre)\b/i.test(cleanVal) || 
                                                                           /\b\d+x\d+\s*(meter|m|mtr|metre)?\b/i.test(cleanVal) ||
                                                                           cleanVal.includes("lari") || 
@@ -3436,7 +3348,6 @@
                                                     </select>
                                                 </div>
                                             </div>
-                                            {}
                                             <div>
                                                 <label className="block text-slate-500 mb-1">Format Penyertaan</label>
                                                 <select 
@@ -3494,7 +3405,6 @@
                                                             <div className="flex gap-2 mt-2">
                                                                 <span className="bg-indigo-100 text-indigo-800 text-[9px] font-black px-2 py-0.5 rounded-full uppercase">{ev.kategori}</span>
                                                                 <span className="bg-slate-200 text-slate-700 text-[9px] font-black px-2 py-0.5 rounded-full uppercase">{ev.jenis}</span>
-                                                                {}
                                                                 <span className="bg-amber-100 text-amber-800 text-[9px] font-black px-2 py-0.5 rounded-full uppercase">{ev.format || "Individu"}</span>
                                                             </div>
                                                         </div>
@@ -3534,6 +3444,7 @@
                             </div>
                         )}
 
+                        {}
                         {/* KEPUTUSAN TAB */}
                         {activeTab === "keputusan" && (
                             <div className="space-y-6">
@@ -3956,6 +3867,7 @@
                             </div>
                         )}
 
+                        {}
                         {/* PASCA SUKAN TAB */}
                         {activeTab === "pasca_sukan" && (
                             <div className="space-y-6 animate-in fade-in duration-200">
@@ -3964,7 +3876,7 @@
                                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                                         <div>
                                             <h3 className="text-lg font-black text-slate-900">🏆 Modul Dokumentasi Pasca Kejohanan Sukan</h3>
-                                            <p className="text-xs text-slate-400 mt-1">Urus sijil penghargaan, laporan kokum keseluruhan, dan arkib tahun semasa.</p>
+                                            <p className="text-xs text-slate-400 mt-1">Urus Sijil Penghargaan, Laporan Kokum Keseluruhan, dan Arkib Tahun Semasa.</p>
                                         </div>
                                         <div className="flex flex-wrap items-center gap-2 w-full md:w-auto justify-start md:justify-end">
                                             <button 
@@ -3986,26 +3898,40 @@
                                                 <span>📂 {isArchiving ? "Mengarkib..." : `Arkib Rekod ${activeYear}`}</span>
                                             </button>
                                             
-                                            <button 
-                                                onClick={() => executeBypassPrint('rekod_keseluruhan')}
-                                                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl border border-emerald-500 flex items-center gap-2 shadow-md shadow-emerald-600/10 flex-1 sm:flex-initial justify-center"
-                                            >
-                                                <PrinterIcon className="h-4 w-4" />
-                                                <span>Cetak Semua Rekod Fail</span>
-                                            </button>
-
-                                            <button 
-                                                onClick={() => executeBypassPrint('kokum')}
-                                                className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl border border-indigo-200 flex items-center gap-2 shadow-md shadow-indigo-600/10 flex-1 sm:flex-initial justify-center"
-                                            >
-                                                <PrinterIcon className="h-4 w-4" />
-                                                <span>Cetak Laporan Rasmi</span>
-                                            </button>
+                                            <div className="relative inline-block text-left shrink-0" ref={printMenuRef}>
+                                                <button 
+                                                    onClick={() => setIsPrintMenuOpen(!isPrintMenuOpen)}
+                                                    className="h-10 w-10 flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-md hover:scale-105 active:scale-95 transition-all"
+                                                    title="Pilihan Cetakan Laporan"
+                                                >
+                                                    <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                                                    </svg>
+                                                </button>
+                                                
+                                                {isPrintMenuOpen && (
+                                                    <div className="absolute right-0 mt-2 w-60 bg-white rounded-xl shadow-2xl border border-slate-200 py-2 z-[999] origin-top-right animate-in fade-in slide-in-from-top-2 duration-150">
+                                                        <button 
+                                                            onClick={() => { executeBypassPrint('rekod_keseluruhan'); setIsPrintMenuOpen(false); }}
+                                                            className="w-full text-left px-4 py-2.5 hover:bg-emerald-50 text-emerald-700 text-xs font-bold flex items-center gap-2 transition-colors"
+                                                        >
+                                                            <PrinterIcon className="h-4 w-4 text-emerald-600 shrink-0" />
+                                                            <span>Cetak Semua Rekod Fail</span>
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => { executeBypassPrint('kokum'); setIsPrintMenuOpen(false); }}
+                                                            className="w-full text-left px-4 py-2.5 hover:bg-indigo-50 text-indigo-700 text-xs font-bold flex items-center gap-2 transition-colors"
+                                                        >
+                                                            <PrinterIcon className="h-4 w-4 text-indigo-600 shrink-0" />
+                                                            <span>Cetak Laporan Rasmi</span>
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                {}
                                 {showSignatorySettings && (
                                     <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm animate-in slide-in-from-top-2 duration-200">
                                         <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider mb-4">✍️ Konfigurasi Nama Penandatangan Sijil</h4>
@@ -4050,7 +3976,6 @@
                                     </div>
                                 )}
 
-                                {}
                                 <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
                                     <h3 className="text-sm font-bold text-slate-900 mb-2 uppercase tracking-wider">📜 Penjana Sijil Penghargaan Pintar</h3>
                                     <p className="text-xs text-slate-400 mb-4">Masukkan carian nama atlet, kelas, atau rumah sukan untuk menjana Sijil Penghargaan secara automatik.</p>

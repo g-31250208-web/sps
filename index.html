@@ -79,12 +79,14 @@
         const INITIAL_RESULTS = [];
         const INITIAL_HEATS = [];
         const DEFAULT_ANNOUNCEMENTS = [];
+        const INITIAL_LOGS = [];
 
+        // Dinamik & Guru Penasihat bermula kosong (tidak lagi hardcoded)
         const INITIAL_HOUSES_METADATA = {
-            Merah: { slogan: "Saga Membara Selamanya Juara", guruPenasihat: "Cikgu Rosli, Ustazah Aminah", bonusPoints: 0, warnaLabel: "Merah" },
-            Biru: { slogan: "Biru Gagah Juara Sepanjang Zaman", guruPenasihat: "Cikgu Sarah, Ustaz Fahmi", bonusPoints: 0, warnaLabel: "Biru" },
-            Hijau: { slogan: "Hijau Perkasa Sentiasa Di Puncak", guruPenasihat: "Cikgu Lim, Cikgu Azhar", bonusPoints: 0, warnaLabel: "Hijau" },
-            Kuning: { slogan: "Kuning Diraja Mewarisi Kegemilangan", guruPenasihat: "Cikgu Tan, Ustazah Nor", bonusPoints: 0, warnaLabel: "Kuning" }
+            Merah: { slogan: "Saga Membara Selamanya Juara", guruPenasihat: "", bonusPoints: 0, warnaLabel: "Merah" },
+            Biru: { slogan: "Biru Gagah Juara Sepanjang Zaman", guruPenasihat: "", bonusPoints: 0, warnaLabel: "Biru" },
+            Hijau: { slogan: "Hijau Perkasa Sentiasa Di Puncak", guruPenasihat: "", bonusPoints: 0, warnaLabel: "Hijau" },
+            Kuning: { slogan: "Kuning Diraja Mewarisi Kegemilangan", guruPenasihat: "", bonusPoints: 0, warnaLabel: "Kuning" }
         };
 
         const TrendingUpIcon = () => (
@@ -212,11 +214,13 @@
             const [heats, setHeats] = useState(INITIAL_HEATS);
             const [housesMetadata, setHousesMetadata] = useState(INITIAL_HOUSES_METADATA);
             const [announcements, setAnnouncements] = useState(DEFAULT_ANNOUNCEMENTS);
+            const [logs, setLogs] = useState(INITIAL_LOGS);
 
             const [additionalInfo, setAdditionalInfo] = useState("");
 
             const [filterHouse, setFilterHouse] = useState("Semua");
             const [filterEvent, setFilterEvent] = useState("Semua");
+            const [filterLogQuery, setFilterLogQuery] = useState("");
 
             const [athleteForm, setAthleteForm] = useState({ id: "", nama: "", kelas: "", rumah: "Merah", jantina: "Lelaki", kategori: "L12" });
             const [isEditingAthlete, setIsEditingAthlete] = useState(false);
@@ -224,7 +228,7 @@
             const [regMode, setRegMode] = useState("tunggal"); // "tunggal" | "bundle"
             const [tsvInput, setTsvInput] = useState("");
 
-            // State baru untuk Pendaftaran Atlet ke Acara
+            // State untuk Pendaftaran Atlet ke Acara
             const [selectedStudentId, setSelectedStudentId] = useState("");
             const [studentSearchQuery, setStudentSearchQuery] = useState("");
             const [noAtletInput, setNoAtletInput] = useState("");
@@ -254,8 +258,6 @@
             const [showDiagModal, setShowDiagModal] = useState(false);
             const [showGasModal, setShowGasModal] = useState(false);
             const [showPointsModal, setShowPointsModal] = useState(false);
-            const [showKokumModal, setShowKokumModal] = useState(false);
-            const [showCertModal, setShowCertModal] = useState(false);
 
             const [gasUrl, setGasUrl] = useState("");
             const [isSyncingGas, setIsSyncingGas] = useState(false);
@@ -279,6 +281,31 @@
 
             const fileInputRef = useRef(null);
             const logoUrl = "https://lh3.googleusercontent.com/d/1E8tjAd7j9DJaZgngDn38agUFCvwyUffa";
+
+            const createLog = async (action, details) => {
+                const user = auth.currentUser;
+                const email = user ? user.email : "Akaun Tanpa Nama (Sesi Rawak)";
+                const name = user ? (user.displayName || (user.isAnonymous ? "Sesi Pelawat" : "Urus Setia Guru")) : "Anonim";
+                const logId = "log_" + Date.now();
+                const logData = {
+                    id: logId,
+                    timestamp: new Date().toLocaleString('ms-MY'),
+                    userEmail: email,
+                    userName: name,
+                    action: action,
+                    details: details
+                };
+
+                try {
+                    if (isCloudActive) {
+                        await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('logs').doc(logId).set(logData);
+                    } else {
+                        setLogs(prev => [logData, ...prev]);
+                    }
+                } catch (e) {
+                    console.error("Gagal merekod log aktiviti:", e);
+                }
+            };
 
             // Mengira prestasi Olahragawan & Olahragawati secara automatik berdasarkan keputusan pingat semasa
             const bestAthletesByCategory = useMemo(() => {
@@ -336,7 +363,7 @@
                 return leaders;
             }, [results, athletes, pointsConfig]);
 
-            // Generates an event code based on sorted date index and the event order on that day.
+            // Kod larian automatik
             const eventsWithCode = useMemo(() => {
                 const uniqueDates = Array.from(new Set(events.map(e => e.tarikh).filter(Boolean))).sort();
                 
@@ -346,7 +373,6 @@
                     return idx !== -1 ? idx + 1 : 1;
                 };
 
-                // Group by Day number only
                 const groups = {};
                 events.forEach(e => {
                     const day = getDayNum(e.tarikh);
@@ -356,7 +382,6 @@
 
                 const eventCodeMap = {};
                 Object.keys(groups).forEach(day => {
-                    // Sort events of the day chronologically by time, then by name if same time
                     groups[day].sort((a, b) => {
                         const timeA = a.masa || "00:00";
                         const timeB = b.masa || "00:00";
@@ -364,7 +389,6 @@
                         return a.nama.localeCompare(b.nama);
                     });
 
-                    // Assign DXX formatted code (e.g., 107 for Day 1, Event 7; 207 for Day 2, Event 7)
                     groups[day].forEach((ev, index) => {
                         const seq = String(index + 1).padStart(2, '0');
                         eventCodeMap[ev.id] = `${day}${seq}`;
@@ -381,7 +405,7 @@
                     const timeA = a.masa || "23:59";
                     const timeB = b.masa || "23:59";
                     if (timeA !== timeB) return timeA.localeCompare(timeB);
-                    return a.nama.localeCompare(b.nama);
+                    return (a.nama || "").localeCompare(b.nama || "");
                 });
             }, [events]);
 
@@ -424,6 +448,9 @@
                     }
                     showToastMessage(`Pendaftaran acara & No. Atlet bagi ${athlete.nama} berjaya dikemaskini!`);
                     
+                    // Rekod ke log aktiviti
+                    createLog("Pendaftaran Acara & No. Atlet", `Mengemaskini acara dan no. bib bagi atlet ${athlete.nama} (${athlete.kelas})`);
+
                     // Reset borang
                     setSelectedStudentId("");
                     setStudentSearchQuery("");
@@ -515,6 +542,7 @@
                 const pathHeats = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('heats');
                 const pathMeta = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('metadata');
                 const pathAnnouncements = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('announcements');
+                const pathLogs = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('logs');
 
                 const unsubAthletes = pathAthletes.onSnapshot((snapshot) => {
                     const data = [];
@@ -565,6 +593,13 @@
                     setAnnouncements(data);
                 }, (e) => console.error("Ralat hebahan: ", e));
 
+                const unsubLogs = pathLogs.onSnapshot((snapshot) => {
+                    const data = [];
+                    snapshot.forEach(doc => data.push({ id: doc.id, ...doc.data() }));
+                    data.sort((a, b) => b.id.localeCompare(a.id)); // Susun log terbaru di atas
+                    setLogs(data);
+                }, (e) => console.error("Ralat log audit: ", e));
+
                 return () => {
                     unsubAthletes();
                     unsubEvents();
@@ -575,6 +610,7 @@
                     unsubGas();
                     unsubConfig();
                     unsubAnnouncements();
+                    unsubLogs();
                 };
             }, [isCloudActive]);
 
@@ -667,6 +703,16 @@
                 });
             }, [athletes, filterHouse, filterEvent, eventsWithCode]);
 
+            const filteredLogs = useMemo(() => {
+                if (!filterLogQuery.trim()) return logs;
+                return logs.filter(log => 
+                    log.userEmail.toLowerCase().includes(filterLogQuery.toLowerCase()) ||
+                    log.userName.toLowerCase().includes(filterLogQuery.toLowerCase()) ||
+                    log.action.toLowerCase().includes(filterLogQuery.toLowerCase()) ||
+                    log.details.toLowerCase().includes(filterLogQuery.toLowerCase())
+                );
+            }, [logs, filterLogQuery]);
+
             const groupedByClass = useMemo(() => {
                 const groups = {};
                 athletes.forEach(ath => {
@@ -733,6 +779,7 @@
                     if (isCloudActive) {
                         await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('metadata').doc('points').set(pointsConfig);
                     }
+                    createLog("Ubah Konfigurasi Mata", "Mengemaskini pemberat poin kejohanan (Emas, Perak, Gangsa, dsb)");
                     setShowPointsModal(false);
                     showToastMessage("Sistem pemberat mata pingat kejohanan berjaya disimpan secara awan!", "success");
                 } catch (e) {
@@ -747,6 +794,7 @@
                     if (isCloudActive) {
                         await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('metadata').doc('gas').set({ url: gasUrl });
                     }
+                    createLog("Ubah Konfigurasi GAS", "Mengemaskini pautan integrasi Google Sheets (GAS)");
                     setShowGasModal(false);
                     showToastMessage("Integrasi pautan Google Sheets API (GAS) berjaya dikemaskini!", "success");
                 } catch (e) {
@@ -760,6 +808,7 @@
                     if (isCloudActive) {
                         await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('metadata').doc('config').set({ activeYear });
                     }
+                    createLog("Ubah Tahun Kejohanan", `Menukar tahun kejohanan aktif kepada ${activeYear}`);
                     showToastMessage(`Tahun kejohanan aktif berjaya ditukar kepada ${activeYear}!`, "success");
                 } catch (e) {
                     showToastMessage("Ralat menyimpan tetapan tahun.", "error");
@@ -780,7 +829,7 @@
                         await syncWithGas("houses", "save", { id: name, name: `Rumah ${name}`, slogan: meta.slogan, guruPenasihat: meta.guruPenasihat, bonusPoints: meta.bonusPoints, warnaLabel: meta.warnaLabel });
                     }
                     for (const ath of athletes) {
-                        await syncWithGas("students", "save", { id: ath.id, name: ath.nama, class: ath.kelas, house: ath.rumah, gender: ath.jantina, tahap: ath.kategori });
+                        await syncWithGas("students", "save", { id: ath.id, name: ath.nama, class: ath.kelas, house: ath.rumah, jantina: ath.jantina, kategori: ath.kategori });
                     }
                     for (const ev of eventsWithCode) {
                         await syncWithGas("events", "save", { id: ev.id, name: ev.nama, category: ev.jenis, level: ev.kategori, date: ev.tarikh, time: ev.masa });
@@ -788,6 +837,7 @@
                     for (const res of results) {
                         await syncWithGas("results", "save", { id: res.id, eventId: res.eventId, gold: res.athleteId, goldRecord: res.catatan });
                     }
+                    createLog("Segerakan GAS", "Menjalankan eksport penuh semua pangkalan data ke Google Sheets");
                     showToastMessage("Penyegerakan pangkalan data penuh ke Google Sheets berjaya diselesaikan!", "success");
                 } catch (e) {
                     showToastMessage("Ralat ketika menjalankan penyegerakan penuh.", "error");
@@ -805,6 +855,7 @@
                 document.body.appendChild(downloadAnchor);
                 downloadAnchor.click();
                 downloadAnchor.remove();
+                createLog("Eksport Sandaran", "Membuat sandaran data kejohanan (JSON Backup)");
                 showToastMessage("Fail sandaran JSON berjaya dimuat turun!");
             };
 
@@ -825,7 +876,6 @@
                     try {
                         const data = JSON.parse(event.target.result);
                         
-                        // Validasi asas fail sandaran
                         if (!data.athletes && !data.events && !data.results) {
                             showToastMessage("Ralat: Fail JSON tidak mengandungi format data SPS-SK Bikang yang sah.", "error");
                             return;
@@ -833,14 +883,12 @@
 
                         showToastMessage("Memulakan proses pemulihan data kejohanan...", "info");
 
-                        // Kemas kini state React dalam memori
                         if (data.athletes) setAthletes(data.athletes);
                         if (data.events) setEvents(data.events);
                         if (data.results) setResults(data.results);
                         if (data.heats) setHeats(data.heats);
                         if (data.housesMetadata) setHousesMetadata(data.housesMetadata);
 
-                        // Sekiranya sambungan Firebase awan aktif, segerakkan data ke pelayan
                         if (isCloudActive) {
                             showToastMessage("Sedang menyelaraskan data sandaran ke storan awan...", "info");
                             if (data.athletes) {
@@ -868,8 +916,9 @@
                             }
                         }
 
+                        createLog("Import Sandaran", `Mengembalikan pangkalan data daripada fail sandaran ${file.name}`);
                         showToastMessage("Pemulihan & Penyelarasan pangkalan data selesai sepenuhnya!", "success");
-                        e.target.value = ""; // Set semula input fail
+                        e.target.value = ""; 
                     } catch (err) {
                         console.error(err);
                         showToastMessage("Gagal membaca atau memulihkan fail sandaran: " + err.message, "error");
@@ -909,6 +958,7 @@
                             setResults([]);
                             setHeats([]);
                             setHousesMetadata(INITIAL_HOUSES_METADATA);
+                            createLog("Semula DB", "Menetapkan semula keseluruhan pangkalan data sistem");
                             setConfirmModal({ show: false });
                             showToastMessage("Pangkalan data aktif berjaya dikosongkan.");
                         } catch (e) {
@@ -938,9 +988,9 @@
                             <h2 style="font-size: 32px; font-weight: 700; color: #b45309; margin: 10px 0;">SIJIL PENGHARGAAN</h2>
                             <p style="font-size: 14px; font-style: italic; color: #475569;">Dengan ini diperakui bahawa</p>
                             
-                            <h3 style="font-size: 24px; font-weight: 850; text-decoration: underline; color: #0f172a; margin: 20px 0;">${targetData.nama.toUpperCase()}</h3>
+                            <h3 style="font-size: 24px; font-weight: 850; text-decoration: underline; color: #0f172a; margin: 20px 0;">${(targetData.nama || "").toUpperCase()}</h3>
                             <p style="font-size: 14px; color: #334155; margin-bottom: 30px;">
-                                Kelas: <strong>${targetData.kelas}</strong> | Rumah Sukan: <strong>Rumah ${targetData.rumah}</strong>
+                                Kelas: <strong>${targetData.kelas || ""}</strong> | Rumah Sukan: <strong>Rumah ${targetData.rumah || ""}</strong>
                             </p>
 
                             <p style="font-size: 16px; color: #1e293b; max-width: 600px; margin: 0 auto 40px auto; line-height: 1.8;">
@@ -1024,7 +1074,7 @@
                             return `
                                 <tr>
                                     <td style="border: 1px solid #cbd5e1; padding: 6px; text-align:center;">${idx+1}</td>
-                                    <td style="border: 1px solid #cbd5e1; padding: 6px; font-weight:bold;">${ath ? ath.nama.toUpperCase() : "ATLET"}</td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 6px; font-weight:bold;">${ath ? (ath.nama || "").toUpperCase() : "ATLET"}</td>
                                     <td style="border: 1px solid #cbd5e1; padding: 6px; text-align:center;">${ath ? ath.kelas : ""}</td>
                                     <td style="border: 1px solid #cbd5e1; padding: 6px; text-align:center; font-weight:bold;">${ath ? ath.rumah : ""}</td>
                                     <td style="border: 1px solid #cbd5e1; padding: 6px; text-align:center; font-family:monospace; font-weight:bold; color:#1e3a8a;">${r.catatan}</td>
@@ -1054,9 +1104,9 @@
                     const finalQualifiersRows = qualifiedRunnersFromHeats.map((q) => `
                         <tr>
                             <td style="border: 1px solid #cbd5e1; padding: 6px; text-align:center; font-weight:bold; background: #f0fdf4; color: #16a34a;">Lorong ${q.lane} 🟢</td>
-                            <td style="border: 1px solid #cbd5e1; padding: 6px; font-weight:bold;">${q.athleteName.toUpperCase()}</td>
-                            <td style="border: 1px solid #cbd5e1; padding: 6px; text-align:center;">${q.athleteClass}</td>
-                            <td style="border: 1px solid #cbd5e1; padding: 6px; text-align:center; font-weight:bold;">${q.athleteHouse}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 6px; font-weight:bold;">${(q.athleteName || "").toUpperCase()}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 6px; text-align:center;">${q.athleteClass || ""}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 6px; text-align:center; font-weight:bold;">${q.athleteHouse || ""}</td>
                             <td style="border: 1px solid #cbd5e1; padding: 6px; text-align:center;">Saringan ${q.saringanNo} (Ked. #${q.ranking})</td>
                             <td style="border: 1px solid #cbd5e1; padding: 6px; text-align:center; font-weight:bold; font-family:monospace; color:#16a34a;">${q.catatan}</td>
                         </tr>
@@ -1067,7 +1117,7 @@
                             <div style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 20px;">
                                 <img src="${logoUrl}" style="height: 60px;" />
                                 <h2 style="margin: 5px 0 0 0;">LAPORAN KEPUTUSAN SARINGAN LARIAN</h2>
-                                <h3 style="margin: 2px 0 0 0; color: #475569; font-size:12px;">ACARA: [${targetData.kodAcara}] ${targetData.nama.toUpperCase()} (${targetData.kategori})</h3>
+                                <h3 style="margin: 2px 0 0 0; color: #475569; font-size:12px;">ACARA: [${targetData.kodAcara}] ${(targetData.nama || "").toUpperCase()} (${targetData.kategori})</h3>
                             </div>
 
                             <h3 style="font-size:13px; text-transform:uppercase; font-weight:bold; margin-bottom:5px;">A. Kedudukan Masa bagi Setiap Saringan</h3>
@@ -1138,9 +1188,9 @@
                         }).sort((a, b) => a.lane - b.lane);
                     } else {
                         runnersToPrint = filteredAthletes.map(ath => ({
-                            nama: ath.nama,
-                            kelas: ath.kelas,
-                            house: ath.rumah,
+                            nama: ath.nama || "",
+                            kelas: ath.kelas || "",
+                            house: ath.rumah || "",
                             lane: ""
                         }));
                     }
@@ -1150,7 +1200,7 @@
                             <td style="border: 1px solid #e2e8f0; padding: 8px; text-align: center; font-weight: bold; background: #f8fafc; font-size: 12px;">
                                 ${ath.lane ? `LORONG ${ath.lane}` : idx + 1}
                             </td>
-                            <td style="border: 1px solid #e2e8f0; padding: 8px; font-weight: 700;">${ath.nama.toUpperCase()}</td>
+                            <td style="border: 1px solid #e2e8f0; padding: 8px; font-weight: 700;">${(ath.nama || "").toUpperCase()}</td>
                             <td style="border: 1px solid #e2e8f0; padding: 8px; text-align: center;">${ath.kelas}</td>
                             <td style="border: 1px solid #e2e8f0; padding: 8px; text-align: center; font-weight: 700;">${ath.rumah || ath.house}</td>
                             <td style="border: 1px solid #e2e8f0; padding: 8px; text-align: center;">${ath.ranking ? `Saringan Rank: #${ath.ranking}` : '-'}</td>
@@ -1160,17 +1210,14 @@
 
                     printContent = `
                         <div style="font-family: sans-serif; padding: 15px; color: #1e293b;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 25px;">
-                                <div>
-                                    <h2 style="margin: 0; font-size: 18px; font-weight: 800;">SK BIKANG, LAHAD DATU</h2>
-                                    <h1 style="margin: 3px 0 0 0; font-size: 14px; text-transform: uppercase; color: #1e3a8a;">
-                                        Borang Panggilan Peserta (Marshall Sheet) - ${isFinalRound ? 'PERINGKAT AKHIR' : 'SARINGAN / ACARA TERUS'}
-                                    </h1>
-                                </div>
+                            <div style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 25px;">
                                 <img src="${logoUrl}" style="height: 50px;" />
+                                <h1 style="margin: 0; font-size: 16px; font-weight: 800; color: #1e3a8a; text-transform: uppercase;">
+                                    Borang Panggilan Peserta (Marshall Sheet) - ${isFinalRound ? 'PERINGKAT AKHIR' : 'SARINGAN / ACARA TERUS'}
+                                </h1>
                             </div>
 
-                            <div style="background: #f1f5f9; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div style="background: #f1f5f9; padding: 12px; border-radius: 8px; margin-bottom: 15px; font-size: 11px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                                 <div><strong>Acara Sukan:</strong> [${targetData.kodAcara}] ${targetData.nama}</div>
                                 <div><strong>Kategori:</strong> ${targetData.kategori} (${targetData.jenis})</div>
                                 <div><strong>Tarikh Kejohanan:</strong> ${targetData.tarikh || "Belum Ditetapkan"}</div>
@@ -1209,7 +1256,7 @@
                                 return `
                                     <tr style="border-bottom: 1px solid #e2e8f0;">
                                         <td style="padding: 6px; font-weight: 700;">${medalLabel}</td>
-                                        <td style="padding: 6px; text-transform: uppercase;">${ath ? ath.nama : "Atlet Tidak Diketahui"}</td>
+                                        <td style="padding: 6px; text-transform: uppercase;">${ath ? (ath.nama || "") : "Atlet Tidak Diketahui"}</td>
                                         <td style="padding: 6px; text-align: center;">${ath ? ath.kelas : ""}</td>
                                         <td style="padding: 6px; text-align: center; font-weight: 700;">${ath ? ath.rumah : ""}</td>
                                         <td style="padding: 6px; text-align: center; font-weight: 700; color: #1e3a8a;">${res.catatan || "Tiada"}</td>
@@ -1262,7 +1309,7 @@
                         return `
                             <tr style="height: 35px;">
                                 <td style="border: 1px solid #e2e8f0; padding: 8px; text-align: center; font-weight: 700;">${medalLabel}</td>
-                                <td style="border: 1px solid #e2e8f0; padding: 8px; text-transform: uppercase;">${ath ? ath.nama : "Tidak dikenali"}</td>
+                                <td style="border: 1px solid #e2e8f0; padding: 8px; text-transform: uppercase;">${ath ? (ath.nama || "") : "Tidak dikenali"}</td>
                                 <td style="border: 1px solid #e2e8f0; padding: 8px; text-align: center;">${ath ? ath.kelas : ""}</td>
                                 <td style="border: 1px solid #e2e8f0; padding: 8px; text-align: center; font-weight: 700;">${ath ? ath.rumah : ""}</td>
                                 <td style="border: 1px solid #e2e8f0; padding: 8px; text-align: center; font-weight: 700; color: #1e3a8a;">${res.catatan || "Tiada Rekod"}</td>
@@ -1352,7 +1399,7 @@
                 try {
                     if (isCloudActive) {
                         await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('athletes').doc(docId).set(updatedAthlete);
-                        await syncWithGas("students", "save", { id: docId, name: athleteForm.nama, class: athleteForm.kelas, house: athleteForm.rumah, gender: athleteForm.jantina, tahap: athleteForm.kategori });
+                        await syncWithGas("students", "save", { id: docId, name: athleteForm.nama, class: athleteForm.kelas, house: athleteForm.rumah, jantina: athleteForm.jantina, kategori: athleteForm.kategori });
                     } else {
                         if (isEditingAthlete) {
                             setAthletes(athletes.map(a => a.id === docId ? updatedAthlete : a));
@@ -1360,6 +1407,13 @@
                             setAthletes([...athletes, updatedAthlete]);
                         }
                     }
+
+                    const detailsLog = isEditingAthlete 
+                        ? `Mengemas kini profil atlet: ${athleteForm.nama} (${athleteForm.kelas}) di bawah Rumah ${athleteForm.rumah}`
+                        : `Mendaftarkan ahli sukan baru bernama ${athleteForm.nama} (Kelas: ${athleteForm.kelas}) di bawah Rumah ${athleteForm.rumah}`;
+                    
+                    createLog(isEditingAthlete ? "Sunting Profil Atlet" : "Daftar Atlet Baru", detailsLog);
+
                     showToastMessage(isEditingAthlete ? "Ahli berjaya dikemaskini!" : "Ahli berjaya didaftarkan!");
                     setAthleteForm({ id: "", nama: "", kelas: "", rumah: "Merah", jantina: "Lelaki", kategori: "L12" });
                     setIsEditingAthlete(false);
@@ -1467,8 +1521,8 @@
                                 name: ath.nama, 
                                 class: ath.kelas, 
                                 house: ath.rumah, 
-                                gender: ath.jantina, 
-                                tahap: ath.kategori 
+                                jantina: ath.jantina, 
+                                kategori: ath.kategori 
                             });
                         }
                     } else {
@@ -1478,6 +1532,8 @@
                         }));
                         setAthletes(prev => [...prev, ...localAdded]);
                     }
+
+                    createLog("Daftar Atlet Kelompok (Bundle)", `Berjaya mendaftarkan ${parsedAthletes.length} atlet sukan baru menggunakan muat naik fail Excel/TSV`);
 
                     showToastMessage(`Berjaya mendaftarkan ${parsedAthletes.length} ahli baharu secara bundle!`, "success");
                     setTsvInput("");
@@ -1506,6 +1562,14 @@
                             setEvents([...events, updatedEvent]);
                         }
                     }
+
+                    const logAction = isEditingEvent ? "Sunting Acara Sukan" : "Daftar Acara Sukan";
+                    const logDetails = isEditingEvent
+                        ? `Mengemas kini maklumat acara: ${eventForm.nama} (${eventForm.kategori})`
+                        : `Mendaftarkan acara kejohanan baharu: ${eventForm.nama} (${eventForm.kategori}) - Kategori: ${eventForm.jenis}`;
+                    
+                    createLog(logAction, logDetails);
+
                     showToastMessage(isEditingEvent ? "Acara sukan dikemaskini!" : "Acara sukan baru berjaya ditambah!");
                     setEventForm({ id: "", nama: "", kategori: "L12", jenis: "Balapan", tarikh: "", masa: "" });
                     setIsEditingEvent(false);
@@ -1516,6 +1580,7 @@
 
             const handleDeleteEvent = (eventId) => {
                 if (!checkAuthority()) return;
+                const targetEvent = events.find(e => e.id === eventId);
                 setConfirmModal({
                     show: true,
                     title: "Hapus Acara Sukan?",
@@ -1528,6 +1593,9 @@
                             } else {
                                 setEvents(events.filter(e => e.id !== eventId));
                             }
+
+                            createLog("Hapus Acara Sukan", `Memadam acara sukan [${targetEvent?.kodAcara || ""}] ${targetEvent?.nama || ""}`);
+
                             setConfirmModal({ show: false });
                             showToastMessage("Acara sukan berjaya dihapus.");
                         } catch (e) {
@@ -1561,6 +1629,11 @@
                     } else {
                         setHeats([...heats, newHeat]);
                     }
+
+                    const targetEvent = events.find(ev => ev.id === heatForm.eventId);
+                    const targetAthlete = athletes.find(a => a.id === heatForm.athleteId);
+                    createLog("Kunci Catatan Saringan", `Merekodkan catatan masa ${heatForm.catatan} bagi ${targetAthlete?.nama || ""} dalam Saringan ${heatForm.saringanNo} acara ${targetEvent?.nama || ""}`);
+
                     showToastMessage("Masa larian saringan berjaya disimpan!");
                     setHeatForm({ ...heatForm, athleteId: "", catatan: "" });
                 } catch (e) {
@@ -1570,6 +1643,10 @@
 
             const handleDeleteHeat = (heatId) => {
                 if (!checkAuthority()) return;
+                const targetHeat = heats.find(h => h.id === heatId);
+                const targetEvent = events.find(ev => ev.id === targetHeat?.eventId);
+                const targetAthlete = athletes.find(a => a.id === targetHeat?.athleteId);
+
                 setConfirmModal({
                     show: true,
                     title: "Hapus Rekod Saringan?",
@@ -1581,6 +1658,9 @@
                             } else {
                                 setHeats(heats.filter(h => h.id !== heatId));
                             }
+
+                            createLog("Hapus Catatan Saringan", `Memadam rekod larian saringan ${targetHeat?.saringanNo || ""} bagi ${targetAthlete?.nama || ""} dalam acara ${targetEvent?.nama || ""}`);
+
                             setConfirmModal({ show: false });
                             showToastMessage("Rekod saringan berjaya dihapus.");
                         } catch (e) {
@@ -1615,6 +1695,13 @@
                     } else {
                         setResults([...results, newResult]);
                     }
+
+                    const targetEvent = events.find(ev => ev.id === resultForm.eventId);
+                    const targetAthlete = athletes.find(a => a.id === resultForm.athleteId);
+                    const medalMapping = { "1": "🥇 Johan (Emas)", "2": "🥈 Naib Johan (Perak)", "3": "🥉 Ketiga (Gangsa)", "4": "🏅 Ke-4" };
+
+                    createLog("Kunci Keputusan Podium", `Mengunci masuk kedudukan ${medalMapping[resultForm.kedudukan] || ""} bagi ${targetAthlete?.nama || ""} (Catatan: ${resultForm.catatan || "-"}) dalam acara ${targetEvent?.nama || ""}`);
+
                     showToastMessage("Keputusan atlet berjaya dikunci masuk!");
                     setResultForm({ ...resultForm, athleteId: "", catatan: "" });
                 } catch (e) {
@@ -1624,6 +1711,10 @@
 
             const handleDeleteResult = async (resId) => {
                 if (!checkAuthority()) return;
+                const targetRes = results.find(r => r.id === resId);
+                const targetEvent = events.find(ev => ev.id === targetRes?.eventId);
+                const targetAthlete = athletes.find(a => a.id === targetRes?.athleteId);
+
                 setConfirmModal({
                     show: true,
                     title: "Hapus Keputusan Pingat?",
@@ -1636,6 +1727,9 @@
                             } else {
                                 setResults(results.filter(r => r.id !== resId));
                             }
+
+                            createLog("Hapus Keputusan Podium", `Membatalkan / memadam keputusan kedudukan ke-${targetRes?.kedudukan || ""} bagi ${targetAthlete?.nama || ""} dalam acara ${targetEvent?.nama || ""}`);
+
                             setConfirmModal({ show: false });
                             showToastMessage("Catatan pingat berjaya dibatalkan.");
                         } catch (e) {
@@ -1672,6 +1766,9 @@
                   } else {
                     setHousesMetadata(updated);
                   }
+
+                  createLog("Daftar Rumah Sukan", `Menambah rumah sukan baru bernama Rumah ${cleanName} (${houseForm.warnaLabel})`);
+
                   setHouseForm({ nama: "", slogan: "", guruPenasihat: "", bonusPoints: 0, warnaLabel: "Ungu" });
                   showToastMessage(`Rumah ${cleanName} berjaya ditambah!`);
                 } catch (err) {
@@ -1710,6 +1807,9 @@
                   } else {
                     setHousesMetadata(updatedMeta);
                   }
+
+                  createLog("Tambah Guru Penasihat", `Mendaftarkan Cikgu ${nameToAdd} sebagai guru penasihat Rumah ${houseName}`);
+
                   setNewAdvisorText({ ...newAdvisorText, [houseName]: "" });
                   showToastMessage(`Cikgu ${nameToAdd} berjaya ditambah.`);
                 } catch (err) {
@@ -1746,6 +1846,9 @@
                     } else {
                         setHousesMetadata(updatedMeta);
                     }
+
+                    createLog("Buang Guru Penasihat", `Mengeluarkan Cikgu ${advisorName} daripada senarai guru penasihat Rumah ${houseName}`);
+
                     showToastMessage(`Cikgu ${advisorName} berjaya dikeluarkan.`);
                 } catch (err) {
                     showToastMessage("Ralat mengeluarkan guru penasihat.", "error");
@@ -1770,6 +1873,9 @@
                     } else {
                         setAnnouncements([newNotice, ...announcements]);
                     }
+
+                    createLog("Terbit Hebahan", `Menerbitkan pengumuman kejohanan: "${announceFormText.trim().substring(0, 40)}..."`);
+
                     setAnnounceFormText("");
                     setShowAnnounceForm(false);
                     showToastMessage("Hebahan baharu berjaya diterbitkan!");
@@ -1780,12 +1886,16 @@
 
             const handleDeleteAnnouncement = async (id) => {
                 if (!checkAuthority()) return;
+                const targetNotice = announcements.find(a => a.id === id);
                 try {
                     if (isCloudActive) {
                         await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('announcements').doc(id).delete();
                     } else {
                         setAnnouncements(announcements.filter(a => a.id !== id));
                     }
+
+                    createLog("Hapus Hebahan", `Memadam hebahan: "${targetNotice?.text?.substring(0, 40)}..."`);
+
                     showToastMessage("Hebahan berjaya dikeluarkan.");
                 } catch (e) {
                     showToastMessage("Ralat ketika memadamkan hebahan dari awan.", "error");
@@ -1794,6 +1904,7 @@
 
             const handleDeleteAthlete = (athleteId) => {
                 if (!checkAuthority()) return;
+                const targetAthlete = athletes.find(a => a.id === athleteId);
                 setConfirmModal({
                     show: true,
                     title: "Padam Rekod Atlet?",
@@ -1806,6 +1917,9 @@
                             } else {
                                 setAthletes(athletes.filter(a => a.id !== athleteId));
                             }
+
+                            createLog("Hapus Atlet", `Memadam rekod atlet sukan bernama ${targetAthlete?.nama || ""} (Kelas: ${targetAthlete?.kelas || ""})`);
+
                             setConfirmModal({ show: false });
                             showToastMessage("Rekod atlet berjaya dihapus.");
                         } catch (e) {
@@ -1832,7 +1946,7 @@
                 if (!currentRecordText) return null;
                 
                 const history = HISTORICAL_CHAMPIONSHIP_RECORDS.find(
-                    r => r.eventName.toLowerCase().trim() === eventName.toLowerCase().trim() && r.category === category
+                    r => (r.eventName || "").toLowerCase().trim() === (eventName || "").toLowerCase().trim() && r.category === category
                 );
                 
                 if (!history) return null;
@@ -1886,7 +2000,7 @@
                                 acara: event.nama,
                                 kategori: event.kategori,
                                 jenis: event.jenis,
-                                namaPemenang: athlete.nama.toUpperCase(),
+                                namaPemenang: (athlete.nama || "").toUpperCase(),
                                 kelas: athlete.kelas,
                                 rumah: athlete.rumah,
                                 catatanRekod: res.catatan,
@@ -1898,6 +2012,7 @@
                         }
                     }
 
+                    createLog("Arkib Rekod Sukan", `Mengarkibkan ${successCount} rekod pencapaian Emas tahun ${activeYear} ke dalam Google Sheets`);
                     showToastMessage(`Berjaya mengarkibkan ${successCount} rekod johan ${activeYear} ke dalam lembaran 'rekod_kejohanan_${activeYear}'!`, "success");
                 } catch (e) {
                     showToastMessage("Sistem ralat ketika menghantar data rekod ke Sheets.", "error");
@@ -1934,10 +2049,10 @@
                                 </div>
                             </div>
 
-                            <div className="flex flex-wrap items-center gap-2 w-full md:w-auto justify-center md:justify-end pt-1 pb-1">
+                            <div className="flex flex-wrap items-center gap-2 w-full md:w-auto justify-start md:justify-end pb-1 pt-1">
                                 <button 
                                     onClick={() => setLang(lang === "BM" ? "EN" : "BM")}
-                                    className="bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1 border border-white/10 shrink-0"
+                                    className="bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1 border border-white/10 shrink-0 whitespace-nowrap"
                                 >
                                     🌐 {lang === "BM" ? "BM / EN" : "EN / BM"}
                                 </button>
@@ -1946,7 +2061,7 @@
                                     <div className="relative inline-block shrink-0" ref={adminMenuRef}>
                                         <button 
                                             onClick={() => setIsAdminMenuOpen(!isAdminMenuOpen)}
-                                            className="bg-yellow-500 hover:bg-yellow-600 text-slate-950 font-black px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 transition-all shadow-lg hover:scale-105 active:scale-95 z-50 shrink-0"
+                                            className="bg-yellow-500 hover:bg-yellow-600 text-slate-950 font-black px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 transition-all shadow-lg hover:scale-105 active:scale-95 z-50 shrink-0 whitespace-nowrap"
                                         >
                                             <span>🛠️ PANEL PENTADBIR</span>
                                             <span className="text-[8px] bg-slate-950/10 px-1 rounded-md">▼</span>
@@ -1970,7 +2085,7 @@
                                 )}
 
                                 {currentUser && !currentUser.isAnonymous ? (
-                                    <div className="flex items-center gap-2 bg-slate-800 p-1.5 pl-3 pr-2 rounded-xl border border-slate-700 text-xs shrink-0">
+                                    <div className="flex items-center gap-2 bg-slate-800 p-1.5 pl-3 pr-2 rounded-xl border border-slate-700 text-xs shrink-0 whitespace-nowrap">
                                         <div className="text-right">
                                             <p className="font-bold text-white max-w-[120px] truncate">{currentUser.displayName || "Guru"}</p>
                                             <p className={`text-[9px] font-bold uppercase ${
@@ -1987,12 +2102,12 @@
                                     </div>
                                 ) : (
                                     <div className="flex items-center gap-2 shrink-0">
-                                        <span className="text-[10px] bg-slate-800 border border-slate-700 text-slate-400 px-2.5 py-1.5 rounded-xl font-bold shrink-0">
+                                        <span className="text-[10px] bg-slate-800 border border-slate-700 text-slate-400 px-2.5 py-1.5 rounded-xl font-bold shrink-0 whitespace-nowrap">
                                             👥 Pelawat
                                         </span>
                                         <button 
                                             onClick={handleGoogleLogin}
-                                            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-1.5 rounded-xl text-xs flex items-center gap-2 transition-all shadow-md shadow-indigo-600/20 shrink-0"
+                                            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-1.5 rounded-xl text-xs flex items-center gap-2 transition-all shadow-md shadow-indigo-600/20 shrink-0 whitespace-nowrap"
                                         >
                                             <LogInIcon />
                                             <span>Masuk Google / DELIMa</span>
@@ -2026,7 +2141,6 @@
                         </div>
                     </div>
 
-                    {}
                     <main className="max-w-7xl mx-auto px-4 py-6 flex-grow w-full">
                         
                         {/* DASHBOARD TAB */}
@@ -2039,7 +2153,7 @@
                                             <div className="flex justify-between items-start">
                                                 <div>
                                                     <span className="text-[10px] font-black uppercase text-slate-400">Kedudukan #{idx+1}</span>
-                                                    <h3 className="text-lg font-black text-slate-800">{h.nama}</h3>
+                                                    <h3 className="text-lg font-black text-slate-800">Rumah {h.nama}</h3>
                                                 </div>
                                                 <span className={`text-2xl sm:text-3xl font-black ${h.teks}`}>{h.mata} <span className="text-xs font-bold text-slate-400">mata</span></span>
                                             </div>
@@ -2385,7 +2499,6 @@
                                     </div>
                                 </div>
 
-                                {}
                                 <div className="lg:col-span-2 space-y-6">
                                     {Object.keys(housesMetadata).map(houseName => {
                                         const meta = housesMetadata[houseName];
@@ -2461,7 +2574,6 @@
                                                     )}
                                                 </div>
 
-                                                {}
                                                 <div className="mt-5 border-t pt-4">
                                                     <div className="flex justify-between items-center mb-2">
                                                         <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">👥 Senarai Ahli Sukan (Mengikut Kelas)</h4>
@@ -2561,7 +2673,7 @@
                                                     {showSearchDropdown && studentSearchQuery.trim().length > 0 && (
                                                         <div className="absolute left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-48 overflow-y-auto z-50">
                                                             {athletes
-                                                                .filter(a => a.nama.toLowerCase().includes(studentSearchQuery.toLowerCase()))
+                                                                .filter(a => (a.nama || "").toLowerCase().includes(studentSearchQuery.toLowerCase()))
                                                                 .slice(0, 5)
                                                                 .map(ath => (
                                                                     <div 
@@ -2580,7 +2692,7 @@
                                                                     </div>
                                                                 ))
                                                             }
-                                                            {athletes.filter(a => a.nama.toLowerCase().includes(studentSearchQuery.toLowerCase())).length === 0 && (
+                                                            {athletes.filter(a => (a.nama || "").toLowerCase().includes(studentSearchQuery.toLowerCase())).length === 0 && (
                                                                 <div className="p-2.5 text-slate-400 italic text-center">Tiada ahli sukan ditemui.</div>
                                                             )}
                                                         </div>
@@ -2619,7 +2731,6 @@
                                                     />
                                                 </div>
 
-                                                {}
                                                 <div>
                                                     <label className="block text-slate-500 mb-1">3. Pilih Acara Sukan Disertai</label>
                                                     <div className="border border-slate-200 rounded-xl p-2.5 max-h-32 overflow-y-auto bg-slate-50 space-y-1.5">
@@ -2784,7 +2895,6 @@
                             </div>
                         )}
 
-                        {}
                         {/* ACARA SUKAN TAB */}
                         {activeTab === "acara" && (
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -3034,7 +3144,7 @@
                                                             >
                                                                 <option value="">-- Pilih Pelari --</option>
                                                                 {relevantAthletesForEventForm.map(ath => (
-                                                                    <option key={ath.id} value={ath.id}>{ath.nama.toUpperCase()} ({ath.rumah})</option>
+                                                                    <option key={ath.id} value={ath.id}>{(ath.nama || "").toUpperCase()} ({ath.rumah})</option>
                                                                 ))}
                                                             </select>
                                                         </div>
@@ -3099,7 +3209,7 @@
                                                                     <optgroup label="🟢 8 Pelari Terpantas Layak Akhir (Saringan)">
                                                                         {qualifiedRunnersFromHeats.map(q => (
                                                                             <option key={q.athleteId} value={q.athleteId}>
-                                                                                {q.athleteName.toUpperCase()} ({q.athleteHouse}) - {q.catatan}
+                                                                                {(q.athleteName || "").toUpperCase()} ({q.athleteHouse}) - {q.catatan}
                                                                             </option>
                                                                         ))}
                                                                     </optgroup>
@@ -3107,7 +3217,7 @@
                                                                 <optgroup label="👥 Atlet Berdaftar Bagi Acara Ini">
                                                                     {relevantAthletesForEventForm.map(ath => (
                                                                         <option key={ath.id} value={ath.id}>
-                                                                            {ath.noAtlet ? `[${ath.noAtlet}] ` : ""}{ath.nama.toUpperCase()} ({ath.rumah})
+                                                                            {ath.noAtlet ? `[${ath.noAtlet}] ` : ""}{(ath.nama || "").toUpperCase()} ({ath.rumah})
                                                                         </option>
                                                                     ))}
                                                                 </optgroup>
@@ -3139,7 +3249,6 @@
                                         )}
                                     </div>
 
-                                    {}
                                     <div className="lg:col-span-2 space-y-6">
                                         {selectedEventObject && selectedEventObject.jenis === "Balapan" && activeStageTab === "saringan" ? (
                                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -3161,7 +3270,7 @@
                                                                         <span className="bg-indigo-600 text-white text-xs px-2.5 py-1 rounded-lg font-extrabold shadow-sm">Lorong {runner.lane}</span>
                                                                         <span className="bg-emerald-500 text-white text-[9px] px-1.5 py-0.5 rounded font-bold uppercase">Layak 🟢</span>
                                                                         <div>
-                                                                            <p className="font-extrabold text-slate-800">{runner.athleteName.toUpperCase()}</p>
+                                                                            <p className="font-extrabold text-slate-800">{(runner.athleteName || "").toUpperCase()}</p>
                                                                             <p className="text-[10px] text-slate-400">Kelas: {runner.athleteClass} | Rumah {runner.athleteHouse} | Kedudukan Saringan: #{runner.ranking} (Saringan {runner.saringanNo})</p>
                                                                         </div>
                                                                     </div>
@@ -3242,7 +3351,7 @@
                                                                                 <div key={res.id} className={`flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs p-3 rounded-xl border ${recordBreak ? 'bg-amber-50 border-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.2)]' : 'bg-slate-50 border-slate-100'}`}>
                                                                                     <div className="flex flex-col gap-1">
                                                                                         <span className="font-extrabold text-slate-800">
-                                                                                            {res.kedudukan === "1" ? "🥇 Johan (Emas)" : res.kedudukan === "2" ? "🥈 Naib Johan (Perak)" : res.kedudukan === "3" ? "🥉 Ketiga (Gangsa)" : "🏅 Tempat Ke-4"} - {ath ? ath.nama.toUpperCase() : "Murid"} ({ath ? ath.rumah : ""})
+                                                                                            {res.kedudukan === "1" ? "🥇 Johan (Emas)" : res.kedudukan === "2" ? "🥈 Naib Johan (Perak)" : res.kedudukan === "3" ? "🥉 Ketiga (Gangsa)" : "🏅 Tempat Ke-4"} - {ath ? (ath.nama || "").toUpperCase() : "Murid"} ({ath ? ath.rumah : ""})
                                                                                         </span>
                                                                                         {recordBreak && (
                                                                                             <span className="inline-flex items-center gap-1.5 text-[10px] font-black text-amber-600 bg-amber-100/60 px-2 py-0.5 rounded-md w-fit animate-pulse">
@@ -3341,94 +3450,6 @@
                                         })}
                                     </div>
                                 </div>
-
-                                {/* PUSAT REKOD SEJARAH & DEWAN KEMASYHURAN */}
-                                <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm mt-6">
-                                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b pb-4 mb-4">
-                                        <div>
-                                            <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                                                🏆 Pusat Rekod Sejarah & Dewan Kemasyhuran (Tahun {activeYear})
-                                            </h3>
-                                            <p className="text-xs text-slate-400 mt-1">Simpan, arkib dan bandingkan rekod Johan Emas {activeYear} untuk mengesan pemecah rekod kejohanan lampau.</p>
-                                        </div>
-                                        {userRole !== "pelawat" && (
-                                            <button
-                                                onClick={handleArchiveAnnualRecords}
-                                                disabled={isArchiving}
-                                                className="bg-amber-500 hover:bg-amber-600 disabled:bg-amber-300 text-slate-950 font-black text-xs px-4 py-2.5 rounded-xl shadow-md transition-all flex items-center gap-2"
-                                            >
-                                                <span>{isArchiving ? "⏳ Mengarkib..." : `📂 Simpan & Arkib Rekod ${activeYear} ke Google Sheets`}</span>
-                                            </button>
-                                        )}
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div className="bg-slate-50/50 p-4 rounded-2xl border">
-                                            <h4 className="text-xs font-black text-indigo-700 uppercase tracking-wider mb-3 flex justify-between">
-                                                <span>🥇 Johan Semasa (Tahun {activeYear})</span>
-                                                <span className="text-[10px] text-slate-400">Total: {results.filter(r => r.kedudukan === "1").length} Acara</span>
-                                            </h4>
-                                            <div className="space-y-2 max-h-60 overflow-y-auto pr-1 text-xs">
-                                                {results.filter(r => r.kedudukan === "1").length === 0 ? (
-                                                    <p className="text-xs text-slate-400 italic text-center py-6">Kunci masuk pemenang Emas dahulu untuk dipaparkan di sini.</p>
-                                                ) : (
-                                                    results.filter(r => r.kedudukan === "1").map(res => {
-                                                        const ev = eventsWithCode.find(e => e.id === res.eventId);
-                                                        const ath = athletes.find(a => a.id === res.athleteId);
-                                                        if (!ev || !ath) return null;
-                                                        const recordBreak = checkRecordBreakStatus(ev.nama, ev.kategori, res.catatan);
-
-                                                        return (
-                                                            <div key={res.id} className="flex justify-between items-center bg-white p-2.5 rounded-xl border border-slate-100 shadow-xs">
-                                                                <div>
-                                                                    <p className="font-extrabold text-slate-800">
-                                                                        <span className="font-mono bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded text-[10px] mr-1.5">{ev.kodAcara}</span>
-                                                                        {ev.nama} ({ev.kategori})
-                                                                    </p>
-                                                                    <p className="text-[10px] text-slate-400">🥇 {ath.nama} ({ath.rumah})</p>
-                                                                </div>
-                                                                <div className="text-right">
-                                                                    <span className="font-mono font-bold text-indigo-600 block">{res.catatan}</span>
-                                                                    {recordBreak && (
-                                                                        <span className="text-[8px] bg-amber-100 text-amber-700 font-black px-1.5 py-0.5 rounded uppercase">Break ⚡</span>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        <div className="bg-slate-50/50 p-4 rounded-2xl border">
-                                            <h4 className="text-xs font-black text-amber-800 uppercase tracking-wider mb-3">🔥 Rekod Kejohanan Terdahulu (Penanda Aras SK Bikang)</h4>
-                                            <div className="space-y-2 max-h-60 overflow-y-auto pr-1 text-xs">
-                                                {HISTORICAL_CHAMPIONSHIP_RECORDS.map((rec, i) => {
-                                                    const matchingResult = results.find(r => {
-                                                        const ev = eventsWithCode.find(e => e.id === r.eventId);
-                                                        return ev && ev.nama.toLowerCase().trim() === rec.eventName.toLowerCase().trim() && ev.kategori === rec.category && r.kedudukan === "1";
-                                                    });
-                                                    const isBroken = matchingResult ? checkRecordBreakStatus(rec.eventName, rec.category, matchingResult.catatan) : null;
-
-                                                    return (
-                                                        <div key={i} className={`flex justify-between items-center p-2.5 rounded-xl border ${isBroken ? 'bg-red-50 border-red-200' : 'bg-white border-slate-100'}`}>
-                                                            <div>
-                                                                <p className="font-extrabold text-slate-800">{rec.eventName} ({rec.category})</p>
-                                                                <p className="text-[10px] text-slate-400">👤 {rec.athlete} (Tahun {rec.year})</p>
-                                                            </div>
-                                                            <div className="text-right">
-                                                                <span className="font-mono font-bold text-slate-500 block">{rec.recordText}</span>
-                                                                {isBroken && (
-                                                                    <span className="text-[8px] bg-red-100 text-red-600 font-black px-1.5 py-0.5 rounded uppercase">Pecah 🚫</span>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
                             </div>
                         )}
 
@@ -3466,14 +3487,13 @@
                                                 className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl border border-indigo-200 flex items-center gap-2 shadow-md shadow-indigo-600/10 flex-1 sm:flex-initial justify-center"
                                             >
                                                 <PrinterIcon className="h-4 w-4" />
-                                                <span>Cetak Laporan Kokum</span>
+                                                <span>Cetak Laporan Laporan Rasmi</span>
                                             </button>
                                         </div>
                                     </div>
                                 </div>
 
                                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                    {/* Kolum Kiri - Parameter Tandatangan & Pencetakan Sijil (Hanya muncul apabila butang ditekan) */}
                                     {showSignatorySettings && (
                                         <div className="lg:col-span-1 space-y-6 animate-in slide-in-from-left duration-200">
                                             <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
@@ -3520,7 +3540,6 @@
                                         </div>
                                     )}
 
-                                    {/* Kolum Kanan - Cetakan Sijil Murid Terpilih (Keluasan fleksibel mengikut butang toggle) */}
                                     <div className={`${showSignatorySettings ? "lg:col-span-2" : "lg:col-span-3"} space-y-6`}>
                                         <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
                                             <div className="flex justify-between items-center mb-2">
@@ -3591,7 +3610,7 @@
                                                             return (
                                                                 <tr key={h.nama} className="border-b hover:bg-slate-50 font-bold text-slate-700">
                                                                     <td className="py-2.5 px-3">#{i+1}</td>
-                                                                    <td className="py-2.5 px-3 text-slate-900">{h.nama}</td>
+                                                                    <td className="py-2.5 px-3 text-slate-900">Rumah {h.nama}</td>
                                                                     <td className="py-2.5 px-3 text-center">{h.emas}</td>
                                                                     <td className="py-2.5 px-3 text-center">{h.perak}</td>
                                                                     <td className="py-2.5 px-3 text-center">{h.gangsa}</td>
@@ -3613,11 +3632,62 @@
                                                     rows="3"
                                                     value={additionalInfo}
                                                     onChange={(e) => setAdditionalInfo(e.target.value)}
-                                                    placeholder="Tulis maklumat tambahan di sini, contoh: 'Kejohanan berjalan lancar dengan sokongan PIBG. Tahniah diucapkan kepada semua pemenang...'"
+                                                    placeholder="Tulis maklumat tambahan di sini..."
                                                     className="w-full p-3 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-1 focus:ring-indigo-500 outline-none transition-all font-semibold text-slate-700"
                                                 />
                                             </div>
                                         </div>
+
+                                        {/* PANEL LOG AKTIVITI AUDIT SISTEM */}
+                                        <div className="bg-white rounded-2xl p-5 border border-slate-150 shadow-sm">
+                                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b pb-4 mb-4">
+                                                <div>
+                                                    <h4 className="text-sm font-black text-slate-900 uppercase flex items-center gap-2">
+                                                        <span>📜 Log Audit & Jejak Aktiviti Sistem (SPS-SKB)</span>
+                                                    </h4>
+                                                    <p className="text-[11px] text-slate-400 mt-0.5">Jejaki semua pendaftaran, penyuntingan dan pemadaman data sukan yang dilakukan oleh akaun DELIMa Guru/Admin.</p>
+                                                </div>
+                                                <div className="w-full sm:w-64">
+                                                    <input 
+                                                        type="text"
+                                                        value={filterLogQuery}
+                                                        onChange={(e) => setFilterLogQuery(e.target.value)}
+                                                        placeholder="Cari aktiviti, nama atau e-mel..."
+                                                        className="w-full p-2 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-semibold"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div className="overflow-y-auto max-h-80 pr-1 text-xs">
+                                                {filteredLogs.length === 0 ? (
+                                                    <p className="text-slate-400 italic text-center py-8">Tiada rekod aktiviti log ditemui.</p>
+                                                ) : (
+                                                    <div className="space-y-2">
+                                                        {filteredLogs.map(log => (
+                                                            <div key={log.id} className="p-3 bg-slate-50 border border-slate-150 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-3 hover:bg-slate-100 transition-colors">
+                                                                <div className="space-y-1">
+                                                                    <div className="flex flex-wrap items-center gap-1.5">
+                                                                        <span className="bg-indigo-600 text-white text-[9px] font-black px-2 py-0.5 rounded-md uppercase">
+                                                                            {log.action}
+                                                                        </span>
+                                                                        <span className="text-slate-800 font-extrabold">{log.details}</span>
+                                                                    </div>
+                                                                    <div className="flex items-center gap-2 text-[10px] text-slate-400 font-bold">
+                                                                        <span>👤 {log.userName}</span>
+                                                                        <span>•</span>
+                                                                        <span className="text-indigo-600">{log.userEmail}</span>
+                                                                    </div>
+                                                                </div>
+                                                                <span className="text-[10px] text-slate-400 font-mono font-bold shrink-0 self-end md:self-auto">
+                                                                    📅 {log.timestamp}
+                                                                </span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+
                                     </div>
                                 </div>
                             </div>

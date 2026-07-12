@@ -1497,7 +1497,7 @@
                         <div style="font-family: sans-serif; padding: 15px; color: #1e293b;">
                             <div style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 20px;">
                                 <img src="${logoUrl}" style="height: 60px;" />
-                                <h2 style="margin: 5px 0 0 0; text-transform: uppercase; font-size: 15px; letter-spacing: 0.5px;">Borang Semakan Kehadiran Latihan Rumah Sukan (4x Kehadiran)</h2>
+                                <h2 style="margin: 5px 0 0 0; text-transform: uppercase; font-size: 15px; letter-spacing: 0.5px; font-weight: bold;">BORANG KEHADIRAN AHLI RUMAH SUKAN</h2>
                                 <h3 style="margin: 2px 0 0 0; color: #475569; font-size: 12px; text-transform: uppercase;">Kejohanan Sukan Tahunan SK Bikang ${activeYear}</h3>
                             </div>
 
@@ -1523,6 +1523,80 @@
                                 </thead>
                                 <tbody>
                                     ${rowsHtml || '<tr><td colspan="9" style="padding:15px; text-align:center; font-style:italic; color:#64748b;">Tiada ahli sukan didaftarkan di bawah rumah sukan ini.</td></tr>'}
+                                </tbody>
+                            </table>
+
+                            <div style="display: flex; justify-content: space-between; margin-top: 50px; font-size: 11px;">
+                                <div style="width: 220px; text-align: center;">
+                                    <p style="margin: 0;">Disediakan oleh,</p>
+                                    <div style="border-bottom: 1px solid #94a3b8; height: 50px; margin-bottom: 5px;"></div>
+                                    <p style="margin: 0; font-weight: bold;">(_______________________)</p>
+                                    <p style="margin: 2px 0 0 0; color: #475569; font-size: 10px;">Guru Penasihat Rumah ${targetData.houseName}</p>
+                                </div>
+                                <div style="width: 220px; text-align: center;">
+                                    <p style="margin: 0;">Disahkan oleh,</p>
+                                    <div style="border-bottom: 1px solid #94a3b8; height: 50px; margin-bottom: 5px;"></div>
+                                    <p style="margin: 0; font-weight: bold;">(_______________________)</p>
+                                    <p style="margin: 2px 0 0 0; color: #475569; font-size: 10px;">Penyelaras Sukan / GPK Kokurikulum</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                else if (mode === 'sukantara_rumah' && targetData) {
+                    const houseAthletes = athletes
+                        .filter(a => a.rumah === targetData.houseName)
+                        .sort((a, b) => {
+                            const classCompare = (a.kelas || "").localeCompare(b.kelas || "");
+                            if (classCompare !== 0) return classCompare;
+                            return (a.nama || "").localeCompare(b.nama || "");
+                        });
+
+                    const rowsHtml = houseAthletes.map((ath, idx) => `
+                        <tr style="height: 35px;">
+                            <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center; font-weight: bold;">${idx + 1}</td>
+                            <td style="border: 1px solid #94a3b8; padding: 6px; text-transform: uppercase; font-weight: bold; font-size: 11px;">${ath.nama}</td>
+                            <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center;">${ath.kelas}</td>
+                            <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center;">${ath.jantina || "Lelaki"}</td>
+                            <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center;"></td>
+                            <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center;"></td>
+                            <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center;"></td>
+                            <td style="border: 1px solid #94a3b8; padding: 6px;"></td>
+                        </tr>
+                    `).join('');
+
+                    const meta = housesMetadata[targetData.houseName] || {};
+                    const advisorsText = meta.guruPenasihat || "Belum Ditetapkan";
+
+                    printContent = `
+                        <div style="font-family: sans-serif; padding: 15px; color: #1e293b;">
+                            <div style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 20px;">
+                                <img src="${logoUrl}" style="height: 60px;" />
+                                <h2 style="margin: 5px 0 0 0; text-transform: uppercase; font-size: 15px; letter-spacing: 0.5px; font-weight: bold;">BORANG SARINGAN SUKANTARA</h2>
+                                <h3 style="margin: 2px 0 0 0; color: #475569; font-size: 12px; text-transform: uppercase;">Kejohanan Sukan Tahunan SK Bikang ${activeYear}</h3>
+                            </div>
+
+                            <div style="background: #f1f5f9; padding: 12px; border-radius: 8px; margin-bottom: 15px; font-size: 11px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; border: 1px solid #cbd5e1;">
+                                <div><strong>Rumah Sukan:</strong> Rumah ${targetData.houseName}</div>
+                                <div><strong>Slogan:</strong> "${meta.slogan || '-'}"</div>
+                                <div style="grid-column: span 2;"><strong>Guru Penasihat:</strong> ${advisorsText}</div>
+                            </div>
+
+                            <table style="width: 100%; border-collapse: collapse; font-size: 11px; text-align: left;">
+                                <thead>
+                                    <tr style="background: #cbd5e1; height: 40px;">
+                                        <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 35px;">No</th>
+                                        <th style="border: 1px solid #94a3b8; padding: 6px;">Nama Penuh Ahli / Atlet</th>
+                                        <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 80px;">Kelas</th>
+                                        <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 60px;">Jantina</th>
+                                        <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 80px;">P1</th>
+                                        <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 80px;">P2</th>
+                                        <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 80px;">P3</th>
+                                        <th style="border: 1px solid #94a3b8; padding: 6px; width: 120px;">Catatan</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${rowsHtml || '<tr><td colspan="8" style="padding:15px; text-align:center; font-style:italic; color:#64748b;">Tiada ahli sukan didaftarkan di bawah rumah sukan ini.</td></tr>'}
                                 </tbody>
                             </table>
 
@@ -2747,17 +2821,28 @@
                                                         </h3>
                                                         <p className="text-xs font-semibold text-slate-400 italic">"{meta.slogan || 'Tiada Slogan'}"</p>
                                                     </div>
+                                                    {}
                                                     <div className="text-right flex flex-col items-end gap-1.5">
                                                         <span className="text-[10px] font-bold text-slate-400 uppercase">Mata Bonus</span>
                                                         <p className="text-lg font-black text-slate-800">+{meta.bonusPoints} mata</p>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => executeBypassPrint('kehadiran_rumah', { houseName })}
-                                                            className="mt-1 text-[10px] bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold px-2.5 py-1 rounded-lg border border-indigo-200 transition-all flex items-center gap-1 shrink-0 whitespace-nowrap"
-                                                        >
-                                                            <PrinterIcon className="h-3 w-3" />
-                                                            <span>Cetak Kehadiran (4x)</span>
-                                                        </button>
+                                                        <div className="flex flex-col sm:flex-row gap-1 mt-1">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => executeBypassPrint('kehadiran_rumah', { houseName })}
+                                                                className="text-[10px] bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold px-2.5 py-1 rounded-lg border border-indigo-200 transition-all flex items-center gap-1 shrink-0 whitespace-nowrap"
+                                                            >
+                                                                <PrinterIcon className="h-3 w-3" />
+                                                                <span>Cetak Kehadiran</span>
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => executeBypassPrint('sukantara_rumah', { houseName })}
+                                                                className="text-[10px] bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold px-2.5 py-1 rounded-lg border border-emerald-200 transition-all flex items-center gap-1 shrink-0 whitespace-nowrap"
+                                                            >
+                                                                <PrinterIcon className="h-3 w-3" />
+                                                                <span>Cetak Borang Sukantara</span>
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 </div>
 

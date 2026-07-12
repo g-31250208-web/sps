@@ -2159,8 +2159,16 @@
                     <header className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white shadow-md relative z-50">
                         <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
                             <div className="flex items-center gap-4">
-                                <div className="bg-white/10 p-2 rounded-xl border border-white/20">
-                                    <TrendingUpIcon />
+                                <div className="bg-white p-1 rounded-xl border border-white/10 flex items-center justify-center shadow-md">
+                                    <img 
+                                        src="https://lh3.googleusercontent.com/d/1E8tjAd7j9DJaZgngDn38agUFCvwyUffa" 
+                                        alt="Logo SK Bikang" 
+                                        className="w-11 h-11 object-contain"
+                                        onError={(e) => {
+                                            e.target.onerror = null;
+                                            e.target.src = "https://placehold.co/44x44/ffffff/1e3a8a?text=SKB";
+                                        }}
+                                    />
                                 </div>
                                 <div>
                                     <h1 className="text-xl font-extrabold tracking-tight flex flex-wrap items-center gap-2">

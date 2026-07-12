@@ -280,6 +280,62 @@
             const fileInputRef = useRef(null);
             const logoUrl = "https://lh3.googleusercontent.com/d/1E8tjAd7j9DJaZgngDn38agUFCvwyUffa";
 
+            // Mengira prestasi Olahragawan & Olahragawati secara automatik berdasarkan keputusan pingat semasa
+            const bestAthletesByCategory = useMemo(() => {
+                const athletePoints = {};
+
+                results.forEach(res => {
+                    const ath = athletes.find(a => a.id === res.athleteId);
+                    if (!ath) return;
+
+                    if (!athletePoints[res.athleteId]) {
+                        athletePoints[res.athleteId] = {
+                            points: 0,
+                            gold: 0,
+                            silver: 0,
+                            bronze: 0,
+                            fourth: 0,
+                            athlete: ath
+                        };
+                    }
+
+                    let pts = 0;
+                    if (res.kedudukan === "1") {
+                        pts = pointsConfig.emas;
+                        athletePoints[res.athleteId].gold += 1;
+                    } else if (res.kedudukan === "2") {
+                        pts = pointsConfig.perak;
+                        athletePoints[res.athleteId].silver += 1;
+                    } else if (res.kedudukan === "3") {
+                        pts = pointsConfig.gangsa;
+                        athletePoints[res.athleteId].bronze += 1;
+                    } else if (res.kedudukan === "4") {
+                        pts = pointsConfig.keempat;
+                        athletePoints[res.athleteId].fourth += 1;
+                    }
+                    athletePoints[res.athleteId].points += pts;
+                });
+
+                const categories = ["L12", "P12", "L9", "P9", "Prasekolah", "Terbuka"];
+                const leaders = {};
+
+                categories.forEach(cat => {
+                    const candidates = Object.values(athletePoints).filter(ap => ap.athlete.kategori === cat);
+                    
+                    // Isih mengikut jumlah mata, seterusnya bilangan Emas -> Perak -> Gangsa sebagai pemutus seri
+                    candidates.sort((a, b) => {
+                        if (b.points !== a.points) return b.points - a.points;
+                        if (b.gold !== a.gold) return b.gold - a.gold;
+                        if (b.silver !== a.silver) return b.silver - a.silver;
+                        return b.bronze - a.bronze;
+                    });
+
+                    leaders[cat] = candidates[0] || null;
+                });
+
+                return leaders;
+            }, [results, athletes, pointsConfig]);
+
             // Generates an event code based on sorted date index and the event order on that day.
             const eventsWithCode = useMemo(() => {
                 const uniqueDates = Array.from(new Set(events.map(e => e.tarikh).filter(Boolean))).sort();
@@ -1985,7 +2041,7 @@
                                                     <span className="text-[10px] font-black uppercase text-slate-400">Kedudukan #{idx+1}</span>
                                                     <h3 className="text-lg font-black text-slate-800">{h.nama}</h3>
                                                 </div>
-                                                <span className="text-2xl sm:text-3xl font-black {h.teks}">{h.mata} <span className="text-xs font-bold text-slate-400">mata</span></span>
+                                                <span className={`text-2xl sm:text-3xl font-black ${h.teks}`}>{h.mata} <span className="text-xs font-bold text-slate-400">mata</span></span>
                                             </div>
                                             <div className="grid grid-cols-4 gap-2 mt-6 text-center text-sm font-bold bg-slate-50 p-4 rounded-xl border border-slate-100">
                                                 <div className="flex flex-col items-center">
@@ -3213,6 +3269,76 @@
                                                 )}
                                             </div>
                                         )}
+                                    </div>
+                                </div>
+
+                                {/* PAPARAN AUTO ANUGERAH OLAHRAGAWAN & OLAHRAGAWATI TERBAIK */}
+                                <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm mt-6">
+                                    <div className="border-b pb-3 mb-5">
+                                        <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                                            🏆 Kedudukan Olahragawan & Olahragawati Terbaik (Dijana Automatik)
+                                        </h3>
+                                        <p className="text-xs text-slate-400 mt-1">
+                                            Analisis pungutan pingat individu untuk menobatkan jaguh terbaik kejohanan tahun {activeYear} bagi setiap kategori umur.
+                                        </p>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {[
+                                            { key: "L12", title: "🏆 Olahragawan Terbaik (L12)", icon: "🏃‍♂️" },
+                                            { key: "P12", title: "🏆 Olahragawati Terbaik (P12)", icon: "🏃‍♀️" },
+                                            { key: "L9", title: "⭐ Olahragawan Harapan (L9)", icon: "🏃‍♂️" },
+                                            { key: "P9", title: "⭐ Olahragawati Harapan (P9)", icon: "🏃‍♀️" },
+                                            { key: "Prasekolah", title: "👶 Bintang Cilik (Prasekolah)", icon: "🏅" },
+                                            { key: "Terbuka", title: "🏅 Tokoh Sukan (Terbuka)", icon: "✨" }
+                                        ].map(award => {
+                                            const winnerData = bestAthletesByCategory[award.key];
+                                            const houseColors = {
+                                                Merah: "bg-red-500",
+                                                Biru: "bg-blue-500",
+                                                Hijau: "bg-emerald-500",
+                                                Kuning: "bg-amber-400"
+                                            };
+                                            const badgeColor = winnerData ? (houseColors[winnerData.athlete.rumah] || "bg-indigo-600") : "bg-slate-400";
+
+                                            return (
+                                                <div key={award.key} className="bg-slate-50 border border-slate-150 rounded-2xl p-4 flex flex-col justify-between hover:shadow-md transition-all">
+                                                    <div>
+                                                        <span className="text-[10px] font-black uppercase text-indigo-700 block mb-2">{award.title}</span>
+                                                        {winnerData ? (
+                                                            <div className="space-y-2">
+                                                                <div className="flex items-center gap-2.5">
+                                                                    <span className="text-2xl">{award.icon}</span>
+                                                                    <div>
+                                                                        <h4 className="font-extrabold text-slate-800 uppercase text-xs line-clamp-1">{winnerData.athlete.nama}</h4>
+                                                                        <p className="text-[10px] text-slate-400">Kelas: {winnerData.athlete.kelas}</p>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="flex flex-wrap gap-1.5 pt-1">
+                                                                    <span className={`text-[9px] text-white px-2 py-0.5 rounded-md font-bold ${badgeColor}`}>
+                                                                        Rumah {winnerData.athlete.rumah}
+                                                                    </span>
+                                                                    <span className="bg-slate-200 text-slate-700 text-[9px] font-bold px-2 py-0.5 rounded-md">
+                                                                        🥇{winnerData.gold} 🥈{winnerData.silver} 🥉{winnerData.bronze}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="py-4 text-center text-slate-400 italic text-[11px] flex flex-col items-center justify-center gap-1">
+                                                                <span>⏳ Menunggu Keputusan</span>
+                                                                <span className="text-[9px] text-slate-300">Belum ada pingat didaftarkan</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    {winnerData && (
+                                                        <div className="border-t border-slate-200 mt-3 pt-2.5 flex justify-between items-center">
+                                                            <span className="text-[9px] text-slate-400 font-bold uppercase">Pungutan Mata</span>
+                                                            <span className="text-xs font-black text-indigo-700">{winnerData.points} Mata</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 </div>
 

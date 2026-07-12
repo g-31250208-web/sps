@@ -225,6 +225,9 @@
             const [athleteForm, setAthleteForm] = useState({ id: "", nama: "", kelas: "", rumah: "Merah", jantina: "Lelaki", kategori: "L12" });
             const [isEditingAthlete, setIsEditingAthlete] = useState(false);
             const [isEditModeRumah, setIsEditModeRumah] = useState(false);
+            
+            const [memberSortType, setMemberSortType] = useState("nama"); // Pilihan: "nama" | "jantina"
+
             const [regMode, setRegMode] = useState("tunggal"); // "tunggal" | "bundle"
             const [tsvInput, setTsvInput] = useState("");
 
@@ -2590,66 +2593,100 @@
                                                 </div>
 
                                                 <div className="mt-5 border-t pt-4">
-                                                    <div className="flex justify-between items-center mb-2">
+                                                    {}
+                                                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3">
                                                         <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">👥 Senarai Ahli Sukan (Mengikut Kelas)</h4>
-                                                        {userRole !== "pelawat" && (
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => setIsEditModeRumah(!isEditModeRumah)}
-                                                                className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border transition-all flex items-center gap-1 ${
-                                                                    isEditModeRumah 
-                                                                        ? "bg-amber-100 text-amber-800 border-amber-300" 
-                                                                        : "bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100"
-                                                                }`}
-                                                            >
-                                                                {isEditModeRumah ? "✕ Selesai" : "⚙️ Kemas Kini"}
-                                                            </button>
-                                                        )}
+                                                        <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+                                                            <div className="flex items-center gap-1.5">
+                                                                <span className="text-[10px] text-slate-400 font-bold">Susun:</span>
+                                                                <select
+                                                                    value={memberSortType}
+                                                                    onChange={(e) => setMemberSortType(e.target.value)}
+                                                                    className="text-[10px] font-bold p-1 rounded-lg border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                                                >
+                                                                    <option value="nama">🔤 Nama (A-Z)</option>
+                                                                    <option value="jantina">🚻 Jantina</option>
+                                                                </select>
+                                                            </div>
+                                                            {userRole !== "pelawat" && (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setIsEditModeRumah(!isEditModeRumah)}
+                                                                    className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border transition-all flex items-center gap-1 ${
+                                                                        isEditModeRumah 
+                                                                            ? "bg-amber-100 text-amber-800 border-amber-300" 
+                                                                            : "bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100"
+                                                                    }`}
+                                                                >
+                                                                    {isEditModeRumah ? "✕ Selesai" : "⚙️ Kemas Kini"}
+                                                                </button>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                     {Object.keys(houseMembers).length === 0 ? (
                                                         <p className="text-[11px] text-slate-400 italic">Tiada murid/atlet didaftarkan di bawah rumah sukan ini.</p>
                                                     ) : (
                                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-56 overflow-y-auto pr-1">
-                                                            {Object.keys(houseMembers).sort().map(className => (
-                                                                <div key={className} className="bg-slate-50 p-3 rounded-xl border border-slate-150 flex flex-col gap-1.5">
-                                                                    <span className="text-[10px] font-black text-indigo-700 uppercase bg-indigo-50 px-2 py-0.5 rounded w-fit">{className}</span>
-                                                                    <div className="flex flex-wrap gap-1">
-                                                                        {houseMembers[className].map(ath => (
-                                                                            <span key={ath.id} className="bg-white text-[10px] px-2 py-1 rounded-md border border-slate-200 text-slate-700 font-bold flex items-center justify-between gap-1.5 min-w-[125px]">
-                                                                                <span className="truncate">🏃‍♂️ {ath.nama}</span>
-                                                                                {isEditModeRumah && userRole !== "pelawat" && (
-                                                                                    <div className="flex items-center gap-1 shrink-0 bg-slate-50 p-0.5 rounded border border-slate-100">
-                                                                                        <button
-                                                                                            type="button"
-                                                                                            onClick={() => {
-                                                                                                setAthleteForm(ath);
-                                                                                                setIsEditingAthlete(true);
-                                                                                                showToastMessage(`Sila kemas kini maklumat ${ath.nama} di borang "Daftar Ahli Baharu" di sebelah kiri.`, "info");
-                                                                                                const formElement = document.getElementById("athlete-form-container");
-                                                                                                if (formElement) {
-                                                                                                    formElement.scrollIntoView({ behavior: 'smooth' });
-                                                                                                }
-                                                                                            }}
-                                                                                            className="text-indigo-600 hover:bg-indigo-100 p-0.5 rounded text-[11px]"
-                                                                                            title="Sunting Ahli"
-                                                                                        >
-                                                                                            ✏️
-                                                                                        </button>
-                                                                                        <button
-                                                                                            type="button"
-                                                                                            onClick={() => handleDeleteAthlete(ath.id)}
-                                                                                            className="text-red-500 hover:bg-red-100 p-0.5 rounded text-[11px]"
-                                                                                            title="Hapus Ahli"
-                                                                                        >
-                                                                                            🗑️
-                                                                                        </button>
-                                                                                    </div>
-                                                                                )}
-                                                                            </span>
-                                                                        ))}
+                                                            {Object.keys(houseMembers).sort().map(className => {
+                                                                const sortedAthletes = [...houseMembers[className]].sort((a, b) => {
+                                                                    if (memberSortType === "jantina") {
+                                                                        const genA = a.jantina || "Lelaki";
+                                                                        const genB = b.jantina || "Lelaki";
+                                                                        if (genA !== genB) {
+                                                                            return genA.localeCompare(genB);
+                                                                        }
+                                                                    }
+                                                                    return (a.nama || "").localeCompare(b.nama || "");
+                                                                });
+
+                                                                return (
+                                                                    <div key={className} className="bg-slate-50 p-3 rounded-xl border border-slate-150 flex flex-col gap-1.5">
+                                                                        <span className="text-[10px] font-black text-indigo-700 uppercase bg-indigo-50 px-2 py-0.5 rounded w-fit">{className}</span>
+                                                                        <div className="flex flex-wrap gap-1">
+                                                                            {sortedAthletes.map(ath => {
+                                                                                const suffix = memberSortType === "nama" 
+                                                                                    ? ` (${ath.jantina === "Lelaki" ? "L" : "P"})` 
+                                                                                    : "";
+                                                                                return (
+                                                                                    <span key={ath.id} className="bg-white text-[10px] px-2 py-1 rounded-md border border-slate-200 text-slate-700 font-bold flex items-center justify-between gap-1.5 min-w-[125px]">
+                                                                                        <span className="truncate" title={`${ath.nama}${suffix}`}>
+                                                                                            🏃‍♂️ {ath.nama}{suffix}
+                                                                                        </span>
+                                                                                        {isEditModeRumah && userRole !== "pelawat" && (
+                                                                                            <div className="flex items-center gap-1 shrink-0 bg-slate-50 p-0.5 rounded border border-slate-100">
+                                                                                                <button
+                                                                                                    type="button"
+                                                                                                    onClick={() => {
+                                                                                                        setAthleteForm(ath);
+                                                                                                        setIsEditingAthlete(true);
+                                                                                                        showToastMessage(`Sila kemas kini maklumat ${ath.nama} di borang "Daftar Ahli Baharu" di sebelah kiri.`, "info");
+                                                                                                        const formElement = document.getElementById("athlete-form-container");
+                                                                                                        if (formElement) {
+                                                                                                            formElement.scrollIntoView({ behavior: 'smooth' });
+                                                                                                        }
+                                                                                                    }}
+                                                                                                    className="text-indigo-600 hover:bg-indigo-100 p-0.5 rounded text-[11px]"
+                                                                                                    title="Sunting Ahli"
+                                                                                                >
+                                                                                                    ✏️
+                                                                                                </button>
+                                                                                                <button
+                                                                                                    type="button"
+                                                                                                    onClick={() => handleDeleteAthlete(ath.id)}
+                                                                                                    className="text-red-500 hover:bg-red-100 p-0.5 rounded text-[11px]"
+                                                                                                    title="Hapus Ahli"
+                                                                                                >
+                                                                                                    🗑️
+                                                                                                </button>
+                                                                                            </div>
+                                                                                        )}
+                                                                                    </span>
+                                                                                );
+                                                                            })}
+                                                                        </div>
                                                                     </div>
-                                                                </div>
-                                                            ))}
+                                                                );
+                                                            })}
                                                         </div>
                                                     )}
                                                 </div>

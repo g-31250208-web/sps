@@ -697,14 +697,12 @@
                     const matchHouse = filterHouse === "Semua" || athlete.rumah === filterHouse;
                     let matchEvent = true;
                     if (filterEvent !== "Semua") {
-                        const event = eventsWithCode.find(e => e.id === filterEvent);
-                        if (event) {
-                            matchEvent = athlete.kategori === event.kategori;
-                        }
+                        // Hanya paparkan atlet yang mempunyai ID acara ini dalam senarai acara disertai mereka
+                        matchEvent = athlete.acaraIds && athlete.acaraIds.includes(filterEvent);
                     }
                     return matchHouse && matchEvent;
                 });
-            }, [athletes, filterHouse, filterEvent, eventsWithCode]);
+            }, [athletes, filterHouse, filterEvent]);
 
             const filteredLogs = useMemo(() => {
                 if (!filterLogQuery.trim()) return logs;

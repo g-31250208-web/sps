@@ -216,6 +216,13 @@
             const [announcements, setAnnouncements] = useState(DEFAULT_ANNOUNCEMENTS);
             const [logs, setLogs] = useState(INITIAL_LOGS);
 
+            const [adminList, setAdminList] = useState([]);
+            const [showAdminsModal, setShowAdminsModal] = useState(false);
+            const [newAdminEmail, setNewAdminEmail] = useState("");
+
+            const [maxIndividu, setMaxIndividu] = useState(2);
+            const [maxKumpulan, setMaxKumpulan] = useState(2);
+
             const [additionalInfo, setAdditionalInfo] = useState("");
 
             const [filterHouse, setFilterHouse] = useState("Semua");
@@ -238,7 +245,7 @@
             const [selectedEventIds, setSelectedEventIds] = useState([]);
             const [showSearchDropdown, setShowSearchDropdown] = useState(false);
 
-            const [eventForm, setEventForm] = useState({ id: "", nama: "", kategori: "L12", jenis: "Balapan", tarikh: "", masa: "" });
+            const [eventForm, setEventForm] = useState({ id: "", nama: "", kategori: "L12", jenis: "Balapan", format: "Individu", tarikh: "", masa: "" });
             const [isEditingEvent, setIsEditingEvent] = useState(false);
             
             const [resultForm, setResultForm] = useState({ eventId: "", athleteId: "", kedudukan: "1", catatan: "" });
@@ -428,6 +435,19 @@
                 const athlete = athletes.find(a => a.id === selectedStudentId);
                 if (!athlete) return;
 
+                const selectedEvents = selectedEventIds.map(id => eventsWithCode.find(e => e.id === id)).filter(Boolean);
+                const indCount = selectedEvents.filter(ev => (ev.format || "Individu") === "Individu").length;
+                const grpCount = selectedEvents.filter(ev => (ev.format || "Individu") === "Berkumpulan").length;
+
+                if (indCount > maxIndividu) {
+                    showToastMessage(`Pendaftaran gagal! Sila pastikan penyertaan acara individu tidak melebihi ${maxIndividu}.`, "error");
+                    return;
+                }
+                if (grpCount > maxKumpulan) {
+                    showToastMessage(`Pendaftaran gagal! Sila pastikan penyertaan acara berkumpulan tidak melebihi ${maxKumpulan}.`, "error");
+                    return;
+                }
+
                 const updatedAthlete = {
                     ...athlete,
                     noAtlet: noAtletInput.trim(),
@@ -510,17 +530,6 @@
                     if (user) {
                         setCurrentUser(user);
                         setIsCloudActive(true);
-                        const email = user.email || "";
-                        if (email === "sekolah-7608@moe-dl.edu.my") {
-                            setUserRole("admin");
-                            showToastMessage("Akses Pentadbir Utama Diterima!", "success");
-                        } else if (email.endsWith("@moe-dl.edu.my") || email.endsWith("@moe.edu.my")) {
-                            setUserRole("guru");
-                            showToastMessage("Akses Urus Setia Guru Diterima!", "success");
-                        } else {
-                            setUserRole("pelawat");
-                            showToastMessage("Akaun Peribadi: Sesi Sukan Aktif sebagai Pembaca (Lihat Sahaja).", "warning");
-                        }
                     } else {
                         setCurrentUser(null);
                         setUserRole("pelawat");
@@ -536,6 +545,26 @@
                 return () => unsubscribe();
             }, []);
 
+            // Penyelarasan Peranan Dinamik (SPS-SKB Admin & Guru)
+            useEffect(() => {
+                if (!currentUser) return;
+                const email = currentUser.email || "";
+                
+                if (email === "sekolah-7608@moe-dl.edu.my") {
+                    setUserRole("admin");
+                    showToastMessage("Akses Pentadbir Utama Diterima!", "success");
+                } else if (adminList.some(admin => (admin.email || "").toLowerCase() === email.toLowerCase())) {
+                    setUserRole("admin");
+                    showToastMessage("Akses Pentadbir Utama Bersama Diterima!", "success");
+                } else if (email.endsWith("@moe-dl.edu.my") || email.endsWith("@moe.edu.my")) {
+                    setUserRole("guru");
+                    showToastMessage("Akses Urus Setia Guru Diterima!", "success");
+                } else if (!currentUser.isAnonymous) {
+                    setUserRole("pelawat");
+                    showToastMessage("Akaun Peribadi: Sesi Sukan Aktif sebagai Pembaca (Lihat Sahaja).", "warning");
+                }
+            }, [currentUser, adminList]);
+
             useEffect(() => {
                 if (!isCloudActive) return;
 
@@ -546,6 +575,8 @@
                 const pathMeta = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('metadata');
                 const pathAnnouncements = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('announcements');
                 const pathLogs = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('logs');
+
+                const pathAdmins = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('admins');
 
                 const unsubAthletes = pathAthletes.onSnapshot((snapshot) => {
                     const data = [];
@@ -584,8 +615,11 @@
                 }, (e) => console.error("Ralat config gas:", e));
 
                 const unsubConfig = pathMeta.doc('config').onSnapshot((doc) => {
-                    if (doc.exists && doc.data().activeYear) {
-                        setActiveYear(doc.data().activeYear);
+                    if (doc.exists) {
+                        const data = doc.data();
+                        if (data.activeYear) setActiveYear(data.activeYear);
+                        if (data.maxIndividu !== undefined) setMaxIndividu(data.maxIndividu);
+                        if (data.maxKumpulan !== undefined) setMaxKumpulan(data.maxKumpulan);
                     }
                 }, (e) => console.error("Ralat config year:", e));
 
@@ -603,6 +637,12 @@
                     setLogs(data);
                 }, (e) => console.error("Ralat log audit: ", e));
 
+                const unsubAdmins = pathAdmins.onSnapshot((snapshot) => {
+                    const data = [];
+                    snapshot.forEach(doc => data.push({ id: doc.id, ...doc.data() }));
+                    setAdminList(data);
+                }, (e) => console.error("Ralat senarai admin: ", e));
+
                 return () => {
                     unsubAthletes();
                     unsubEvents();
@@ -614,6 +654,7 @@
                     unsubConfig();
                     unsubAnnouncements();
                     unsubLogs();
+                    unsubAdmins();
                 };
             }, [isCloudActive]);
 
@@ -788,6 +829,76 @@
                 }
             };
 
+            const handleAddAdmin = async (e) => {
+                e.preventDefault();
+                if (userRole !== "admin") {
+                    showToastMessage("Akses dihalang: Hanya Admin Utama sahaja boleh melantik admin baharu.", "error");
+                    return;
+                }
+                const emailToAdd = newAdminEmail.trim().toLowerCase();
+                if (!emailToAdd) return;
+                
+                if (!emailToAdd.includes("@")) {
+                    showToastMessage("E-mel tidak sah.", "error");
+                    return;
+                }
+                
+                if (emailToAdd === "sekolah-7608@moe-dl.edu.my") {
+                    showToastMessage("E-mel ini ialah Admin Utama Asal.", "warning");
+                    return;
+                }
+                
+                if (adminList.some(a => (a.email || "").toLowerCase() === emailToAdd)) {
+                    showToastMessage("E-mel ini sudah pun dilantik sebagai Admin Utama.", "warning");
+                    return;
+                }
+                
+                const docId = "adm_" + Date.now();
+                try {
+                    if (isCloudActive) {
+                        await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('admins').doc(docId).set({
+                            id: docId,
+                            email: emailToAdd,
+                            addedBy: currentUser.email || "Sistem",
+                            addedAt: new Date().toLocaleString('ms-MY')
+                        });
+                    } else {
+                        setAdminList(prev => [...prev, { id: docId, email: emailToAdd, addedBy: "Mod Lokal", addedAt: new Date().toLocaleString('ms-MY') }]);
+                    }
+                    createLog("Tambah Admin", `Melantik akaun ${emailToAdd} sebagai Admin Utama tambahan.`);
+                    setNewAdminEmail("");
+                    showToastMessage(`Akaun ${emailToAdd} berjaya dilantik sebagai Admin Utama!`);
+                } catch (err) {
+                    showToastMessage("Ralat melantik admin utama.", "error");
+                }
+            };
+
+            const handleDeleteAdmin = (adminDoc) => {
+                if (userRole !== "admin") {
+                    showToastMessage("Akses dihalang: Hanya Admin Utama sahaja boleh memadam admin.", "error");
+                    return;
+                }
+                setConfirmModal({
+                    show: true,
+                    title: "Padam Hak Admin Utama?",
+                    message: `Adakah anda pasti ingin membatalkan kelayakan Admin Utama bagi akaun ${adminDoc.email}?`,
+                    onConfirm: async () => {
+                        try {
+                            if (isCloudActive) {
+                                await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('admins').doc(adminDoc.id).delete();
+                            } else {
+                                setAdminList(prev => prev.filter(a => a.id !== adminDoc.id));
+                            }
+                            createLog("Padam Admin", `Membatalkan hak Admin Utama bagi akaun ${adminDoc.email}.`);
+                            setConfirmModal({ show: false });
+                            showToastMessage("Hak akses Admin Utama berjaya dipadamkan.");
+                        } catch (e) {
+                            showToastMessage("Gagal memadam admin.", "error");
+                        }
+                    }
+                });
+            };
+
             const handleSaveGas = async (e) => {
                 e.preventDefault();
                 if (!checkAuthority()) return;
@@ -807,12 +918,16 @@
                 if (!checkAuthority()) return;
                 try {
                     if (isCloudActive) {
-                        await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('metadata').doc('config').set({ activeYear });
+                        await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('metadata').doc('config').set({ 
+                            activeYear,
+                            maxIndividu,
+                            maxKumpulan
+                        });
                     }
-                    createLog("Ubah Tahun Kejohanan", `Menukar tahun kejohanan aktif kepada ${activeYear}`);
-                    showToastMessage(`Tahun kejohanan aktif berjaya ditukar kepada ${activeYear}!`, "success");
+                    createLog("Ubah Had & Tahun Kejohanan", `Menukar tahun kejohanan kepada ${activeYear} (Had Individu: ${maxIndividu}, Had Kumpulan: ${maxKumpulan})`);
+                    showToastMessage(`Tahun kejohanan aktif dan had penyertaan berjaya dikemaskini!`, "success");
                 } catch (e) {
-                    showToastMessage("Ralat menyimpan tetapan tahun.", "error");
+                    showToastMessage("Ralat menyimpan tetapan konfigurasi.", "error");
                 }
             };
 
@@ -2069,7 +2184,7 @@
                                 {(userRole === "admin" || userRole === "guru") && (
                                     <div className="relative inline-block shrink-0" ref={adminMenuRef}>
                                         <button 
-                                            onClick={() => setIsAdminMenuOpen(!isAdminMenuOpen)}
+                                            onClick={() => { setIsAdminMenuOpen(!isAdminMenuOpen); }}
                                             className="bg-yellow-500 hover:bg-yellow-600 text-slate-950 font-black px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 transition-all shadow-lg hover:scale-105 active:scale-95 z-50 shrink-0 whitespace-nowrap"
                                         >
                                             <span>🛠️ PANEL PENTADBIR</span>
@@ -2084,6 +2199,12 @@
                                                 <button onClick={() => { setShowDiagModal(true); setIsAdminMenuOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-semibold flex items-center gap-2">ℹ️ Info Diag</button>
                                                 <button onClick={() => { setShowGasModal(true); setIsAdminMenuOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-semibold flex items-center gap-2">⚡ Setup GAS API</button>
                                                 <button onClick={() => { setShowPointsModal(true); setIsAdminMenuOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-semibold flex items-center gap-2">⚙️ Tetapan Mata & Tahun</button>
+                                                
+                                                {}
+                                                {userRole === "admin" && (
+                                                    <button onClick={() => { setShowAdminsModal(true); setIsAdminMenuOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-semibold flex items-center gap-2">👥 Urus Admin Utama</button>
+                                                )}
+
                                                 <div className="border-t border-slate-100 my-1"></div>
                                                 <button onClick={() => { handleBackup(); setIsAdminMenuOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-emerald-50 text-xs font-semibold text-emerald-700 flex items-center gap-2 font-bold">📥 Sandaran Data (JSON)</button>
                                                 <button onClick={() => { handleRestoreClick(); setIsAdminMenuOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-amber-50 text-xs font-semibold text-amber-700 flex items-center gap-2 font-bold">📤 Muat Naik Sandaran (JSON)</button>
@@ -2788,23 +2909,47 @@
                                                         {selectedStudentId ? (
                                                             eventsWithCode
                                                                 .filter(ev => ev.kategori === athletes.find(a => a.id === selectedStudentId)?.kategori || ev.kategori === "Terbuka")
-                                                                .map(ev => (
-                                                                    <label key={ev.id} className="flex items-center gap-2 cursor-pointer p-1 rounded hover:bg-white">
-                                                                        <input 
-                                                                            type="checkbox"
-                                                                            checked={selectedEventIds.includes(ev.id)}
-                                                                            onChange={(e) => {
-                                                                                if (e.target.checked) {
-                                                                                    setSelectedEventIds([...selectedEventIds, ev.id]);
-                                                                                } else {
-                                                                                    setSelectedEventIds(selectedEventIds.filter(id => id !== ev.id));
-                                                                                }
-                                                                            }}
-                                                                            className="rounded text-indigo-600 focus:ring-indigo-500"
-                                                                        />
-                                                                        <span className="font-bold text-slate-700">[{ev.kodAcara}] {ev.nama} ({ev.kategori})</span>
-                                                                    </label>
-                                                                ))
+                                                                .map(ev => {
+                                                                    const isChecked = selectedEventIds.includes(ev.id);
+                                                                    const evFormat = ev.format || "Individu";
+                                                                    return (
+                                                                        <label key={ev.id} className="flex items-center gap-2 cursor-pointer p-1 rounded hover:bg-white">
+                                                                            <input 
+                                                                                type="checkbox"
+                                                                                checked={isChecked}
+                                                                                onChange={(e) => {
+                                                                                    if (e.target.checked) {
+                                                                                        const currentIndividuCount = selectedEventIds.filter(id => {
+                                                                                            const matchingEv = eventsWithCode.find(e => e.id === id);
+                                                                                            return (matchingEv?.format || "Individu") === "Individu";
+                                                                                        }).length;
+
+                                                                                        const currentKumpulanCount = selectedEventIds.filter(id => {
+                                                                                            const matchingEv = eventsWithCode.find(e => e.id === id);
+                                                                                            return (matchingEv?.format || "Individu") === "Berkumpulan";
+                                                                                        }).length;
+
+                                                                                        if (evFormat === "Individu" && currentIndividuCount >= maxIndividu) {
+                                                                                            showToastMessage(`Had Melebihi Had: Murid ini dihadkan maksimum ${maxIndividu} acara individu!`, "error");
+                                                                                            return;
+                                                                                        }
+                                                                                        if (evFormat === "Berkumpulan" && currentKumpulanCount >= maxKumpulan) {
+                                                                                            showToastMessage(`Had Melebihi Had: Murid ini dihadkan maksimum ${maxKumpulan} acara berkumpulan!`, "error");
+                                                                                            return;
+                                                                                        }
+                                                                                        setSelectedEventIds([...selectedEventIds, ev.id]);
+                                                                                    } else {
+                                                                                        setSelectedEventIds(selectedEventIds.filter(id => id !== ev.id));
+                                                                                    }
+                                                                                }}
+                                                                                className="rounded text-indigo-600 focus:ring-indigo-500"
+                                                                            />
+                                                                            <span className="font-bold text-slate-700">
+                                                                                [{ev.kodAcara}] {ev.nama} ({ev.kategori}) - <span className="text-[9px] bg-indigo-50 text-indigo-700 px-1 py-0.5 rounded font-bold uppercase">{evFormat}</span>
+                                                                            </span>
+                                                                        </label>
+                                                                    );
+                                                                })
                                                         ) : (
                                                             <p className="text-slate-400 italic text-center text-[10px] py-4">Sila cari & pilih ahli sukan terlebih dahulu untuk melihat acara yang sepadan.</p>
                                                         )}
@@ -2976,14 +3121,20 @@
                                                                           cleanVal.includes("berpagar") ||
                                                                           cleanVal.includes("ganti-ganti");
 
+                                                        const isBerkumpulan = /\b\d+\s*x\s*\d+\b/i.test(cleanVal) || 
+                                                                              cleanVal.includes("ganti-ganti") || 
+                                                                              cleanVal.includes("kumpulan") ||
+                                                                              cleanVal.includes("relay");
+
                                                         setEventForm({ 
                                                             ...eventForm, 
                                                             nama: val,
-                                                            jenis: isBalapan ? "Balapan" : "Padang"
+                                                            jenis: isBalapan ? "Balapan" : "Padang",
+                                                            format: isBerkumpulan ? "Berkumpulan" : "Individu"
                                                         });
                                                     }}
                                                     className="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none font-bold text-slate-800"
-                                                    placeholder="Contoh: Lari 100m, Lompat Jauh"
+                                                    placeholder="Contoh: Lari 100m, Lompat Jauh, 4x100m"
                                                 />
                                             </div>
                                             <div className="grid grid-cols-2 gap-2">
@@ -3014,6 +3165,18 @@
                                                         <option value="Sukaneka">Sukaneka 🏆</option>
                                                     </select>
                                                 </div>
+                                            </div>
+                                            {}
+                                            <div>
+                                                <label className="block text-slate-500 mb-1">Format Penyertaan</label>
+                                                <select 
+                                                    value={eventForm.format || "Individu"}
+                                                    onChange={(e) => setEventForm({ ...eventForm, format: e.target.value })}
+                                                    className="w-full p-2.5 rounded-xl border border-slate-200 bg-white font-bold"
+                                                >
+                                                    <option value="Individu">Individu 👤</option>
+                                                    <option value="Berkumpulan">Berkumpulan (Kumpulan / Ganti-Ganti) 👥</option>
+                                                </select>
                                             </div>
                                             <div className="grid grid-cols-2 gap-2">
                                                 <div>
@@ -3061,6 +3224,8 @@
                                                             <div className="flex gap-2 mt-2">
                                                                 <span className="bg-indigo-100 text-indigo-800 text-[9px] font-black px-2 py-0.5 rounded-full uppercase">{ev.kategori}</span>
                                                                 <span className="bg-slate-200 text-slate-700 text-[9px] font-black px-2 py-0.5 rounded-full uppercase">{ev.jenis}</span>
+                                                                {}
+                                                                <span className="bg-amber-100 text-amber-800 text-[9px] font-black px-2 py-0.5 rounded-full uppercase">{ev.format || "Individu"}</span>
                                                             </div>
                                                         </div>
                                                         <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto border-t sm:border-0 pt-2.5 sm:pt-0">
@@ -3764,6 +3929,76 @@
                     </main>
 
                     {/* Modals Pentadbir */}
+                    {}
+                    {showAdminsModal && (
+                        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[10000]">
+                            <div className="bg-white rounded-2xl w-full max-w-lg p-6 shadow-2xl relative">
+                                <h3 className="text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">👥 Urus Admin Utama Berkongsi</h3>
+                                <p className="text-xs text-slate-500 mb-4 leading-relaxed">
+                                    Anda boleh melantik mana-mana akaun Google atau DELIMa KPM yang lain sebagai Admin Utama tambahan untuk berkongsi hak pentadbiran penuh.
+                                </p>
+                                
+                                <form onSubmit={handleAddAdmin} className="space-y-3 text-xs font-semibold mb-5 pb-5 border-b border-slate-100">
+                                    <label className="block text-slate-700 mb-1">E-mel Google / DELIMa Utama yang ingin dilantik</label>
+                                    <div className="flex gap-2">
+                                        <input 
+                                            type="email"
+                                            required
+                                            value={newAdminEmail}
+                                            onChange={(e) => setNewAdminEmail(e.target.value)}
+                                            placeholder="cth: cikgu.baru@moe-dl.edu.my"
+                                            className="p-2.5 text-xs rounded-xl border border-slate-200 flex-1 bg-slate-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                        />
+                                        <button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-md">
+                                            + Lantik Admin
+                                        </button>
+                                    </div>
+                                </form>
+
+                                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">📋 Senarai Admin Dilantik</h4>
+                                <div className="space-y-2 max-h-48 overflow-y-auto mb-6 pr-1">
+                                    <div className="p-3 bg-slate-50 border border-slate-150 rounded-xl flex items-center justify-between">
+                                        <div>
+                                            <p className="font-bold text-slate-800">sekolah-7608@moe-dl.edu.my</p>
+                                            <p className="text-[9px] text-slate-400">👑 Admin Utama Asal (Kekal)</p>
+                                        </div>
+                                    </div>
+
+                                    {adminList.length === 0 ? (
+                                        <p className="text-xs text-slate-400 italic py-2 text-center">Tiada admin tambahan dilantik.</p>
+                                    ) : (
+                                        adminList.map(adm => (
+                                            <div key={adm.id} className="p-3 bg-white border border-slate-150 rounded-xl flex items-center justify-between hover:bg-slate-50 transition-colors">
+                                                <div>
+                                                    <p className="font-bold text-slate-800">{adm.email}</p>
+                                                    <p className="text-[9px] text-slate-400">Dilantik oleh: {adm.addedBy} • {adm.addedAt}</p>
+                                                </div>
+                                                <button 
+                                                    type="button"
+                                                    onClick={() => handleDeleteAdmin(adm)}
+                                                    className="text-red-500 hover:bg-red-50 p-1.5 rounded-lg border border-red-100 transition-colors text-xs font-bold"
+                                                    title="Padam Admin"
+                                                >
+                                                    ✕ Padam
+                                                </button>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+
+                                <div className="flex justify-end pt-2">
+                                    <button 
+                                        type="button" 
+                                        onClick={() => setShowAdminsModal(false)} 
+                                        className="bg-slate-900 hover:bg-slate-950 text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-md"
+                                    >
+                                        Tutup
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {showDiagModal && (
                         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[10000]">
                             <div className="bg-white rounded-2xl w-full max-w-lg p-6 shadow-2xl relative">
@@ -3839,7 +4074,7 @@
                     {showPointsModal && (
                         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[10000]">
                             <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl relative">
-                                <h3 className="text-sm font-bold text-slate-900 mb-4 border-b pb-2">⚙️ Tetapan Poin Pingat & Tahun Aktif</h3>
+                                <h3 className="text-sm font-bold text-slate-900 mb-4 border-b pb-2">⚙️ Tetapan Konfigurasi Had, Poin & Tahun Aktif</h3>
                                 <div className="space-y-4 text-xs font-semibold">
                                     <div>
                                         <label className="block text-slate-700 mb-1">📆 Tahun Kejohanan Aktif (YYYY)</label>
@@ -3850,6 +4085,29 @@
                                             placeholder="Contoh: 2026..."
                                             className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-yellow-500 focus:outline-none font-bold text-sm bg-yellow-50 text-slate-900"
                                         />
+                                    </div>
+                                    {}
+                                    <div className="grid grid-cols-2 gap-3 border-t pt-3">
+                                        <div>
+                                            <label className="block text-slate-700 mb-1">👤 Had Acara Individu</label>
+                                            <input 
+                                                type="number" 
+                                                value={maxIndividu}
+                                                onChange={(e) => setMaxIndividu(parseInt(e.target.value) || 0)}
+                                                min="0"
+                                                className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none font-bold"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-slate-700 mb-1">👥 Had Acara Kumpulan</label>
+                                            <input 
+                                                type="number" 
+                                                value={maxKumpulan}
+                                                onChange={(e) => setMaxKumpulan(parseInt(e.target.value) || 0)}
+                                                min="0"
+                                                className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none font-bold"
+                                            />
+                                        </div>
                                     </div>
                                     <div className="border-t pt-3">
                                         <label className="block text-slate-500 mb-1">Mata Pingat Emas (🥇)</label>
@@ -3901,7 +4159,7 @@
                                         onClick={() => { handleSavePoints(); handleSaveConfig(); setShowPointsModal(false); }} 
                                         className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-lg"
                                     >
-                                        Simpan Tetapan Mata & Tahun
+                                        Simpan Tetapan Had, Poin & Tahun
                                     </button>
                                 </div>
                             </div>

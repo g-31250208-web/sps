@@ -296,13 +296,56 @@
             const fileInputRef = useRef(null);
             const logoUrl = "https://lh3.googleusercontent.com/d/1E8tjAd7j9DJaZgngDn38agUFCvwyUffa";
 
-            // Mengira objek acara yang dipilih berdasarkan tab keputusan/saringan semasa
+            const eventsWithCode = useMemo(() => {
+                const uniqueDates = Array.from(new Set(events.map(e => e.tarikh).filter(Boolean))).sort();
+                
+                const getDayNum = (date) => {
+                    if (!date) return 1;
+                    const idx = uniqueDates.indexOf(date);
+                    return idx !== -1 ? idx + 1 : 1;
+                };
+
+                const groups = {};
+                events.forEach(e => {
+                    const day = getDayNum(e.tarikh);
+                    if (!groups[day]) groups[day] = [];
+                    groups[day].push(e);
+                });
+
+                const eventCodeMap = {};
+                Object.keys(groups).forEach(day => {
+                    groups[day].sort((a, b) => {
+                        const timeA = a.masa || "00:00";
+                        const timeB = b.masa || "00:00";
+                        if (timeA !== timeB) return timeA.localeCompare(timeB);
+                        return a.nama.localeCompare(b.nama);
+                    });
+
+                    groups[day].forEach((ev, index) => {
+                        const seq = String(index + 1).padStart(2, '0');
+                        eventCodeMap[ev.id] = `${day}${seq}`;
+                    });
+                });
+
+                return events.map(ev => ({
+                    ...ev,
+                    kodAcara: eventCodeMap[ev.id] || "101"
+                })).sort((a, b) => {
+                    const dateA = a.tarikh || "9999-12-31";
+                    const dateB = b.tarikh || "9999-12-31";
+                    if (dateA !== dateB) return dateA.localeCompare(dateB);
+                    const timeA = a.masa || "23:59";
+                    const timeB = b.masa || "23:59";
+                    if (timeA !== timeB) return timeA.localeCompare(timeB);
+                    return (a.nama || "").localeCompare(b.nama || "");
+                });
+            }, [events]);
+
             const selectedEventObject = useMemo(() => {
                 const targetId = resultForm.eventId || heatForm.eventId;
                 return eventsWithCode.find(e => e.id === targetId) || null;
             }, [resultForm.eventId, heatForm.eventId, eventsWithCode]);
 
-            // Mengira senarai atlit yang layak berdasarkan had kategori acara terpilih
             const relevantAthletesForEventForm = useMemo(() => {
                 if (!selectedEventObject) return [];
                 const cat = selectedEventObject.kategori;
@@ -310,6 +353,115 @@
                     return a.kategori === cat || cat === "Terbuka";
                 });
             }, [selectedEventObject, athletes]);
+
+            const bestAthletesByCategory = useMemo(() => {
+                const athletePoints = {};
+
+                results.forEach(res => {
+                    const ath = athletes.find(a => a.id === res.athleteId);
+                    if (!ath) return;
+
+                    if (!athletePoints[res.athleteId]) {
+                        athletePoints[res.athleteId] = {
+                            points: 0,
+                            gold: 0,
+                            silver: 0,
+                            bronze: 0,
+                            fourth: 0,
+                            athlete: ath
+                        };
+                    }
+
+                    let pts = 0;
+                    if (res.kedudukan === "1") {
+                        pts = pointsConfig.emas;
+                        athletePoints[res.athleteId].gold += 1;
+                    } else if (res.kedudukan === "2") {
+                        pts = pointsConfig.perak;
+                        athletePoints[res.athleteId].silver += 1;
+                    } else if (res.kedudukan === "3") {
+                        pts = pointsConfig.gangsa;
+                        athletePoints[res.athleteId].bronze += 1;
+                    } else if (res.kedudukan === "4") {
+                        pts = pointsConfig.keempat;
+                        athletePoints[res.athleteId].fourth += 1;
+                    }
+                    athletePoints[res.athleteId].points += pts;
+                });
+
+                const categories = ["L12", "P12", "L9", "P9", "Prasekolah", "Terbuka"];
+                const leaders = {};
+
+                categories.forEach(cat => {
+                    const candidates = Object.values(athletePoints).filter(ap => ap.athlete.kategori === cat);
+                    
+                    // Isih mengikut jumlah mata, seterusnya bilangan Emas -> Perak -> Gangsa sebagai pemutus seri
+                    candidates.sort((a, b) => {
+                        if (b.points !== a.points) return b.points - a.points;
+                        if (b.gold !== a.gold) return b.gold - a.gold;
+                        if (b.silver !== a.silver) return b.silver - a.silver;
+                        return b.bronze - a.bronze;
+                    });
+
+                    leaders[cat] = candidates[0] || null;
+                });
+
+                return leaders;
+            }, [results, athletes, pointsConfig]);
+
+            const houseStandings = useMemo(() => {
+                const COLOR_PRESETS = {
+                    Merah: { warna: "bg-red-500", teks: "text-red-600", glow: "hover:shadow-[0_0_20px_rgba(239,68,68,0.4)] hover:border-red-300" },
+                    Biru: { warna: "bg-blue-500", teks: "text-blue-600", glow: "hover:shadow-[0_0_20px_rgba(59,130,246,0.4)] hover:border-blue-300" },
+                    Hijau: { warna: "bg-emerald-500", teks: "text-emerald-600", glow: "hover:shadow-[0_0_20px_rgba(16,185,129,0.4)] hover:border-emerald-300" },
+                    Kuning: { warna: "bg-amber-400", teks: "text-amber-500", glow: "hover:shadow-[0_0_20px_rgba(251,191,36,0.4)] hover:border-amber-300" },
+                    Ungu: { warna: "bg-purple-500", teks: "text-purple-600", glow: "hover:shadow-[0_0_20px_rgba(168,85,247,0.4)] hover:border-purple-300" },
+                    Oren: { warna: "bg-orange-500", teks: "text-orange-600", glow: "hover:shadow-[0_0_20px_rgba(249,115,22,0.4)] hover:border-orange-300" }
+                };
+
+                const houses = {};
+                Object.keys(housesMetadata).forEach(name => {
+                    const meta = housesMetadata[name];
+                    const preset = COLOR_PRESETS[meta.warnaLabel] || COLOR_PRESETS.Merah;
+                    houses[name] = {
+                        emas: 0, perak: 0, gangsa: 0, keempat: 0, mata: 0,
+                        warna: preset.warna,
+                        teks: preset.teks,
+                        glow: preset.glow,
+                        slogan: meta.slogan || ""
+                    };
+                });
+
+                results.forEach(res => {
+                    const athlete = athletes.find(a => a.id === res.athleteId);
+                    if (athlete && houses[athlete.rumah]) {
+                        const h = houses[athlete.rumah];
+                        if (res.kedudukan === "1") {
+                            h.emas += 1;
+                            h.mata += pointsConfig.emas;
+                        } else if (res.kedudukan === "2") {
+                            h.perak += 1;
+                            h.mata += pointsConfig.perak;
+                        } else if (res.kedudukan === "3") {
+                            h.gangsa += 1;
+                            h.mata += pointsConfig.gangsa;
+                        } else if (res.kedudukan === "4") {
+                            h.keempat += 1;
+                            h.mata += pointsConfig.keempat;
+                        }
+                    }
+                });
+
+                Object.keys(houses).forEach(name => {
+                    if (housesMetadata[name]) {
+                        houses[name].mata += parseInt(housesMetadata[name].bonusPoints) || 0;
+                    }
+                });
+
+                return Object.entries(houses).map(([nama, data]) => ({
+                    nama, ...data
+                })).sort((a, b) => b.mata - a.mata);
+            }, [results, athletes, pointsConfig, housesMetadata]);
 
             // Fungsi menyemak status pemecahan rekod kejohanan berbanding rekod sejarah SK Bikang
             const checkRecordBreakStatus = (eventName, category, newRecordText) => {

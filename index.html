@@ -296,6 +296,83 @@
             const fileInputRef = useRef(null);
             const logoUrl = "https://lh3.googleusercontent.com/d/1E8tjAd7j9DJaZgngDn38agUFCvwyUffa";
 
+            // Mengira objek acara yang dipilih berdasarkan tab keputusan/saringan semasa
+            const selectedEventObject = useMemo(() => {
+                const targetId = resultForm.eventId || heatForm.eventId;
+                return eventsWithCode.find(e => e.id === targetId) || null;
+            }, [resultForm.eventId, heatForm.eventId, eventsWithCode]);
+
+            // Mengira senarai atlit yang layak berdasarkan had kategori acara terpilih
+            const relevantAthletesForEventForm = useMemo(() => {
+                if (!selectedEventObject) return [];
+                const cat = selectedEventObject.kategori;
+                return athletes.filter(a => {
+                    return a.kategori === cat || cat === "Terbuka";
+                });
+            }, [selectedEventObject, athletes]);
+
+            // Fungsi menyemak status pemecahan rekod kejohanan berbanding rekod sejarah SK Bikang
+            const checkRecordBreakStatus = (eventName, category, newRecordText) => {
+                if (!newRecordText) return null;
+                const hist = HISTORICAL_CHAMPIONSHIP_RECORDS.find(h => 
+                    h.eventName.toLowerCase().trim() === eventName.toLowerCase().trim() && 
+                    h.category.toUpperCase().trim() === category.toUpperCase().trim()
+                );
+                if (!hist) return null;
+
+                const parseRecordVal = (str, isTrack) => {
+                    const num = parseFloat(str.replace(/[^\d.]/g, ''));
+                    return isNaN(num) ? (isTrack ? Infinity : -Infinity) : num;
+                };
+
+                const isTrack = hist.isTrack;
+                const oldVal = parseRecordVal(hist.recordText, isTrack);
+                const newVal = parseRecordVal(newRecordText, isTrack);
+
+                const isBroken = isTrack ? (newVal < oldVal) : (newVal > oldVal);
+
+                if (isBroken) {
+                    return {
+                        oldRecord: hist.recordText,
+                        oldHolder: `${hist.athlete} (${hist.year})`
+                    };
+                }
+                return null;
+            };
+
+            // Fungsi utama mengarkibkan rekod kejohanan tahunan ke pangkalan data awan atau tempatan
+            const handleArchiveAnnualRecords = async () => {
+                if (!checkAuthority()) return;
+                setIsArchiving(true);
+                try {
+                    const archiveData = {
+                        year: activeYear,
+                        archivedAt: new Date().toLocaleString('ms-MY'),
+                        archivedBy: currentUser ? (currentUser.email || currentUser.displayName || "Urus Setia") : "Urus Setia",
+                        athletes,
+                        events: eventsWithCode,
+                        results,
+                        heats,
+                        housesMetadata
+                    };
+
+                    if (isCloudActive) {
+                        const archiveId = `archive_${activeYear}`;
+                        await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('archives').doc(archiveId).set(archiveData);
+                    } else {
+                        localStorage.setItem(`SPS_SKB_ARCHIVE_${activeYear}`, JSON.stringify(archiveData));
+                    }
+
+                    createLog("Arkib Rekod Tahunan", `Mengarkibkan rekod kejohanan bagi tahun ${activeYear}`);
+                    showToastMessage(`Berjaya mengarkibkan rekod kejohanan tahun ${activeYear}!`, "success");
+                } catch (e) {
+                    console.error("Gagal mengarkib:", e);
+                    showToastMessage("Ralat ketika memproses arkib: " + e.message, "error");
+                } finally {
+                    setIsArchiving(false);
+                }
+            };
+
             const createLog = async (action, details) => {
                 const user = auth.currentUser;
                 const email = user ? user.email : "Akaun Tanpa Nama (Sesi Rawak)";
@@ -4028,6 +4105,266 @@
                             </div>
                         )}
                     </main>
+
+                    {}
+                    {/* TOAST SYSTEM */}
+                    {toast.show && (
+                        <div className={`fixed bottom-5 right-5 z-[10000] p-4 rounded-xl shadow-2xl flex items-center gap-2.5 transition-all animate-bounce ${
+                            toast.type === "success" ? "bg-emerald-600 text-white" :
+                            toast.type === "error" ? "bg-red-600 text-white" :
+                            toast.type === "warning" ? "bg-amber-500 text-slate-900" : "bg-blue-600 text-white"
+                        }`}>
+                            <span className="text-sm font-bold">{toast.message}</span>
+                            <button onClick={() => setToast({ show: false, message: "", type: "info" })} className="font-bold text-xs hover:opacity-80 ml-2">✕</button>
+                        </div>
+                    )}
+
+                    {/* CONFIRMATION MODAL */}
+                    {confirmModal.show && (
+                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+                            <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-150">
+                                <h3 className="text-base font-extrabold text-slate-900 mb-2">{confirmModal.title}</h3>
+                                <p className="text-xs text-slate-500 leading-relaxed mb-6">{confirmModal.message}</p>
+                                <div className="flex justify-end gap-2 text-xs font-bold">
+                                    <button onClick={() => setConfirmModal({ show: false })} className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl transition-all">Batal</button>
+                                    <button onClick={() => { confirmModal.onConfirm(); }} className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl shadow transition-all">Sahkan</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* DIAGNOSTIC MODAL */}
+                    {showDiagModal && (
+                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+                            <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 max-h-[85vh] overflow-y-auto animate-in zoom-in-95 duration-150">
+                                <div className="flex justify-between items-center border-b pb-3 mb-4">
+                                    <h3 className="text-sm font-bold text-slate-900 uppercase">ℹ️ Info Diagnostik Sistem</h3>
+                                    <button onClick={() => setShowDiagModal(false)} className="text-slate-400 hover:text-slate-600">✕</button>
+                                </div>
+                                <div className="space-y-4 text-xs">
+                                    <div className="bg-slate-50 p-4 rounded-xl space-y-2 border">
+                                        <p className="font-semibold text-slate-700">Sambungan Firebase:</p>
+                                        <p className="font-mono text-slate-600">Status Awan: {isCloudActive ? "🟢 Aktif (Awan)" : "🟡 Pasif (Mod Lokal / Fail Sandaran)"}</p>
+                                        <p className="font-mono text-slate-600">App ID: {appId}</p>
+                                        <p className="font-mono text-slate-600">Akaun: {currentUser ? `${currentUser.email} (${currentUser.isAnonymous ? 'Tanpa Nama / Pelawat' : 'Log Masuk Google'})` : "Tiada Akaun Aktif"}</p>
+                                        <p className="font-mono text-slate-600">Peranan Pengguna: {userRole.toUpperCase()}</p>
+                                    </div>
+                                    <div className="bg-slate-50 p-4 rounded-xl space-y-2 border">
+                                        <p className="font-semibold text-slate-700">Ringkasan Pangkalan Data Semasa:</p>
+                                        <p className="font-mono text-slate-600">Bilangan Atlet: {athletes.length}</p>
+                                        <p className="font-mono text-slate-600">Bilangan Acara: {eventsWithCode.length}</p>
+                                        <p className="font-mono text-slate-600">Keputusan Kunci: {results.length}</p>
+                                        <p className="font-mono text-slate-600">Rekod Saringan: {heats.length}</p>
+                                    </div>
+                                </div>
+                                <div className="flex justify-end gap-2 mt-6">
+                                    <button onClick={() => setShowDiagModal(false)} className="bg-indigo-600 text-white font-bold text-xs px-4 py-2 rounded-xl">Tutup</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* GOOGLE SHEETS GAS MODAL */}
+                    {showGasModal && (
+                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+                            <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-150">
+                                <div className="flex justify-between items-center border-b pb-3 mb-4">
+                                    <h3 className="text-sm font-bold text-slate-900 uppercase">⚡ Setup Google Sheets API (GAS)</h3>
+                                    <button onClick={() => setShowGasModal(false)} className="text-slate-400 hover:text-slate-600">✕</button>
+                                </div>
+                                <form onSubmit={handleSaveGas} className="space-y-4 text-xs font-semibold">
+                                    <p className="text-slate-400 text-[11px]">Masukkan pautan web app Google Apps Script untuk segerak automatik ke helaian Google Sheets:</p>
+                                    <div>
+                                        <label className="block text-slate-500 mb-1">Google Apps Script Web App URL</label>
+                                        <input 
+                                            type="url" 
+                                            required
+                                            value={gasUrl}
+                                            onChange={(e) => setGasUrl(e.target.value)}
+                                            placeholder="https://script.google.com/macros/s/.../exec"
+                                            className="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-1 focus:ring-indigo-500 focus:outline-none font-mono"
+                                        />
+                                    </div>
+                                    <div className="flex gap-2 pt-2 justify-end font-bold text-xs">
+                                        <button type="button" onClick={() => setShowGasModal(false)} className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl">Batal</button>
+                                        <button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl shadow">Simpan Tetapan</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* POINTS AND ANNUAL CONFIGURATION MODAL */}
+                    {showPointsModal && (
+                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+                            <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 max-h-[85vh] overflow-y-auto animate-in zoom-in-95 duration-150">
+                                <div className="flex justify-between items-center border-b pb-3 mb-4">
+                                    <h3 className="text-sm font-bold text-slate-900 uppercase">⚙️ Tetapan Poin, Had & Tahun Kejohanan</h3>
+                                    <button onClick={() => setShowPointsModal(false)} className="text-slate-400 hover:text-slate-600">✕</button>
+                                </div>
+                                <div className="space-y-5 text-xs font-semibold">
+                                    <div className="bg-slate-50 p-4 rounded-xl border space-y-3">
+                                        <p className="font-extrabold text-indigo-700 text-[11px] uppercase">🗓️ Tahun & Had Penyertaan</p>
+                                        <div className="grid grid-cols-3 gap-2">
+                                            <div>
+                                                <label className="block text-slate-500 mb-1">Tahun Aktif</label>
+                                                <input 
+                                                    type="text" 
+                                                    value={activeYear}
+                                                    onChange={(e) => setActiveYear(e.target.value)}
+                                                    className="w-full p-2 rounded-lg border bg-white"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-slate-500 mb-1">Maks Individu</label>
+                                                <input 
+                                                    type="number" 
+                                                    value={maxIndividu}
+                                                    onChange={(e) => setMaxIndividu(parseInt(e.target.value) || 2)}
+                                                    className="w-full p-2 rounded-lg border bg-white"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-slate-500 mb-1">Maks Kumpulan</label>
+                                                <input 
+                                                    type="number" 
+                                                    value={maxKumpulan}
+                                                    onChange={(e) => setMaxKumpulan(parseInt(e.target.value) || 2)}
+                                                    className="w-full p-2 rounded-lg border bg-white"
+                                                />
+                                            </div>
+                                        </div>
+                                        <button 
+                                            onClick={handleSaveConfig}
+                                            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-1.5 rounded-lg text-[11px] w-full mt-2"
+                                        >
+                                            Simpan Tahun & Had Penyertaan
+                                        </button>
+                                    </div>
+
+                                    <div className="bg-slate-50 p-4 rounded-xl border space-y-3">
+                                        <p className="font-extrabold text-indigo-700 text-[11px] uppercase">🥇 Pemberat Mata Sukan</p>
+                                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                                            <div>
+                                                <label className="block text-slate-500 mb-1">🥇 Emas</label>
+                                                <input 
+                                                    type="number" 
+                                                    value={pointsConfig.emas}
+                                                    onChange={(e) => setPointsConfig({ ...pointsConfig, emas: parseInt(e.target.value) || 0 })}
+                                                    className="w-full p-2 rounded-lg border bg-white"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-slate-500 mb-1">🥈 Perak</label>
+                                                <input 
+                                                    type="number" 
+                                                    value={pointsConfig.perak}
+                                                    onChange={(e) => setPointsConfig({ ...pointsConfig, perak: parseInt(e.target.value) || 0 })}
+                                                    className="w-full p-2 rounded-lg border bg-white"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-slate-500 mb-1">🥉 Gangsa</label>
+                                                <input 
+                                                    type="number" 
+                                                    value={pointsConfig.gangsa}
+                                                    onChange={(e) => setPointsConfig({ ...pointsConfig, gangsa: parseInt(e.target.value) || 0 })}
+                                                    className="w-full p-2 rounded-lg border bg-white"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-slate-500 mb-1">🏅 Ke-4</label>
+                                                <input 
+                                                    type="number" 
+                                                    value={pointsConfig.keempat}
+                                                    onChange={(e) => setPointsConfig({ ...pointsConfig, keempat: parseInt(e.target.value) || 0 })}
+                                                    className="w-full p-2 rounded-lg border bg-white"
+                                                />
+                                            </div>
+                                            <div className="col-span-2 sm:col-span-1">
+                                                <label className="block text-slate-500 mb-1">🏃‍♂️ Masuk</label>
+                                                <input 
+                                                    type="number" 
+                                                    value={pointsConfig.penyertaan}
+                                                    onChange={(e) => setPointsConfig({ ...pointsConfig, penyertaan: parseInt(e.target.value) || 0 })}
+                                                    className="w-full p-2 rounded-lg border bg-white"
+                                                />
+                                            </div>
+                                        </div>
+                                        <button 
+                                            onClick={handleSavePoints}
+                                            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-1.5 rounded-lg text-[11px] w-full mt-2"
+                                        >
+                                            Simpan Pemberat Mata Pingat
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="flex justify-end gap-2 mt-6">
+                                    <button onClick={() => setShowPointsModal(false)} className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs px-4 py-2 rounded-xl">Tutup</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* CO-ADMINS ACCESS MODAL */}
+                    {showAdminsModal && (
+                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+                            <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 max-h-[85vh] overflow-y-auto animate-in zoom-in-95 duration-150">
+                                <div className="flex justify-between items-center border-b pb-3 mb-4">
+                                    <h3 className="text-sm font-bold text-slate-900 uppercase">👥 Urus Admin Utama Bersama</h3>
+                                    <button onClick={() => setShowAdminsModal(false)} className="text-slate-400 hover:text-slate-600">✕</button>
+                                </div>
+                                <div className="space-y-4 text-xs font-semibold">
+                                    <form onSubmit={handleAddAdmin} className="bg-slate-50 p-4 rounded-xl border space-y-3">
+                                        <p className="text-[10.5px] text-slate-400">Lantik akaun guru lain sebagai Admin Utama dengan hak mengedit tetapan sistem:</p>
+                                        <div>
+                                            <label className="block text-slate-500 mb-1">Alamat E-mel Google / DELIMa KPM</label>
+                                            <input 
+                                                type="email" 
+                                                required
+                                                value={newAdminEmail}
+                                                onChange={(e) => setNewAdminEmail(e.target.value)}
+                                                placeholder="cth: g-12345678@moe-dl.edu.my"
+                                                className="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-1 focus:ring-indigo-500 focus:outline-none"
+                                            />
+                                        </div>
+                                        <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 rounded-xl">Lantik Sebagai Admin</button>
+                                    </form>
+
+                                    <div className="space-y-2">
+                                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Senarai Admin Utama Semasa:</p>
+                                        <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+                                            <div className="bg-indigo-50 p-2.5 rounded-xl border border-indigo-100 flex justify-between items-center">
+                                                <div>
+                                                    <p className="font-extrabold text-indigo-900">sekolah-7608@moe-dl.edu.my</p>
+                                                    <p className="text-[9px] text-indigo-500">Asal / Pengasas Sistem</p>
+                                                </div>
+                                                <span className="text-[9.5px] bg-indigo-200 text-indigo-800 px-2 py-0.5 rounded-full font-bold">Utama</span>
+                                            </div>
+                                            {adminList.map(adm => (
+                                                <div key={adm.id} className="bg-white p-2.5 rounded-xl border flex justify-between items-center">
+                                                    <div>
+                                                        <p className="font-extrabold text-slate-800">{adm.email}</p>
+                                                        <p className="text-[9px] text-slate-400">Ditambah oleh: {adm.addedBy} ({adm.addedAt})</p>
+                                                    </div>
+                                                    <button 
+                                                        onClick={() => handleDeleteAdmin(adm)}
+                                                        className="text-red-500 hover:text-red-700 font-bold"
+                                                        title="Tarik balik hak admin"
+                                                    >
+                                                        ✕ Tarik balik
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="flex justify-end mt-6">
+                                    <button onClick={() => setShowAdminsModal(false)} className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs px-4 py-2 rounded-xl">Tutup</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             );
         }

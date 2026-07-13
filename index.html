@@ -3344,7 +3344,7 @@
                                             {Object.keys(housesMetadata).map(name => <option key={name} value={name}>{name}</option>)}
                                         </select>
                                         <select value={filterEvent} onChange={(e) => setFilterEvent(e.target.value)} className="p-2.5 border rounded-xl text-xs font-semibold bg-white">
-                                            <option value="Semua">Semua Acara Lumba</option>
+                                            <option value="Semua">Semua Acara</option>
                                             {eventsWithCode.map(ev => <option key={ev.id} value={ev.id}>[{ev.kodAcara}] {ev.nama} ({ev.kategori})</option>)}
                                         </select>
                                     </div>

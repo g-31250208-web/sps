@@ -1757,10 +1757,7 @@
                 }
             };
 
-            const handleAthleteSubmit = async (e) => {
-                e.preventDefault();
-                if (!checkAuthority()) return;
-                
+            const saveAthleteData = async () => {
                 const docId = athleteForm.id || "A_" + Date.now();
                 const updatedAthlete = { ...athleteForm, id: docId };
 
@@ -1793,8 +1790,30 @@
                         kategori: prev.kategori
                     }));
                     setIsEditingAthlete(false);
+                    setConfirmModal({ show: false, title: "", message: "", onConfirm: null });
                 } catch (err) {
                     showToastMessage("Ralat menulis ke pangkalan data awan.", "error");
+                }
+            };
+
+            const handleAthleteSubmit = async (e) => {
+                e.preventDefault();
+                if (!checkAuthority()) return;
+
+                const namaInput = athleteForm.nama.trim().toLowerCase();
+                const isDuplicate = athletes.some(a => (a.nama || "").trim().toLowerCase() === namaInput && a.id !== athleteForm.id);
+
+                if (isDuplicate) {
+                    setConfirmModal({
+                        show: true,
+                        title: "Amaran: Nama Ahli Bertindih",
+                        message: "Nama sudah ada dalam sistem, teruskan?",
+                        onConfirm: () => {
+                            saveAthleteData();
+                        }
+                    });
+                } else {
+                    saveAthleteData();
                 }
             };
 

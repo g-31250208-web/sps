@@ -3288,7 +3288,12 @@
                                 {/* Paparan Senarai Atlet: Mod Lebar Penuh (Spacious Full Width) */}
                                 <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm relative">
                                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b pb-3 mb-4">
-                                        <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Senarai Rasmi Atlet Berdaftar</h3>
+                                        <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                                            <span>Senarai Rasmi Atlet Berdaftar</span>
+                                            <span className="bg-indigo-100 text-indigo-700 text-[11px] font-black px-2.5 py-0.5 rounded-full">
+                                                {filteredAthletes.length} orang
+                                            </span>
+                                        </h3>
                                         
                                         <div className="flex flex-wrap gap-2 text-xs items-center">
                                             <select value={filterHouse} onChange={(e) => setFilterHouse(e.target.value)} className="p-1.5 border rounded-lg bg-slate-50">
@@ -3333,6 +3338,7 @@
                                         <table className="w-full text-xs text-left border-collapse">
                                             <thead>
                                                 <tr className="border-b text-slate-400 font-bold uppercase">
+                                                    <th className="py-2.5 w-[50px] text-center">Bil.</th>
                                                     <th className="py-2.5">No. Atlet</th>
                                                     <th className="py-2.5">Nama Atlet</th>
                                                     <th className="py-2.5">Kelas</th>
@@ -3342,8 +3348,9 @@
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {filteredAthletes.map(ath => (
+                                                {filteredAthletes.map((ath, index) => (
                                                     <tr key={ath.id} className="border-b last:border-0 hover:bg-slate-50 font-semibold text-slate-700">
+                                                        <td className="py-2.5 text-center font-bold text-slate-500">{index + 1}</td>
                                                         <td className="py-2.5 font-mono text-indigo-700 font-bold">{ath.noAtlet || "-"}</td>
                                                         <td className="py-2.5 uppercase font-bold text-slate-800">{ath.nama}</td>
                                                         <td className="py-2.5">{ath.kelas}</td>
@@ -3409,7 +3416,7 @@
                                                 ))}
                                                 {filteredAthletes.length === 0 && (
                                                     <tr>
-                                                        <td colSpan="6" className="py-8 text-center text-slate-400 italic">Tiada rekod atlet berdaftar ditemui.</td>
+                                                        <td colSpan="7" className="py-8 text-center text-slate-400 italic">Tiada rekod atlet berdaftar ditemui.</td>
                                                     </tr>
                                                 )}
                                             </tbody>

@@ -81,7 +81,7 @@
         const DEFAULT_ANNOUNCEMENTS = [];
         const INITIAL_LOGS = [];
 
-        // Dinamik & Guru Penasihat bermula kosong (tidak lagi hardcoded)
+        // Dinamik & Guru Penasihat bermula kosong
         const INITIAL_HOUSES_METADATA = {
             Merah: { slogan: "Saga Membara Selamanya Juara", guruPenasihat: "", bonusPoints: 0, warnaLabel: "Merah" },
             Biru: { slogan: "Biru Gagah Juara Sepanjang Zaman", guruPenasihat: "", bonusPoints: 0, warnaLabel: "Biru" },
@@ -492,7 +492,7 @@
 
             const checkAuthority = () => {
                 if (userRole !== "admin" && userRole !== "guru") {
-                    showToastMessage("Akses Dihalang: Hanya Pentadbir Utama atau Urus Setia Guru (DELIMa) sahaja dibenarkan membuat perubahan.", "error");
+                    showToastMessage("Akses Dihalang: Sila log masuk dengan ID DELIMa KPM Guru atau Admin untuk melakukan tindakan ini.", "error");
                     return false;
                 }
                 return true;
@@ -1155,8 +1155,8 @@
                         <div style="font-family: sans-serif; padding: 20px; color: #1e293b;">
                             <div style="text-align: center; border-bottom: 3px double #0f172a; padding-bottom: 15px; margin-bottom: 30px;">
                                 <img src="${logoUrl}" style="height: 70px;" />
-                                <h2 style="margin: 5px 0 0 0; font-size: 20px; text-transform: uppercase;">LAPORAN RASMI</h2>
-                                <h3 style="margin: 3px 0 0 0; font-size: 14px; color: #475569;">KEJOHANAN SUKAN TAHUNAN SK BIKANG ${activeYear}</h3>
+                                <h2 style="margin: 5px 0 0 0; text-transform: uppercase;">LAPORAN RASMI</h2>
+                                <h3 style="margin: 3px 0 0 0; color: #475569;">KEJOHANAN SUKAN TAHUNAN SK BIKANG ${activeYear}</h3>
                             </div>
 
                             <h4 style="font-size: 14px; text-transform: uppercase; margin-bottom: 10px;">1. Kedudukan Serta Pungutan Mata Keseluruhan</h4>
@@ -2487,7 +2487,7 @@
                         accept=".json" 
                         className="hidden" 
                     />
-                    {}
+                    
                     {/* Header Premium */}
                     <header className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white shadow-md relative z-50">
                         <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
@@ -2613,7 +2613,6 @@
 
                     <main className="max-w-7xl mx-auto px-4 py-6 flex-grow w-full">
                         
-                        {}
                         {/* DASHBOARD TAB */}
                         {activeTab === "dashboard" && (
                             <div className="space-y-6">
@@ -2736,7 +2735,6 @@
                             </div>
                         )}
 
-                        {}
                         {/* RUMAH SUKAN TAB */}
                         {activeTab === "rumah_sukan" && (
                             <div className="space-y-6">
@@ -2754,7 +2752,11 @@
                                     </div>
                                     <button
                                         type="button"
-                                        onClick={() => setIsHouseSidebarOpen(true)}
+                                        onClick={() => {
+                                            setIsEditingHouse(false);
+                                            setHouseForm({ nama: "", slogan: "", guruPenasihat: "", bonusPoints: 0, warnaLabel: "Ungu" });
+                                            setIsHouseSidebarOpen(true);
+                                        }}
                                         className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-5 py-3 rounded-xl shadow-lg hover:shadow-indigo-600/20 transition-all flex items-center gap-2 shrink-0 self-stretch sm:self-auto justify-center"
                                     >
                                         <span>⚙️ Buka Panel Kawalan Sisi (Sidebar) Rumah Sukan</span>
@@ -2792,7 +2794,7 @@
                                                 
                                                 {userRole === "pelawat" ? (
                                                     <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 text-xs text-amber-800 font-semibold mb-3">
-                                                        🔒 <strong>Mod Baca Sahaja Aktif:</strong> Sila log masuk dengan ID DELIMa KPM Guru atau Admin untuk mendaftar rumah sukan.
+                                                        🔒 <strong>Mod Baca Sahaja Aktif:</strong> Sila log masuk dengan ID DELIMa KPM Guru atau Admin untuk mendaftar rumah sukan baharu.
                                                     </div>
                                                 ) : (
                                                     <form onSubmit={isEditingHouse ? handleEditHouseSubmit : handleAddHouseSubmitDirect} className="space-y-4 text-xs font-semibold mb-4 pb-4 border-b">
@@ -2865,6 +2867,7 @@
                                     </div>
                                 </div>
 
+                                {/* Grid Rumah Sukan */}
                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                     {Object.keys(housesMetadata).map(houseName => {
                                         const meta = housesMetadata[houseName];
@@ -2886,30 +2889,44 @@
                                                     <div className="flex items-center gap-2 flex-wrap">
                                                         <h3 className="text-xl font-extrabold text-slate-800 flex items-center gap-2">
                                                             <span>Rumah {houseName}</span>
-                                                            {userRole !== "pelawat" && (
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => {
-                                                                        setHouseForm({
-                                                                            nama: houseName,
-                                                                            slogan: meta.slogan || "",
-                                                                            guruPenasihat: meta.guruPenasihat || "",
-                                                                            bonusPoints: meta.bonusPoints || 0,
-                                                                            warnaLabel: meta.warnaLabel || "Ungu"
-                                                                        });
-                                                                        setOriginalHouseKey(houseName);
-                                                                        setIsEditingHouse(true);
-                                                                        setIsHouseSidebarOpen(true);
-                                                                        showToastMessage(`Sedia menyunting maklumat Rumah ${houseName} di Panel Kawalan Sisi.`, "info");
-                                                                    }}
-                                                                    className="text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 p-1 rounded-full transition-all inline-flex items-center justify-center"
-                                                                    title="Sunting Nama & Slogan Rumah Sukan"
-                                                                >
+                                                            
+                                                            {}
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    if (userRole === "pelawat") {
+                                                                        showToastMessage("Akses Dihalang: Sila log masuk menggunakan ID DELIMa KPM Guru atau Admin untuk mengedit Rumah Sukan.", "warning");
+                                                                        return;
+                                                                    }
+                                                                    setHouseForm({
+                                                                        nama: houseName,
+                                                                        slogan: meta.slogan || "",
+                                                                        guruPenasihat: meta.guruPenasihat || "",
+                                                                        bonusPoints: meta.bonusPoints || 0,
+                                                                        warnaLabel: meta.warnaLabel || "Ungu"
+                                                                    });
+                                                                    setOriginalHouseKey(houseName);
+                                                                    setIsEditingHouse(true);
+                                                                    setIsHouseSidebarOpen(true);
+                                                                    showToastMessage(`Sedia menyunting maklumat Rumah ${houseName} di Panel Kawalan Sisi.`, "info");
+                                                                }}
+                                                                className={`p-1.5 rounded-lg transition-all inline-flex items-center justify-center ${
+                                                                    userRole === "pelawat" 
+                                                                        ? "text-slate-400 hover:text-amber-500 hover:bg-amber-50" 
+                                                                        : "text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50"
+                                                                }`}
+                                                                title={userRole === "pelawat" ? "Log masuk untuk edit (Terkunci)" : "Sunting Nama & Slogan Rumah Sukan"}
+                                                            >
+                                                                {userRole === "pelawat" ? (
                                                                     <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
-                                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
                                                                     </svg>
-                                                                </button>
-                                                            )}
+                                                                ) : (
+                                                                    <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                                                                    </svg>
+                                                                )}
+                                                            </button>
                                                         </h3>
                                                         <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${cls.bg} ${cls.text}`}>
                                                             {meta.warnaLabel}
@@ -2985,7 +3002,6 @@
                             </div>
                         )}
 
-                        {}
                         {/* ATLIT TAB */}
                         {activeTab === "atlit" && (
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -3092,7 +3108,7 @@
                                     </div>
 
                                     {/* Borang Pendaftaran Acara & No. Atlet */}
-                                    <div ref={pendaftaranAcaraRef} className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm space-y-4 Scroll-mt-6">
+                                    <div ref={pendaftaranAcaraRef} className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm space-y-4 scroll-mt-6">
                                         <h3 className="text-sm font-bold text-slate-900 border-b pb-2">📋 Pendaftaran Acara & No. Atlet</h3>
                                         
                                         {userRole === "pelawat" ? (
@@ -3271,14 +3287,12 @@
                                                                 <div className="flex justify-center gap-1">
                                                                     <button 
                                                                         onClick={() => {
-                                                                            // Set atlet aktif di Pendaftaran Acara & No. Atlet
                                                                             setSelectedStudentId(ath.id);
                                                                             setStudentSearchQuery(ath.nama);
                                                                             setNoAtletInput(ath.noAtlet || "");
                                                                             setSelectedEventIds(ath.acaraIds || []);
                                                                             showToastMessage(`Profil ${ath.nama} dimuatkan di borang Pendaftaran Acara. Sila semak di atas.`, "info");
                                                                             
-                                                                            // Tatalan lancar ke borang Pendaftaran Acara
                                                                             if (pendaftaranAcaraRef.current) {
                                                                                 pendaftaranAcaraRef.current.scrollIntoView({ behavior: 'smooth' });
                                                                             }
@@ -3306,7 +3320,6 @@
                             </div>
                         )}
 
-                        {}
                         {/* ACARA TAB */}
                         {activeTab === "acara" && (
                             <div className="space-y-6">
@@ -3484,7 +3497,6 @@
                             </div>
                         )}
 
-                        {}
                         {/* KEPUTUSAN TAB */}
                         {activeTab === "keputusan" && (
                             <div className="space-y-6">
@@ -3915,11 +3927,9 @@
                             </div>
                         )}
 
-                        {}
                         {/* PASCA SUKAN TAB */}
                         {activeTab === "pasca_sukan" && (
                             <div className="space-y-6 animate-in fade-in duration-200">
-                                {/* Kad Menu Tindakan Pasca Sukan */}
                                 <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
                                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                                         <div>
@@ -3927,7 +3937,6 @@
                                             <p className="text-xs text-slate-400 mt-1">Urus sijil penghargaan, laporan kokum keseluruhan, dan arkib tahun semasa.</p>
                                         </div>
                                         
-                                        {}
                                         <div className="flex flex-wrap items-center gap-2 w-full md:w-auto justify-start md:justify-end">
                                             <button 
                                                 onClick={() => setShowSignatorySettings(!showSignatorySettings)}

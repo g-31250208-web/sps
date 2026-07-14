@@ -3300,7 +3300,7 @@
                                             <select value={filterEvent} onChange={(e) => setFilterEvent(e.target.value)} className="p-1.5 border rounded-lg bg-slate-50">
                                                 <option value="Semua">Semua Acara</option>
                                                 {eventsWithCode.map(ev => (
-                                                    <option key={ev.id} value={ev.id}>[{ev.kodAcara}] {ev.nama}</option>
+                                                    <option key={ev.id} value={ev.id}>[{ev.kodAcara}] {ev.nama.toUpperCase()} {ev.kategori}</option>
                                                 ))}
                                             </select>
                                             
@@ -3643,7 +3643,7 @@
                                             >
                                                 <option value="">-- Sila Pilih Acara --</option>
                                                 {eventsWithCode.map(ev => (
-                                                    <option key={ev.id} value={ev.id}>[{ev.kodAcara}] {ev.nama} ({ev.kategori}) - {ev.jenis}</option>
+                                                    <option key={ev.id} value={ev.id}>[{ev.kodAcara}] {ev.nama.toUpperCase()} {ev.kategori} - {ev.jenis}</option>
                                                 ))}
                                             </select>
                                         </div>

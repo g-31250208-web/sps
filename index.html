@@ -3289,7 +3289,8 @@
                                 <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm relative">
                                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b pb-3 mb-4">
                                         <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Senarai Rasmi Atlet Berdaftar</h3>
-                                        <div className="flex flex-wrap gap-2 text-xs">
+                                        
+                                        <div className="flex flex-wrap gap-2 text-xs items-center">
                                             <select value={filterHouse} onChange={(e) => setFilterHouse(e.target.value)} className="p-1.5 border rounded-lg bg-slate-50">
                                                 <option value="Semua">Semua Rumah</option>
                                                 {Object.keys(housesMetadata).map(name => (
@@ -3302,6 +3303,29 @@
                                                     <option key={ev.id} value={ev.id}>[{ev.kodAcara}] {ev.nama}</option>
                                                 ))}
                                             </select>
+                                            
+                                            <button 
+                                                onClick={() => {
+                                                    let targetEvent = eventsWithCode.find(e => e.id === filterEvent);
+                                                    if (!targetEvent) {
+                                                        targetEvent = {
+                                                            id: "semua",
+                                                            kodAcara: "AM-AMP",
+                                                            nama: `Panggilan Atlet Am (${filterHouse === 'Semua' ? 'Keseluruhan' : 'Rumah ' + filterHouse})`,
+                                                            kategori: "Semua Kategori",
+                                                            jenis: "Campuran",
+                                                            tarikh: "-",
+                                                            masa: "-"
+                                                        };
+                                                    }
+                                                    executeBypassPrint('panggilan', targetEvent);
+                                                }}
+                                                className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-3.5 py-1.5 rounded-xl flex items-center gap-1.5 shadow-md shadow-indigo-600/10 transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                                                title="Cetak Calling Sheet / Marshall Sheet mengikut tapisan aktif"
+                                            >
+                                                <PrinterIcon className="h-3.5 w-3.5" />
+                                                <span>Cetak Calling Sheet</span>
+                                            </button>
                                         </div>
                                     </div>
 

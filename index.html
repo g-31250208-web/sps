@@ -1382,61 +1382,68 @@
                             return (a.nama || "").localeCompare(b.nama || "");
                         });
 
-                    const rowsHtml = houseAthletes.map((ath, idx) => {
-                        const shortJap = ath.jantina === "Lelaki" ? "L" : (ath.jantina === "Perempuan" ? "P" : (ath.jantina || "L"));
-                        const cleanKelas = (ath.kelas || "").replace(/Prasekolah/gi, "PRA");
-                        return `
-                            <tr style="height: 35px;">
-                                <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center; font-weight: bold;">${idx + 1}</td>
-                                <td style="border: 1px solid #94a3b8; padding: 6px; text-transform: uppercase; font-weight: bold; font-size: 11px;">${ath.nama}</td>
-                                <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center;">${cleanKelas}</td>
-                                <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center; font-weight: bold;">${shortJap}</td>
-                                <td style="border: 1px solid #94a3b8; padding: 6px;"></td>
-                                <td style="border: 1px solid #94a3b8; padding: 6px;"></td>
-                                <td style="border: 1px solid #94a3b8; padding: 6px;"></td>
-                                <td style="border: 1px solid #94a3b8; padding: 6px;"></td>
-                                <td style="border: 1px solid #94a3b8; padding: 6px;"></td>
-                            </tr>
-                        `;
-                    }).join('');
+                    // Bahagikan senarai atlet kepada halaman (18 atlet semuka surat)
+                    const chunkSize = 18;
+                    const pages = [];
+                    for (let i = 0; i < houseAthletes.length; i += chunkSize) {
+                        pages.push(houseAthletes.slice(i, i + chunkSize));
+                    }
 
                     const meta = housesMetadata[targetData.houseName] || {};
                     const advisorsText = meta.guruPenasihat || "Belum Ditetapkan";
 
-                    printContent = `
-                        <div style="font-family: sans-serif; padding: 15px; color: #1e293b;">
+                    const pagesHtml = pages.map((pageData, pageIdx) => {
+                        const rowsHtml = pageData.map((ath, idx) => {
+                            const globalIdx = (pageIdx * chunkSize) + idx + 1;
+                            const shortJap = ath.jantina === "Lelaki" ? "L" : (ath.jantina === "Perempuan" ? "P" : (ath.jantina || "L"));
+                            const cleanKelas = (ath.kelas || "").replace(/Prasekolah/gi, "PRA");
+                            return `
+                                <tr style="height: 35px;">
+                                    <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center; font-weight: bold;">${globalIdx}</td>
+                                    <td style="border: 1px solid #94a3b8; padding: 6px; text-transform: uppercase; font-weight: bold; font-size: 11px;">${ath.nama}</td>
+                                    <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center;">${cleanKelas}</td>
+                                    <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center; font-weight: bold;">${shortJap}</td>
+                                    <td style="border: 1px solid #94a3b8; padding: 6px;"></td>
+                                    <td style="border: 1px solid #94a3b8; padding: 6px;"></td>
+                                    <td style="border: 1px solid #94a3b8; padding: 6px;"></td>
+                                    <td style="border: 1px solid #94a3b8; padding: 6px;"></td>
+                                    <td style="border: 1px solid #94a3b8; padding: 6px;"></td>
+                                </tr>
+                            `;
+                        }).join('');
+
+                        // Papar header besar hanya pada muka surat pertama
+                        const headerSection = pageIdx === 0 ? `
                             <div style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 20px;">
                                 <img src="${logoUrl}" style="height: 60px;" />
                                 <h2 style="margin: 5px 0 0 0; text-transform: uppercase; font-size: 15px; letter-spacing: 0.5px; font-weight: bold;">BORANG KEHADIRAN & MAKLUMAT AHLI</h2>
                                 <h3 style="margin: 2px 0 0 0; color: #475569; font-size: 12px; text-transform: uppercase;">Kejohanan Sukan Tahunan SK Bikang ${activeYear}</h3>
                             </div>
+                        ` : `
+                            <div style="text-align: center; border-bottom: 1px dashed #94a3b8; padding-bottom: 5px; margin-bottom: 15px;">
+                                <h2 style="margin: 0; text-transform: uppercase; font-size: 12px; font-weight: bold; color: #475569;">
+                                    Borang Kehadiran: Rumah ${targetData.houseName} (Muka Surat ${pageIdx + 1} daripada ${pages.length})
+                                </h2>
+                            </div>
+                        `;
 
+                        const metaBox = pageIdx === 0 ? `
                             <div style="background: #f1f5f9; padding: 12px; border-radius: 8px; margin-bottom: 15px; font-size: 11px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; border: 1px solid #cbd5e1;">
                                 <div><strong>Rumah Sukan:</strong> Rumah ${targetData.houseName}</div>
                                 <div><strong>Slogan:</strong> "${meta.slogan || '-'}"</div>
                                 <div style="grid-column: span 2;"><strong>Guru Penasihat:</strong> ${advisorsText}</div>
                             </div>
+                        ` : `
+                            <div style="font-size: 10px; margin-bottom: 10px; display: flex; justify-content: space-between; border: 1px solid #e2e8f0; padding: 6px; border-radius: 6px;">
+                                <span><strong>Rumah Sukan:</strong> Rumah ${targetData.houseName}</span>
+                                <span><strong>Muka Surat:</strong> ${pageIdx + 1} daripada ${pages.length}</span>
+                            </div>
+                        `;
 
-                            <table style="width: 100%; border-collapse: collapse; font-size: 11px; text-align: left;">
-                                <thead>
-                                    <tr style="background: #cbd5e1; height: 55px;">
-                                        <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 35px;">No</th>
-                                        <th style="border: 1px solid #94a3b8; padding: 6px;">Nama Penuh Ahli</th>
-                                        <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 70px;">Kelas</th>
-                                        <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 50px;">Jantina</th>
-                                        <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 75px; font-size: 10px; vertical-align: top;">Tarikh:<br><br></th>
-                                        <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 75px; font-size: 10px; vertical-align: top;">Tarikh:<br><br></th>
-                                        <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 75px; font-size: 10px; vertical-align: top;">Tarikh:<br><br></th>
-                                        <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 75px; font-size: 10px; vertical-align: top;">Tarikh:<br><br></th>
-                                        <th style="border: 1px solid #94a3b8; padding: 6px; width: 120px;">Catatan</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${rowsHtml || '<tr><td colspan="9" style="padding:15px; text-align:center; font-style:italic; color:#64748b;">Tiada ahli sukan didaftarkan di bawah rumah sukan ini.</td></tr>'}
-                                </tbody>
-                            </table>
-
-                            <div style="display: flex; justify-content: space-between; margin-top: 50px; font-size: 11px;">
+                        // Tunjukkan blok tandatangan pada halaman terakhir sahaja
+                        const isLastPage = pageIdx === pages.length - 1;
+                        const signatureSection = isLastPage ? `
+                            <div style="display: flex; justify-content: space-between; margin-top: 40px; font-size: 11px; page-break-inside: avoid;">
                                 <div style="width: 220px; text-align: center;">
                                     <p style="margin: 0;">Disediakan oleh,</p>
                                     <div style="border-bottom: 1px solid #94a3b8; height: 50px; margin-bottom: 5px;"></div>
@@ -1450,6 +1457,40 @@
                                     <p style="margin: 2px 0 0 0; color: #475569; font-size: 10px;">Penyelaras Sukan / GPK Kokurikulum</p>
                                 </div>
                             </div>
+                        ` : '';
+
+                        return `
+                            <div class="print-page" style="page-break-after: always; box-sizing: border-box; min-height: 270mm; display: flex; flex-direction: column; justify-content: space-between;">
+                                <div>
+                                    ${headerSection}
+                                    ${metaBox}
+                                    <table style="width: 100%; border-collapse: collapse; font-size: 11px; text-align: left;">
+                                        <thead>
+                                            <tr style="background: #cbd5e1; height: 45px;">
+                                                <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 35px;">No</th>
+                                                <th style="border: 1px solid #94a3b8; padding: 6px;">Nama Penuh Ahli</th>
+                                                <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 70px;">Kelas</th>
+                                                <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 50px;">Jantina</th>
+                                                <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 75px; font-size: 10px; vertical-align: top;">Tarikh:<br><br></th>
+                                                <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 75px; font-size: 10px; vertical-align: top;">Tarikh:<br><br></th>
+                                                <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 75px; font-size: 10px; vertical-align: top;">Tarikh:<br><br></th>
+                                                <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 75px; font-size: 10px; vertical-align: top;">Tarikh:<br><br></th>
+                                                <th style="border: 1px solid #94a3b8; padding: 6px; width: 120px;">Catatan</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${rowsHtml}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                ${signatureSection}
+                            </div>
+                        `;
+                    }).join('');
+
+                    printContent = `
+                        <div style="font-family: sans-serif; color: #1e293b;">
+                            ${pagesHtml}
                         </div>
                     `;
                 } else if (mode === 'sukantara_rumah' && targetData) {
@@ -1461,66 +1502,66 @@
                             return (a.nama || "").localeCompare(b.nama || "");
                         });
 
-                    const rowsHtml = houseAthletes.map((ath, idx) => {
-                        const shortJap = ath.jantina === "Lelaki" ? "L" : (ath.jantina === "Perempuan" ? "P" : (ath.jantina || "L"));
-                        const cleanKelas = (ath.kelas || "").replace(/Prasekolah/gi, "PRA");
-                        return `
-                            <tr style="height: 35px;">
-                                <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center; font-weight: bold;">${idx + 1}</td>
-                                <td style="border: 1px solid #94a3b8; padding: 6px; text-transform: uppercase; font-weight: bold; font-size: 11px;">${ath.nama}</td>
-                                <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center;">${cleanKelas}</td>
-                                <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center; font-weight: bold;">${shortJap}</td>
-                                <td style="border: 1px solid #94a3b8; padding: 6px;"></td>
-                                <td style="border: 1px solid #94a3b8; padding: 6px;"></td>
-                                <td style="border: 1px solid #94a3b8; padding: 6px;"></td>
-                                <td style="border: 1px solid #94a3b8; padding: 6px;"></td>
-                                <td style="border: 1px solid #94a3b8; padding: 6px;"></td>
-                            </tr>
-                        `;
-                    }).join('');
+                    // Bahagikan senarai atlet kepada halaman (18 atlet semuka surat)
+                    const chunkSize = 18;
+                    const pages = [];
+                    for (let i = 0; i < houseAthletes.length; i += chunkSize) {
+                        pages.push(houseAthletes.slice(i, i + chunkSize));
+                    }
 
                     const meta = housesMetadata[targetData.houseName] || {};
                     const advisorsText = meta.guruPenasihat || "Belum Ditetapkan";
 
-                    printContent = `
-                        <div style="font-family: sans-serif; padding: 15px; color: #1e293b;">
+                    const pagesHtml = pages.map((pageData, pageIdx) => {
+                        const rowsHtml = pageData.map((ath, idx) => {
+                            const globalIdx = (pageIdx * chunkSize) + idx + 1;
+                            const shortJap = ath.jantina === "Lelaki" ? "L" : (ath.jantina === "Perempuan" ? "P" : (ath.jantina || "L"));
+                            const cleanKelas = (ath.kelas || "").replace(/Prasekolah/gi, "PRA");
+                            return `
+                                <tr style="height: 35px;">
+                                    <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center; font-weight: bold;">${globalIdx}</td>
+                                    <td style="border: 1px solid #94a3b8; padding: 6px; text-transform: uppercase; font-weight: bold; font-size: 11px;">${ath.nama}</td>
+                                    <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center;">${cleanKelas}</td>
+                                    <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center; font-weight: bold;">${shortJap}</td>
+                                    <td style="border: 1px solid #94a3b8; padding: 6px;"></td>
+                                    <td style="border: 1px solid #94a3b8; padding: 6px;"></td>
+                                    <td style="border: 1px solid #94a3b8; padding: 6px;"></td>
+                                    <td style="border: 1px solid #94a3b8; padding: 6px;"></td>
+                                    <td style="border: 1px solid #94a3b8; padding: 6px;"></td>
+                                </tr>
+                            `;
+                        }).join('');
+
+                        const headerSection = pageIdx === 0 ? `
                             <div style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 20px;">
                                 <img src="${logoUrl}" style="height: 60px;" />
                                 <h2 style="margin: 5px 0 0 0; text-transform: uppercase; font-size: 15px; letter-spacing: 0.5px; font-weight: bold;">BORANG SARINGAN SUKANTARA</h2>
                                 <h3 style="margin: 2px 0 0 0; color: #475569; font-size: 12px; text-transform: uppercase;">Kejohanan Sukan Tahunan SK Bikang ${activeYear}</h3>
                             </div>
+                        ` : `
+                            <div style="text-align: center; border-bottom: 1px dashed #94a3b8; padding-bottom: 5px; margin-bottom: 15px;">
+                                <h2 style="margin: 0; text-transform: uppercase; font-size: 12px; font-weight: bold; color: #475569;">
+                                    Borang Saringan Sukantara: Rumah ${targetData.houseName} (Muka Surat ${pageIdx + 1} daripada ${pages.length})
+                                </h2>
+                            </div>
+                        `;
 
+                        const metaBox = pageIdx === 0 ? `
                             <div style="background: #f1f5f9; padding: 12px; border-radius: 8px; margin-bottom: 15px; font-size: 11px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; border: 1px solid #cbd5e1;">
                                 <div><strong>Rumah Sukan:</strong> Rumah ${targetData.houseName}</div>
                                 <div><strong>Slogan:</strong> "${meta.slogan || '-'}"</div>
                                 <div style="grid-column: span 2;"><strong>Guru Penasihat:</strong> ${advisorsText}</div>
                             </div>
+                        ` : `
+                            <div style="font-size: 10px; margin-bottom: 10px; display: flex; justify-content: space-between; border: 1px solid #e2e8f0; padding: 6px; border-radius: 6px;">
+                                <span><strong>Rumah Sukan:</strong> Rumah ${targetData.houseName}</span>
+                                <span><strong>Muka Surat:</strong> ${pageIdx + 1} daripada ${pages.length}</span>
+                            </div>
+                        `;
 
-                            <table style="width: 100%; border-collapse: collapse; font-size: 11px; text-align: left;">
-                                <thead>
-                                    <tr style="background: #cbd5e1; height: 45px;">
-                                        <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 35px;">No</th>
-                                        <th style="border: 1px solid #94a3b8; padding: 6px;">Nama Penuh Ahli / Atlet</th>
-                                        <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 70px;">Kelas</th>
-                                        <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 45px;">Jantina</th>
-                                        <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 95px; font-size: 10px;">Lompat Jauh</th>
-                                        <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 95px; font-size: 10px;">Lompat Tinggi</th>
-                                        <th style="border: 1px solid #94a3b8; padding: 4px; text-align: center; width: 95px; font-size: 10px;">
-                                            <div style="display: flex; flex-direction: column; line-height: 1.1; align-items: center; justify-content: center; font-weight: bold;">
-                                                <span>50M/</span>
-                                                <span>60M/80M</span>
-                                            </div>
-                                        </th>
-                                        <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 95px; font-size: 10px;">Lontar Peluru</th>
-                                        <th style="border: 1px solid #94a3b8; padding: 6px; width: 100px;">Catatan</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${rowsHtml || '<tr><td colspan="9" style="padding:15px; text-align:center; font-style:italic; color:#64748b;">Tiada ahli sukan didaftarkan di bawah rumah sukan ini.</td></tr>'}
-                                </tbody>
-                            </table>
-
-                            <div style="display: flex; justify-content: space-between; margin-top: 50px; font-size: 11px;">
+                        const isLastPage = pageIdx === pages.length - 1;
+                        const signatureSection = isLastPage ? `
+                            <div style="display: flex; justify-content: space-between; margin-top: 40px; font-size: 11px; page-break-inside: avoid;">
                                 <div style="width: 220px; text-align: center;">
                                     <p style="margin: 0;">Disediakan oleh,</p>
                                     <div style="border-bottom: 1px solid #94a3b8; height: 50px; margin-bottom: 5px;"></div>
@@ -1534,6 +1575,45 @@
                                     <p style="margin: 2px 0 0 0; color: #475569; font-size: 10px;">Penyelaras Sukan / GPK Kokurikulum</p>
                                 </div>
                             </div>
+                        ` : '';
+
+                        return `
+                            <div class="print-page" style="page-break-after: always; box-sizing: border-box; min-height: 270mm; display: flex; flex-direction: column; justify-content: space-between;">
+                                <div>
+                                    ${headerSection}
+                                    ${metaBox}
+                                    <table style="width: 100%; border-collapse: collapse; font-size: 11px; text-align: left;">
+                                        <thead>
+                                            <tr style="background: #cbd5e1; height: 45px;">
+                                                <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 35px;">No</th>
+                                                <th style="border: 1px solid #94a3b8; padding: 6px;">Nama Penuh Ahli / Atlet</th>
+                                                <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 70px;">Kelas</th>
+                                                <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 45px;">Jantina</th>
+                                                <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 95px; font-size: 10px;">Lompat Jauh</th>
+                                                <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 95px; font-size: 10px;">Lompat Tinggi</th>
+                                                <th style="border: 1px solid #94a3b8; padding: 4px; text-align: center; width: 95px; font-size: 10px;">
+                                                    <div style="display: flex; flex-direction: column; line-height: 1.1; align-items: center; justify-content: center; font-weight: bold;">
+                                                        <span>50M/</span>
+                                                        <span>60M/80M</span>
+                                                    </div>
+                                                </th>
+                                                <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 95px; font-size: 10px;">Lontar Peluru</th>
+                                                <th style="border: 1px solid #94a3b8; padding: 6px; width: 100px;">Catatan</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${rowsHtml}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                ${signatureSection}
+                            </div>
+                        `;
+                    }).join('');
+
+                    printContent = `
+                        <div style="font-family: sans-serif; color: #1e293b;">
+                            ${pagesHtml}
                         </div>
                     `;
                 } else if (mode === 'rekod_keseluruhan') {
@@ -1649,10 +1729,14 @@
                             }
                             @page { 
                                 size: A4 portrait; 
-                                margin-top: 0.5in; 
-                                margin-bottom: 0.5in; 
-                                margin-left: 0.5in; 
-                                margin-right: 0.5in; 
+                                margin: 0.5in !important; 
+                            }
+                            .print-page {
+                                page-break-after: always;
+                                box-sizing: border-box;
+                            }
+                            .print-page:last-child {
+                                page-break-after: avoid !important;
                             }
                         }
                         body { background-color: #ffffff; padding: 0.5in; }

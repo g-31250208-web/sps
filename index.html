@@ -73,7 +73,7 @@
         const db = firebase.firestore();
         const appId = "sps-skb-d8256";
 
-        // Pembersihan Data Demo
+        // Pembersihan Data Demo / Sifar Asal
         const INITIAL_ATHLETES = [];
         const INITIAL_EVENTS = [];
         const INITIAL_RESULTS = [];
@@ -1627,60 +1627,89 @@
                                     </div>
                                 </div>
                             </div>
-                        `;
-                    }
+                        </div>
+                    `;
+                }
 
-                    let customStyle = `
+                let customStyle = `
+                    @media print {
+                        body { margin: 0; padding: 0; background: white; }
+                        @page { size: A4 portrait; margin: 0; }
+                    }
+                    body { background-color: #ffffff; padding: 15mm; }
+                `;
+
+                if (mode === 'kehadiran_rumah' || mode === 'sukantara_rumah') {
+                    customStyle = `
                         @media print {
-                            body { margin: 0; padding: 0; background: white; }
+                            body { 
+                                margin: 0; 
+                                padding-top: 0.5in !important; 
+                                padding-bottom: 0.5in !important; 
+                                padding-left: 0.5in !important;
+                                padding-right: 0.5in !important;
+                                background: white; 
+                            }
                             @page { size: A4 portrait; margin: 0; }
                         }
-                        body { background-color: #ffffff; padding: 15mm; }
+                        body { background-color: #ffffff; padding: 0.5in 15mm; }
                     `;
+                }
 
-                    if (mode === 'kehadiran_rumah' || mode === 'sukantara_rumah') {
-                        customStyle = `
-                            @media print {
-                                body { 
-                                    margin: 0; 
-                                    padding-top: 0.5in !important; 
-                                    padding-bottom: 0.5in !important; 
-                                    padding-left: 0 !important;
-                                    padding-right: 0 !important;
-                                    background: white; 
-                                }
-                                @page { size: A4 portrait; margin: 0; }
-                            }
-                            body { background-color: #ffffff; padding: 0.5in 15mm; }
-                        `;
+                const fullHtml = `
+                    <!DOCTYPE html>
+                    <html lang="ms">
+                    <head>
+                        <meta charset="UTF-8">
+                        <title>Cetak Dokumen Sukan - SK Bikang</title>
+                        <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet">
+                        <style>
+                            ${customStyle}
+                        </style>
+                    </head>
+                    <body>
+                        <div style="max-width: 210mm; margin: 0 auto; background: white;">
+                            ${printContent}
+                        </div>
+                    </body>
+                    </html>
+                `;
+
+                // Paparkan di dalam modal pratinjau interaktif
+                setPreviewContent(fullHtml);
+                setIsPreviewModalOpen(true);
+                showToastMessage("Pratinjau dijana! Sila semak kesilapan sebelum mencetak.", "info");
+            };
+
+            const saveAthleteData = async () => {
+                try {
+                    const docId = athleteForm.id || "A_" + Date.now();
+                    const updatedAthlete = { ...athleteForm, id: docId };
+
+                    if (isCloudActive) {
+                        await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('athletes').doc(docId).set(updatedAthlete);
+                        await syncWithGas("students", "save", { 
+                            id: docId, 
+                            name: athleteForm.nama, 
+                            class: athleteForm.kelas, 
+                            house: athleteForm.rumah, 
+                            gender: athleteForm.jantina, 
+                            tahap: athleteForm.kategori 
+                        });
+                    } else {
+                        if (isEditingAthlete) {
+                            setAthletes(athletes.map(a => a.id === docId ? updatedAthlete : a));
+                        } else {
+                            setAthletes([...athletes, updatedAthlete]);
+                        }
                     }
 
-                    const fullHtml = `
-                        <!DOCTYPE html>
-                        <html lang="ms">
-                        <head>
-                            <meta charset="UTF-8">
-                            <title>Cetak Dokumen Sukan - SK Bikang</title>
-                            <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet">
-                            <style>
-                                ${customStyle}
-                            </style>
-                        </head>
-                        <body>
-                            <div style="max-width: 210mm; margin: 0 auto; background: white;">
-                                ${printContent}
-                            </div>
-                        </body>
-                        </html>
-                    `;
-
-                    // Set preview content and open preview modal instead of raw printing instantly
-                    setPreviewContent(fullHtml);
-                    setIsPreviewModalOpen(true);
-                    showToastMessage("Pratinjau dijana! Sila semak kesilapan sebelum mencetak.", "info");
-                };
-
-                const saveAthleteData = async () => {
+                    const logAction = isEditingAthlete ? "Sunting Profil Atlet" : "Daftar Atlet Sukan";
+                    const logDetails = isEditingAthlete 
+                        ? `Mengemas kini maklumat atlet: ${athleteForm.nama} (${athleteForm.kelas})`
+                        : `Mendaftarkan atlet sukan baharu: ${athleteForm.nama} (${athleteForm.kelas}) dari Rumah ${athleteForm.rumah}`;
+                    
+                    createLog(logAction, logDetails);
 
                     showToastMessage(isEditingAthlete ? "Ahli berjaya dikemaskini!" : "Ahli berjaya didaftarkan!");
                     
@@ -2521,6 +2550,7 @@
                         </div>
                     </div>
 
+                    {}
                     <main className="max-w-7xl mx-auto px-4 py-6 flex-grow w-full">
                         
                         {/* DASHBOARD TAB */}
@@ -2756,7 +2786,7 @@
                                     </div>
                                 )}
 
-                                {/* Grid Senarai Rumah Sukan */}
+                                {}
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     {Object.keys(housesMetadata).map(houseName => {
                                         const meta = housesMetadata[houseName];
@@ -2880,7 +2910,6 @@
                         {/* ATLIT TAB */}
                         {activeTab === "atlit" && (
                             <div className="space-y-6">
-                                {/* Header Tab Pengurusan Atlet */}
                                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm mb-6">
                                     <div className="flex items-center gap-3">
                                         <div className="bg-indigo-100 text-indigo-700 p-2.5 rounded-xl">
@@ -2925,7 +2954,7 @@
                                     </div>
                                 </div>
 
-                                {/* Sidebar Drawer: Pendaftaran Ahli Baharu */}
+                                {}
                                 {isAddAthleteSidebarOpen && (
                                     <div className="fixed inset-0 z-[100] flex justify-end">
                                         <div 
@@ -3018,19 +3047,6 @@
                                                         <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl shadow transition-all">
                                                             {isEditingAthlete ? "Kemas Kini Profil Ahli" : "Daftar Ahli Baru"}
                                                         </button>
-                                                        {isEditingAthlete && (
-                                                            <button 
-                                                                type="button" 
-                                                                onClick={() => { 
-                                                                    setAthleteForm({ id: "", nama: "", kelas: "", rumah: "Merah", jantina: "Lelaki", kategori: "L12" }); 
-                                                                    setIsEditingAthlete(false); 
-                                                                    setIsAddAthleteSidebarOpen(false);
-                                                                }} 
-                                                                className="w-full bg-slate-200 text-slate-700 py-2 rounded-xl"
-                                                            >
-                                                                Batal Suntingan
-                                                            </button>
-                                                        )}
                                                     </form>
                                                 ) : (
                                                     <form onSubmit={handleTsvSubmit} className="space-y-4 text-xs font-semibold">
@@ -3059,7 +3075,7 @@
                                     </div>
                                 )}
 
-                                {/* Sidebar Drawer: Pendaftaran Acara & No. Atlet */}
+                                {}
                                 {isAssignEventSidebarOpen && (
                                     <div className="fixed inset-0 z-[100] flex justify-end">
                                         <div 
@@ -3187,7 +3203,7 @@
                                     </div>
                                 )}
 
-                                {/* Paparan Senarai Atlet: Mod Lebar Penuh (Spacious Full Width) */}
+                                {}
                                 <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm relative">
                                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b pb-3 mb-4">
                                         <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
@@ -3446,9 +3462,6 @@
                                                             <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl shadow transition-all">
                                                                 {isEditingEvent ? "Kemas Kini Acara" : "Daftar Acara Sukan"}
                                                             </button>
-                                                            {isEditingEvent && (
-                                                                <button type="button" onClick={() => { setEventForm({ id: "", nama: "", kategori: "L12", jenis: "Balapan", format: "Individu", tarikh: "", masa: "" }); setIsEditingEvent(false); }} className="w-full bg-slate-200 text-slate-700 py-2 rounded-xl">Batal Suntingan</button>
-                                                            )}
                                                         </form>
                                                     )}
                                                 </div>
@@ -3457,6 +3470,7 @@
                                     </div>
                                 )}
 
+                                {}
                                 <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
                                     <h3 className="text-sm font-bold text-slate-900 border-b pb-3 mb-4 uppercase tracking-wider">Senarai Penjadualan Rasmi Acara</h3>
                                     <div className="space-y-3">
@@ -3700,11 +3714,6 @@
                                                                     ))}
                                                                 </optgroup>
                                                             </select>
-                                                            {relevantAthletesForEventForm.length === 0 && selectedEventObject && (
-                                                                <p className="text-red-500 text-[10px] mt-1 font-bold">
-                                                                    ⚠️ Tiada atlet berdaftar ke acara ini lagi. Sila daftarkan atlet di Tab "Pengurusan Atlet".
-                                                                </p>
-                                                            )}
                                                         </div>
 
                                                         <div>
@@ -3727,6 +3736,7 @@
                                         )}
                                     </div>
 
+                                    {}
                                     <div className="lg:col-span-2 space-y-6">
                                         {selectedEventObject && selectedEventObject.jenis === "Balapan" && activeStageTab === "saringan" ? (
                                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -4001,7 +4011,6 @@
                                     </div>
                                 </div>
 
-                                {}
                                 {showSignatorySettings && (
                                     <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm animate-in slide-in-from-top-2 duration-200">
                                         <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider mb-4">✍️ Konfigurasi Nama Penandatangan Sijil</h4>
@@ -4046,7 +4055,6 @@
                                     </div>
                                 )}
 
-                                {}
                                 <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
                                     <h3 className="text-sm font-bold text-slate-900 mb-2 uppercase tracking-wider">📜 Penjana Sijil Penghargaan Pintar</h3>
                                     <p className="text-xs text-slate-400 mb-4">Masukkan carian nama atlet, kelas, atau rumah sukan untuk menjana Sijil Penghargaan secara automatik.</p>

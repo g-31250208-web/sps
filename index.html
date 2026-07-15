@@ -1562,19 +1562,23 @@
                             return (a.nama || "").localeCompare(b.nama || "");
                         });
 
-                    const rowsHtml = houseAthletes.map((ath, idx) => `
-                        <tr style="height: 35px;">
-                            <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center; font-weight: bold;">${idx + 1}</td>
-                            <td style="border: 1px solid #94a3b8; padding: 6px; text-transform: uppercase; font-weight: bold; font-size: 11px;">${ath.nama}</td>
-                            <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center;">${ath.kelas}</td>
-                            <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center;">${ath.jantina || "Lelaki"}</td>
-                            <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center;"></td>
-                            <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center;"></td>
-                            <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center;"></td>
-                            <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center;"></td>
-                            <td style="border: 1px solid #94a3b8; padding: 6px;"></td>
-                        </tr>
-                    `).join('');
+                    const rowsHtml = houseAthletes.map((ath, idx) => {
+                        const shortJap = ath.jantina === "Lelaki" ? "L" : (ath.jantina === "Perempuan" ? "P" : (ath.jantina || "L"));
+                        const cleanKelas = (ath.kelas || "").replace(/Prasekolah/gi, "PRA");
+                        return `
+                            <tr style="height: 35px;">
+                                <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center; font-weight: bold;">${idx + 1}</td>
+                                <td style="border: 1px solid #94a3b8; padding: 6px; text-transform: uppercase; font-weight: bold; font-size: 11px;">${ath.nama}</td>
+                                <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center;">${cleanKelas}</td>
+                                <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center; font-weight: bold;">${shortJap}</td>
+                                <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center;"></td>
+                                <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center;"></td>
+                                <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center;"></td>
+                                <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center;"></td>
+                                <td style="border: 1px solid #94a3b8; padding: 6px;"></td>
+                            </tr>
+                        `;
+                    }).join('');
 
                     const meta = housesMetadata[targetData.houseName] || {};
                     const advisorsText = meta.guruPenasihat || "Belum Ditetapkan";
@@ -1598,13 +1602,13 @@
                                     <tr style="background: #cbd5e1; height: 40px;">
                                         <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 35px;">No</th>
                                         <th style="border: 1px solid #94a3b8; padding: 6px;">Nama Penuh Ahli / Atlet</th>
-                                        <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 80px;">Kelas</th>
-                                        <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 60px;">Jantina</th>
-                                        <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 80px;">P1</th>
-                                        <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 80px;">P2</th>
-                                        <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 80px;">P3</th>
-                                        <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 80px;">P4</th>
-                                        <th style="border: 1px solid #94a3b8; padding: 6px; width: 120px;">Catatan</th>
+                                        <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 70px;">Kelas</th>
+                                        <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 45px;">Jantina</th>
+                                        <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 95px; font-size: 10px;">Lompat Jauh</th>
+                                        <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 95px; font-size: 10px;">Lompat Tinggi</th>
+                                        <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 95px; font-size: 10px;">50M/60M/80M/</th>
+                                        <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 95px; font-size: 10px;">Lontar Peluru</th>
+                                        <th style="border: 1px solid #94a3b8; padding: 6px; width: 100px;">Catatan</th>
                                     </tr>
                                 </thead>
                                 <tbody>

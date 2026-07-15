@@ -291,6 +291,40 @@
             const [showGasModal, setShowGasModal] = useState(false);
             const [showPointsModal, setShowPointsModal] = useState(false);
 
+            const handleExportHouseMembersJSON = (houseName) => {
+                const houseAthletes = athletes.filter(a => a.rumah === houseName);
+                const exportData = houseAthletes.map(ath => ({
+                    nama: ath.nama,
+                    kelas: ath.kelas,
+                    jantina: ath.jantina,
+                    rumah_sukan: ath.rumah
+                }));
+                
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
+                const downloadAnchor = document.createElement('a');
+                downloadAnchor.setAttribute("href", dataStr);
+                downloadAnchor.setAttribute("download", `Ahli_Rumah_${houseName}_${activeYear}.json`);
+                document.body.appendChild(downloadAnchor);
+                downloadAnchor.click();
+                downloadAnchor.remove();
+
+                // Salin ke clipboard untuk kemudahan web app lain
+                const jsonText = JSON.stringify(exportData, null, 2);
+                const tempTextArea = document.createElement("textarea");
+                tempTextArea.value = jsonText;
+                document.body.appendChild(tempTextArea);
+                tempTextArea.select();
+                try {
+                    document.execCommand('copy');
+                    showToastMessage(`Senarai ahli Rumah ${houseName} berjaya dimuat turun & disalin ke papan klip!`, "success");
+                } catch (err) {
+                    showToastMessage(`Senarai ahli Rumah ${houseName} berjaya dimuat turun!`, "success");
+                }
+                document.body.removeChild(tempTextArea);
+                
+                createLog("Eksport Ahli Rumah Sukan", `Mengeksport senarai ahli Rumah ${houseName} ke format JSON.`);
+            };
+
             const [gasUrl, setGasUrl] = useState("");
             const [isSyncingGas, setIsSyncingGas] = useState(false);
 
@@ -2814,6 +2848,7 @@
                                         const cls = COLOR_PRESETS[meta.warnaLabel] || { bg: "bg-slate-100", text: "text-slate-700", warna: "bg-slate-500", teks: "text-slate-600" };
                                         const houseMembers = (groupedByClass[houseName]) || {};
                                         const advisors = meta.guruPenasihat ? meta.guruPenasihat.split(',').map(s => s.trim()).filter(Boolean) : [];
+                                        const totalHouseMembersCount = athletes.filter(a => a.rumah === houseName).length;
 
                                         return (
                                             <div key={houseName} className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm space-y-4 hover:shadow-md transition-shadow">
@@ -2861,6 +2896,7 @@
                                                     <div className="flex gap-1.5">
                                                         <button onClick={() => executeBypassPrint('kehadiran_rumah', { houseName })} className="text-[10px] font-bold bg-slate-100 hover:bg-slate-200 px-2.5 py-1.5 rounded-lg flex items-center gap-1" title="Cetak Kehadiran">📝 Kehadiran</button>
                                                         <button onClick={() => executeBypassPrint('sukantara_rumah', { houseName })} className="text-[10px] font-bold bg-slate-100 hover:bg-slate-200 px-2.5 py-1.5 rounded-lg flex items-center gap-1" title="Cetak Borang Sukantara">🏅 Sukantara</button>
+                                                        <button onClick={() => handleExportHouseMembersJSON(houseName)} className="text-[10px] font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-2.5 py-1.5 rounded-lg flex items-center gap-1" title="Eksport Senarai Ahli ke JSON">📤 Eksport JSON</button>
                                                     </div>
                                                 </div>
                                                 <p className="text-xs font-semibold text-slate-400 italic">"{meta.slogan || 'Saga Membara Selamanya Juara'}"</p>
@@ -2897,7 +2933,12 @@
                                                 </div>
 
                                                 <div className="border-t pt-3 space-y-2">
-                                                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">🏃‍♂️ SENARAI AHLI RUMAH</h4>
+                                                    <div className="flex justify-between items-center mb-1">
+                                                        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">🏃‍♂️ SENARAI AHLI RUMAH</h4>
+                                                        <span className="text-[11px] font-extrabold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-lg">
+                                                            (Jumlah {totalHouseMembersCount} ahli)
+                                                        </span>
+                                                    </div>
                                                     <div className="max-h-48 overflow-y-auto pr-1 space-y-3">
                                                         {Object.keys(houseMembers).length === 0 ? (
                                                             <p className="text-xs text-slate-400 italic text-center py-4">Tiada ahli berdaftar di bawah rumah ini.</p>

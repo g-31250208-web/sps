@@ -968,7 +968,7 @@
                     createLog("Segerakan GAS", "Menjalankan eksport penuh semua pangkalan data ke Google Sheets");
                     showToastMessage("Penyegerakan pangkalan data penuh ke Google Sheets berjaya diselesaikan!", "success");
                 } catch (e) {
-                    showToastMessage("Ralat ketika menjalankan penyegerakan penuh.", "error");
+                    showToastMessage("Ralat ketika running penyegerakan penuh.", "error");
                 } finally {
                     setIsSyncingGas(false);
                 }
@@ -1571,6 +1571,7 @@
                             <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center;"></td>
                             <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center;"></td>
                             <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center;"></td>
+                            <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center;"></td>
                             <td style="border: 1px solid #94a3b8; padding: 6px;"></td>
                         </tr>
                     `).join('');
@@ -1602,11 +1603,12 @@
                                         <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 80px;">P1</th>
                                         <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 80px;">P2</th>
                                         <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 80px;">P3</th>
+                                        <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 80px;">P4</th>
                                         <th style="border: 1px solid #94a3b8; padding: 6px; width: 120px;">Catatan</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    ${rowsHtml || '<tr><td colspan="8" style="padding:15px; text-align:center; font-style:italic; color:#64748b;">Tiada ahli sukan didaftarkan di bawah rumah sukan ini.</td></tr>'}
+                                    ${rowsHtml || '<tr><td colspan="9" style="padding:15px; text-align:center; font-style:italic; color:#64748b;">Tiada ahli sukan didaftarkan di bawah rumah sukan ini.</td></tr>'}
                                 </tbody>
                             </table>
 
@@ -2260,7 +2262,7 @@
                     ...housesMetadata,
                     [houseName]: {
                         ...currentMeta,
-                        guruPenasihat: existingAdvisors.join(', ')
+                        guruPenasihat: advisors.join(', ')
                     }
                 };
 
@@ -2674,7 +2676,7 @@
                                         </div>
 
                                         {showAnnounceForm && userRole !== "pelawat" && (
-                                            <form onSubmit={handleAddAnnouncement} className="mb-6 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs font-semibold space-y-3">
+                                            <form onSubmit={handleAddAnnouncement} className="mb-6 bg-slate-50 p-4 rounded-xl border border-amber-200 text-xs font-semibold space-y-3">
                                                 <textarea 
                                                     rows="3"
                                                     required

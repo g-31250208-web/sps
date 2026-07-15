@@ -4394,6 +4394,80 @@
                             </div>
                         </div>
                     )}
+
+                    {}
+                    {/* Tetingkap Pratinjau Cetak Interaktif */}
+                    {isPreviewModalOpen && (
+                        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[10000] flex flex-col items-center justify-center p-4">
+                            <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+                                {/* Pengepala Modal */}
+                                <div className="bg-slate-950 text-white px-6 py-4 flex justify-between items-center shrink-0">
+                                    <div>
+                                        <h3 className="text-sm font-black uppercase tracking-wider flex items-center gap-2">
+                                            <span>📄 Pratinjau Dokumen Sukan</span>
+                                            <span className="text-[9px] bg-indigo-600 text-white px-2 py-0.5 rounded-full font-bold">Saiz A4 Sedia</span>
+                                        </h3>
+                                        <p className="text-[10px] text-slate-400 mt-0.5">Sila kesan sebarang kesilapan maklumat sebelum menghantar arahan cetak.</p>
+                                    </div>
+                                    <button 
+                                        onClick={() => {
+                                            setIsPreviewModalOpen(false);
+                                            setPreviewContent("");
+                                        }} 
+                                        className="text-slate-400 hover:text-white text-lg font-bold transition-colors w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-800"
+                                    >
+                                        ✕
+                                    </button>
+                                </div>
+
+                                {/* Bingkai Viewport Sandwic (Iframe) */}
+                                <div className="flex-grow bg-slate-100 p-4 flex justify-center items-center overflow-hidden">
+                                    <iframe 
+                                        id="preview-iframe"
+                                        title="SPS-SKB Print Viewer"
+                                        srcDoc={previewContent}
+                                        className="w-full h-full max-w-[210mm] bg-white shadow-2xl border border-slate-300 rounded-xl"
+                                    />
+                                </div>
+
+                                {/* Menu Tindakan Bawah (Sticky Footer) */}
+                                <div className="bg-slate-50 border-t border-slate-200 px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-4 shrink-0">
+                                    <div className="flex items-center gap-2 text-slate-500">
+                                        <span className="text-base">💡</span>
+                                        <p className="text-[11px] font-medium leading-normal">
+                                            Tip Cetakan: Pilih format <strong className="text-slate-700">"Save as PDF"</strong> atau pilih mesin pencetak fizikal anda di tetingkap sistem cetak.
+                                        </p>
+                                    </div>
+                                    <div className="flex gap-3 text-xs font-bold w-full sm:w-auto">
+                                        <button 
+                                            onClick={() => {
+                                                setIsPreviewModalOpen(false);
+                                                setPreviewContent("");
+                                            }} 
+                                            className="flex-1 sm:flex-none px-5 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl transition-colors"
+                                        >
+                                            ✕ Tutup Pratinjau
+                                        </button>
+                                        <button 
+                                            onClick={() => {
+                                                const iframe = document.getElementById('preview-iframe');
+                                                if (iframe) {
+                                                    iframe.contentWindow.focus();
+                                                    iframe.contentWindow.print();
+                                                } else {
+                                                    showToastMessage("Ralat: Gagal memuatkan bingkai pratinjau.", "error");
+                                                }
+                                            }} 
+                                            className="flex-1 sm:flex-none px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2 transition-all hover:scale-105"
+                                        >
+                                            <PrinterIcon className="h-4 w-4" />
+                                            <span>🖨️ Klik Untuk Cetak</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             );
         }

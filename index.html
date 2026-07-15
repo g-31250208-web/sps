@@ -1627,60 +1627,60 @@
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    `;
-                }
-
-                const fullHtml = `
-                    <!DOCTYPE html>
-                    <html lang="ms">
-                    <head>
-                        <meta charset="UTF-8">
-                        <title>Cetak Dokumen Sukan - SK Bikang</title>
-                        <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet">
-                        <style>
-                            @media print {
-                                body { margin: 0; padding: 0; background: white; }
-                                @page { size: A4 portrait; margin: 0; }
-                            }
-                            body { background-color: #ffffff; padding: 15mm; }
-                        </style>
-                    </head>
-                    <body>
-                        <div style="max-width: 210mm; margin: 0 auto; background: white;">
-                            ${printContent}
-                        </div>
-                    </body>
-                    </html>
-                `;
-
-                // Set preview content and open preview modal instead of raw printing instantly
-                setPreviewContent(fullHtml);
-                setIsPreviewModalOpen(true);
-                showToastMessage("Pratinjau dijana! Sila semak kesilapan sebelum mencetak.", "info");
-            };
-
-            const saveAthleteData = async () => {
-                const docId = athleteForm.id || "A_" + Date.now();
-                const updatedAthlete = { ...athleteForm, id: docId };
-
-                try {
-                    if (isCloudActive) {
-                        await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('athletes').doc(docId).set(updatedAthlete);
-                        await syncWithGas("students", "save", { id: docId, name: athleteForm.nama, class: athleteForm.kelas, house: athleteForm.rumah, jantina: athleteForm.jantina, kategori: athleteForm.kategori });
-                    } else {
-                        if (isEditingAthlete) {
-                            setAthletes(athletes.map(a => a.id === docId ? updatedAthlete : a));
-                        } else {
-                            setAthletes([...athletes, updatedAthlete]);
-                        }
+                        `;
                     }
 
-                    const detailsLog = isEditingAthlete 
-                        ? `Mengemas kini profil atlet: ${athleteForm.nama} (${athleteForm.kelas}) di bawah Rumah ${athleteForm.rumah}`
-                        : `Mendaftarkan ahli sukan baru bernama ${athleteForm.nama} (Kelas: ${athleteForm.kelas}) di bawah Rumah ${athleteForm.rumah}`;
-                    
-                    createLog(isEditingAthlete ? "Sunting Profil Atlet" : "Daftar Atlet Baru", detailsLog);
+                    let customStyle = `
+                        @media print {
+                            body { margin: 0; padding: 0; background: white; }
+                            @page { size: A4 portrait; margin: 0; }
+                        }
+                        body { background-color: #ffffff; padding: 15mm; }
+                    `;
+
+                    if (mode === 'kehadiran_rumah' || mode === 'sukantara_rumah') {
+                        customStyle = `
+                            @media print {
+                                body { 
+                                    margin: 0; 
+                                    padding-top: 0.5in !important; 
+                                    padding-bottom: 0.5in !important; 
+                                    padding-left: 0 !important;
+                                    padding-right: 0 !important;
+                                    background: white; 
+                                }
+                                @page { size: A4 portrait; margin: 0; }
+                            }
+                            body { background-color: #ffffff; padding: 0.5in 15mm; }
+                        `;
+                    }
+
+                    const fullHtml = `
+                        <!DOCTYPE html>
+                        <html lang="ms">
+                        <head>
+                            <meta charset="UTF-8">
+                            <title>Cetak Dokumen Sukan - SK Bikang</title>
+                            <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet">
+                            <style>
+                                ${customStyle}
+                            </style>
+                        </head>
+                        <body>
+                            <div style="max-width: 210mm; margin: 0 auto; background: white;">
+                                ${printContent}
+                            </div>
+                        </body>
+                        </html>
+                    `;
+
+                    // Set preview content and open preview modal instead of raw printing instantly
+                    setPreviewContent(fullHtml);
+                    setIsPreviewModalOpen(true);
+                    showToastMessage("Pratinjau dijana! Sila semak kesilapan sebelum mencetak.", "info");
+                };
+
+                const saveAthleteData = async () => {
 
                     showToastMessage(isEditingAthlete ? "Ahli berjaya dikemaskini!" : "Ahli berjaya didaftarkan!");
                     

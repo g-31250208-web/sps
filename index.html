@@ -1587,42 +1587,48 @@
                     }).join('');
 
                     const meta = housesMetadata[targetData.houseName] || {};
-                    const advisorsText = meta.guruPenasihat || "Belum Ditetapkan";
+                const advisorsText = meta.guruPenasihat || "Belum Ditetapkan";
 
-                    printContent = `
-                        <div style="font-family: sans-serif; padding: 15px; color: #1e293b;">
-                            <div style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 20px;">
-                                <img src="${logoUrl}" style="height: 60px;" />
-                                <h2 style="margin: 5px 0 0 0; text-transform: uppercase; font-size: 15px; letter-spacing: 0.5px; font-weight: bold;">BORANG SARINGAN SUKANTARA</h2>
-                                <h3 style="margin: 2px 0 0 0; color: #475569; font-size: 12px; text-transform: uppercase;">Kejohanan Sukan Tahunan SK Bikang ${activeYear}</h3>
-                            </div>
+                printContent = `
+                    <div style="font-family: sans-serif; padding: 15px; color: #1e293b;">
+                        <div style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 20px;">
+                            <img src="${logoUrl}" style="height: 60px;" />
+                            <h2 style="margin: 5px 0 0 0; text-transform: uppercase; font-size: 15px; letter-spacing: 0.5px; font-weight: bold;">BORANG SARINGAN SUKANTARA</h2>
+                            <h3 style="margin: 2px 0 0 0; color: #475569; font-size: 12px; text-transform: uppercase;">Kejohanan Sukan Tahunan SK Bikang ${activeYear}</h3>
+                        </div>
 
-                            <div style="background: #f1f5f9; padding: 12px; border-radius: 8px; margin-bottom: 15px; font-size: 11px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; border: 1px solid #cbd5e1;">
-                                <div><strong>Rumah Sukan:</strong> Rumah ${targetData.houseName}</div>
-                                <div><strong>Slogan:</strong> "${meta.slogan || '-'}"</div>
-                                <div style="grid-column: span 2;"><strong>Guru Penasihat:</strong> ${advisorsText}</div>
-                            </div>
+                        <div style="background: #f1f5f9; padding: 12px; border-radius: 8px; margin-bottom: 15px; font-size: 11px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; border: 1px solid #cbd5e1;">
+                            <div><strong>Rumah Sukan:</strong> Rumah ${targetData.houseName}</div>
+                            <div><strong>Slogan:</strong> "${meta.slogan || '-'}"</div>
+                            <div style="grid-column: span 2;"><strong>Guru Penasihat:</strong> ${advisorsText}</div>
+                        </div>
 
-                            <table style="width: 100%; border-collapse: collapse; font-size: 11px; text-align: left;">
-                                <thead>
-                                    <tr style="background: #cbd5e1; height: 40px;">
-                                        <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 35px;">No</th>
-                                        <th style="border: 1px solid #94a3b8; padding: 6px;">Nama Penuh Ahli / Atlet</th>
-                                        <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 70px;">Kelas</th>
-                                        <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 45px;">Jantina</th>
-                                        <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 95px; font-size: 10px;">Lompat Jauh</th>
-                                        <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 95px; font-size: 10px;">Lompat Tinggi</th>
-                                        <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 95px; font-size: 10px;">50M/60M/80M/</th>
-                                        <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 95px; font-size: 10px;">Lontar Peluru</th>
-                                        <th style="border: 1px solid #94a3b8; padding: 6px; width: 100px;">Catatan</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${rowsHtml || '<tr><td colspan="9" style="padding:15px; text-align:center; font-style:italic; color:#64748b;">Tiada ahli sukan didaftarkan di bawah rumah sukan ini.</td></tr>'}
-                                </tbody>
-                            </table>
+                        <table style="width: 100%; border-collapse: collapse; font-size: 11px; text-align: left;">
+                            <thead>
+                                <tr style="background: #cbd5e1; height: 45px;">
+                                    <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 35px;">No</th>
+                                    <th style="border: 1px solid #94a3b8; padding: 6px;">Nama Penuh Ahli / Atlet</th>
+                                    <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 70px;">Kelas</th>
+                                    <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 45px;">Jantina</th>
+                                    <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 95px; font-size: 10px;">Lompat Jauh</th>
+                                    <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 95px; font-size: 10px;">Lompat Tinggi</th>
+                                    <th style="border: 1px solid #94a3b8; padding: 4px; text-align: center; width: 95px; font-size: 10px;">
+                                        <div style="display: flex; flex-direction: column; line-height: 1.1; align-items: center; justify-content: center; font-weight: bold;">
+                                            <span>50M</span>
+                                            <span>60M</span>
+                                            <span>80M</span>
+                                        </div>
+                                    </th>
+                                    <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 95px; font-size: 10px;">Lontar Peluru</th>
+                                    <th style="border: 1px solid #94a3b8; padding: 6px; width: 100px;">Catatan</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${rowsHtml || '<tr><td colspan="9" style="padding:15px; text-align:center; font-style:italic; color:#64748b;">Tiada ahli sukan didaftarkan di bawah rumah sukan ini.</td></tr>'}
+                            </tbody>
+                        </table>
 
-                            <div style="display: flex; justify-content: space-between; margin-top: 50px; font-size: 11px;">
+                        <div style="display: flex; justify-content: space-between; margin-top: 50px; font-size: 11px;">
                                 <div style="width: 220px; text-align: center;">
                                     <p style="margin: 0;">Disediakan oleh,</p>
                                     <div style="border-bottom: 1px solid #94a3b8; height: 50px; margin-bottom: 5px;"></div>

@@ -1353,382 +1353,184 @@
                             </div>
 
                             <table style="width: 100%; border-collapse: collapse; font-size: 11px; text-align: left;">
-                                <thead>
-                                    <tr style="background: #cbd5e1;">
-                                        <th style="border: 1px solid #94a3b8; padding: 8px; text-align: center; width: 110px;">Lorong / Susunan</th>
-                                        <th style="border: 1px solid #94a3b8; padding: 8px;">Nama Penuh Atlet</th>
-                                        <th style="border: 1px solid #94a3b8; padding: 8px; text-align: center; width: 80px;">Kelas</th>
-                                        <th style="border: 1px solid #94a3b8; padding: 8px; text-align: center; width: 100px;">Rumah Sukan</th>
-                                        <th style="border: 1px solid #94a3b8; padding: 8px; text-align: center; width: 120px;">Ranking Saringan</th>
-                                        <th style="border: 1px solid #94a3b8; padding: 8px; width: 120px;">Catatan Pegawai</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${athleteRowsHtml}
-                                </tbody>
-                            </table>
-                        </div>
-                    `;
-                } else if (mode === 'keputusan_semua') {
-                    const eventBlocksHtml = eventsWithCode.map((event, idx) => {
-                        const eventResults = results.filter(r => r.eventId === event.id)
-                                                     .sort((a,b) => parseInt(a.kedudukan) - parseInt(b.kedudukan));
-                        
-                        let resultRowsHtml = "";
-                        if (eventResults.length === 0) {
-                            resultRowsHtml = `<tr><td colspan="5" style="padding: 10px; text-align: center; color: #94a3b8; font-style: italic;">Keputusan belum dikunci masuk.</td></tr>`;
-                        } else {
-                            resultRowsHtml = eventResults.map(res => {
-                                const ath = athletes.find(a => a.id === res.athleteId);
-                                const medalLabel = res.kedudukan === "1" ? "🥇 Johan" : res.kedudukan === "2" ? "🥈 Naib Johan" : res.kedudukan === "3" ? "🥉 Ketiga" : "🏅 Tempat Ke-4";
-                                return `
-                                    <tr style="border-bottom: 1px solid #e2e8f0;">
-                                        <td style="padding: 6px; font-weight: 700;">${medalLabel}</td>
-                                        <td style="padding: 6px; text-transform: uppercase;">${ath ? (ath.nama || "") : "Atlet Tidak Diketahui"}</td>
-                                        <td style="padding: 6px; text-align: center;">${ath ? ath.kelas : ""}</td>
-                                        <td style="padding: 6px; text-align: center; font-weight: 700;">${ath ? ath.rumah : ""}</td>
-                                        <td style="padding: 6px; text-align: center; font-weight: 700; color: #1e3a8a;">${res.catatan || "Tiada"}</td>
-                                    </tr>
-                                `;
-                            }).join('');
-                        }
-
-                        return `
-                            <div style="margin-bottom: 25px; page-break-inside: avoid;">
-                                <div style="background: #f1f5f9; padding: 8px; font-weight: 700; font-size: 12px; border-left: 5px solid #1e3a8a; display: flex; justify-content: space-between;">
-                                    <span>Acara #${idx+1}: [${event.kodAcara}] ${event.nama} (${event.kategori})</span>
-                                    <span>📅 ${event.tarikh || "N/A"}</span>
-                                </div>
-                                <table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 5px; text-align: left;">
-                                    <thead>
-                                        <tr style="border-bottom: 2px solid #cbd5e1; background: #fafafa;">
-                                            <th style="padding: 6px; width: 100px;">Kedudukan</th>
-                                            <th style="padding: 6px;">Nama Atlet</th>
-                                            <th style="padding: 6px; width: 100px; text-align: center;">Kelas</th>
-                                            <th style="padding: 6px; width: 100px; text-align: center;">Rumah Sukan</th>
-                                            <th style="padding: 6px; width: 120px; text-align: center;">Catatan Kejohanan</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        ${resultRowsHtml}
-                                    </tbody>
-                                </table>
-                            </div>
-                        `;
-                    }).join('');
-
-                    printContent = `
-                        <div style="font-family: sans-serif; padding: 20px; color: #1e293b;">
-                            <div style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 25px;">
-                                <img src="${logoUrl}" style="height: 60px;" />
-                                <h2 style="margin: 5px 0 0 0;">BUKU LAPORAN KEPUTUSAN PENUH KEJOHANAN</h2>
-                                <h3 style="margin: 2px 0 0 0; color: #475569;">SK BIKANG, LAHAD DATU, SABAH</h3>
-                            </div>
-                            ${eventBlocksHtml}
-                        </div>
-                    `;
-                } else if (mode === 'keputusan_tunggal' && targetData) {
-                    const singleEventResults = results.filter(r => r.eventId === targetData.id)
-                                                      .sort((a,b) => parseInt(a.kedudukan) - parseInt(b.kedudukan));
-
-                    const singleRowsHtml = singleEventResults.map(res => {
-                        const ath = athletes.find(a => a.id === res.athleteId);
-                        const medalLabel = res.kedudukan === "1" ? "🥇 Johan" : res.kedudukan === "2" ? "🥈 Naib Johan" : res.kedudukan === "3" ? "🥉 Ketiga" : "🏅 Tempat Ke-4";
-                        return `
-                            <tr style="height: 35px;">
-                                <td style="border: 1px solid #e2e8f0; padding: 8px; text-align: center; font-weight: 700;">${medalLabel}</td>
-                                <td style="border: 1px solid #e2e8f0; padding: 8px; text-transform: uppercase;">${ath ? (ath.nama || "") : "Tidak dikenali"}</td>
-                                <td style="border: 1px solid #e2e8f0; padding: 8px; text-align: center;">${ath ? ath.kelas : ""}</td>
-                                <td style="border: 1px solid #e2e8f0; padding: 8px; text-align: center; font-weight: 700;">${ath ? ath.rumah : ""}</td>
-                                <td style="border: 1px solid #e2e8f0; padding: 8px; text-align: center; font-weight: 700; color: #1e3a8a;">${res.catatan || "Tiada Rekod"}</td>
+                        <thead>
+                            <tr style="background: #cbd5e1;">
+                                <th style="border: 1px solid #94a3b8; padding: 8px; text-align: center; width: 100px;">Peringkat</th>
+                                <th style="border: 1px solid #94a3b8; padding: 8px;">Nama Penuh Pemenang</th>
+                                <th style="border: 1px solid #94a3b8; padding: 8px; text-align: center; width: 80px;">Kelas</th>
+                                <th style="border: 1px solid #94a3b8; padding: 8px; text-align: center; width: 100px;">Rumah Sukan</th>
+                                <th style="border: 1px solid #94a3b8; padding: 8px; text-align: center; width: 120px;">Hasil Catatan Terbaik</th>
                             </tr>
-                        `;
-                    }).join('');
+                        </thead>
+                        <tbody>
+                            ${singleRowsHtml}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        } else if (mode === 'kehadiran_rumah' && targetData) {
+            const houseAthletes = athletes
+                .filter(a => a.rumah === targetData.houseName)
+                .sort((a, b) => {
+                    const classCompare = (a.kelas || "").localeCompare(b.kelas || "");
+                    if (classCompare !== 0) return classCompare;
+                    return (a.nama || "").localeCompare(b.nama || "");
+                });
 
-                    printContent = `
-                        <div style="font-family: sans-serif; padding: 15px; color: #1e293b;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 25px;">
-                                <div>
-                                    <h2 style="margin: 0; font-size: 18px; font-weight: 800;">SK BIKANG, LAHAD DATU</h2>
-                                    <h1 style="margin: 3px 0 0 0; font-size: 14px; text-transform: uppercase; color: #1e3a8a;">Laporan Keputusan Rasmi Acara (Official Record)</h1>
-                                </div>
-                                <img src="${logoUrl}" style="height: 50px;" />
-                            </div>
+            const rowsHtml = houseAthletes.map((ath, idx) => {
+                const shortJap = ath.jantina === "Lelaki" ? "L" : (ath.jantina === "Perempuan" ? "P" : (ath.jantina || "L"));
+                const cleanKelas = (ath.kelas || "").replace(/Prasekolah/gi, "PRA");
+                return `
+                    <tr style="height: 35px;">
+                        <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center; font-weight: bold;">${idx + 1}</td>
+                        <td style="border: 1px solid #94a3b8; padding: 6px; text-transform: uppercase; font-weight: bold; font-size: 11px;">${ath.nama}</td>
+                        <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center;">${cleanKelas}</td>
+                        <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center; font-weight: bold;">${shortJap}</td>
+                        <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center;"></td>
+                        <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center;"></td>
+                        <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center;"></td>
+                        <td style="border: 1px solid #94a3b8; padding: 6px;"></td>
+                    </tr>
+                `;
+            }).join('');
 
-                            <div style="background: #f1f5f9; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                                <div><strong>Acara Perlumbaan:</strong> [${targetData.kodAcara}] ${targetData.nama}</div>
-                                <div><strong>Kategori:</strong> ${targetData.kategori} (${targetData.jenis})</div>
-                                <div><strong>Tarikh Rasmi Pelaksanaan:</strong> ${targetData.tarikh || "Belum Ditetapkan"}</div>
-                                <div><strong>Masa Ditamatkan:</strong> ${targetData.masa || "--:--"}</div>
-                            </div>
+            const meta = housesMetadata[targetData.houseName] || {};
+            const advisorsText = meta.guruPenasihat || "Belum Ditetapkan";
 
-                            <table style="width: 100%; border-collapse: collapse; font-size: 11px; text-align: left;">
-                                <thead>
-                                    <tr style="background: #cbd5e1;">
-                                        <th style="border: 1px solid #94a3b8; padding: 8px; text-align: center; width: 100px;">Peringkat</th>
-                                        <th style="border: 1px solid #94a3b8; padding: 8px;">Nama Penuh Pemenang</th>
-                                        <th style="border: 1px solid #94a3b8; padding: 8px; text-align: center; width: 80px;">Kelas</th>
-                                        <th style="border: 1px solid #94a3b8; padding: 8px; text-align: center; width: 100px;">Rumah Sukan</th>
-                                        <th style="border: 1px solid #94a3b8; padding: 8px; text-align: center; width: 120px;">Hasil Catatan Terbaik</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${singleRowsHtml}
-                                </tbody>
-                            </table>
-                        </div>
-                    `;
-                } else if (mode === 'kehadiran_rumah' && targetData) {
-                    const houseAthletes = athletes
-                        .filter(a => a.rumah === targetData.houseName)
-                        .sort((a, b) => {
-                            const classCompare = (a.kelas || "").localeCompare(b.kelas || "");
-                            if (classCompare !== 0) return classCompare;
-                            return (a.nama || "").localeCompare(b.nama || "");
-                        });
+            printContent = `
+                <div style="font-family: sans-serif; padding: 15px; color: #1e293b;">
+                    <div style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 20px;">
+                        <img src="${logoUrl}" style="height: 60px;" />
+                        <h2 style="margin: 5px 0 0 0; text-transform: uppercase; font-size: 15px; letter-spacing: 0.5px; font-weight: bold;">BORANG KEHADIRAN & MAKLUMAT AHLI</h2>
+                        <h3 style="margin: 2px 0 0 0; color: #475569; font-size: 12px; text-transform: uppercase;">Kejohanan Sukan Tahunan SK Bikang ${activeYear}</h3>
+                    </div>
 
-                    const rowsHtml = houseAthletes.map((ath, idx) => `
-                        <tr style="height: 35px;">
-                            <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center; font-weight: bold;">${idx + 1}</td>
-                            <td style="border: 1px solid #94a3b8; padding: 6px; text-transform: uppercase; font-weight: bold; font-size: 11px;">${ath.nama}</td>
-                            <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center;">${ath.kelas}</td>
-                            <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center;">${ath.jantina || "Lelaki"}</td>
-                            <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center;"></td>
-                            <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center;"></td>
-                            <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center;"></td>
-                            <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center;"></td>
-                            <td style="border: 1px solid #94a3b8; padding: 6px;"></td>
-                        </tr>
-                    `).join('');
+                    <div style="background: #f1f5f9; padding: 12px; border-radius: 8px; margin-bottom: 15px; font-size: 11px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; border: 1px solid #cbd5e1;">
+                        <div><strong>Rumah Sukan:</strong> Rumah ${targetData.houseName}</div>
+                        <div><strong>Slogan:</strong> "${meta.slogan || '-'}"</div>
+                        <div style="grid-column: span 2;"><strong>Guru Penasihat:</strong> ${advisorsText}</div>
+                    </div>
 
-                    const meta = housesMetadata[targetData.houseName] || {};
-                const advisorsText = meta.guruPenasihat || "Belum Ditetapkan";
-
-                printContent = `
-                    <div style="font-family: sans-serif; padding: 15px; color: #1e293b;">
-                        <div style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 20px;">
-                            <img src="${logoUrl}" style="height: 60px;" />
-                            <h2 style="margin: 5px 0 0 0; text-transform: uppercase; font-size: 15px; letter-spacing: 0.5px; font-weight: bold;">BORANG SARINGAN SUKANTARA</h2>
-                            <h3 style="margin: 2px 0 0 0; color: #475569; font-size: 12px; text-transform: uppercase;">Kejohanan Sukan Tahunan SK Bikang ${activeYear}</h3>
-                        </div>
-
-                        <div style="background: #f1f5f9; padding: 12px; border-radius: 8px; margin-bottom: 15px; font-size: 11px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; border: 1px solid #cbd5e1;">
-                            <div><strong>Rumah Sukan:</strong> Rumah ${targetData.houseName}</div>
-                            <div><strong>Slogan:</strong> "${meta.slogan || '-'}"</div>
-                            <div style="grid-column: span 2;"><strong>Guru Penasihat:</strong> ${advisorsText}</div>
-                        </div>
-
-                        <table style="width: 100%; border-collapse: collapse; font-size: 11px; text-align: left;">
-                            <thead>
-                                <tr style="background: #cbd5e1; height: 45px;">
-                                    <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 35px;">No</th>
-                                    <th style="border: 1px solid #94a3b8; padding: 6px;">Nama Penuh Ahli / Atlet</th>
-                                    <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 70px;">Kelas</th>
-                                    <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 45px;">Jantina</th>
-                                    <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 95px; font-size: 10px;">Lompat Jauh</th>
-                                    <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 95px; font-size: 10px;">Lompat Tinggi</th>
-                                    <th style="border: 1px solid #94a3b8; padding: 4px; text-align: center; width: 95px; font-size: 10px;">
-                                        <div style="display: flex; flex-direction: column; line-height: 1.1; align-items: center; justify-content: center; font-weight: bold;">
-                                            <span>50M/</span>
-                                            <span>60M/80M</span>
-                                        </div>
-                                    </th>
-                                    <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 95px; font-size: 10px;">Lontar Peluru</th>
-                                    <th style="border: 1px solid #94a3b8; padding: 6px; width: 100px;">Catatan</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${rowsHtml || '<tr><td colspan="9" style="padding:15px; text-align:center; font-style:italic; color:#64748b;">Tiada ahli sukan didaftarkan di bawah rumah sukan ini.</td></tr>'}
-                            </tbody>
-                        </table>
-
-                        <div style="display: flex; justify-content: space-between; margin-top: 50px; font-size: 11px;">
-                                <div style="width: 220px; text-align: center;">
-                                    <p style="margin: 0;">Disediakan oleh,</p>
-                                    <div style="border-bottom: 1px solid #94a3b8; height: 50px; margin-bottom: 5px;"></div>
-                                    <p style="margin: 0; font-weight: bold;">(_______________________)</p>
-                                    <p style="margin: 2px 0 0 0; color: #475569; font-size: 10px;">Guru Penasihat Rumah ${targetData.houseName}</p>
-                                </div>
-                                <div style="width: 220px; text-align: center;">
-                                    <p style="margin: 0;">Disahkan oleh,</p>
-                                    <div style="border-bottom: 1px solid #94a3b8; height: 50px; margin-bottom: 5px;"></div>
-                                    <p style="margin: 0; font-weight: bold;">(_______________________)</p>
-                                    <p style="margin: 2px 0 0 0; color: #475569; font-size: 10px;">Penyelaras Sukan / GPK Kokurikulum</p>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                } else if (mode === 'sukantara_rumah' && targetData) {
-                    const houseAthletes = athletes
-                        .filter(a => a.rumah === targetData.houseName)
-                        .sort((a, b) => {
-                            const classCompare = (a.kelas || "").localeCompare(b.kelas || "");
-                            if (classCompare !== 0) return classCompare;
-                            return (a.nama || "").localeCompare(b.nama || "");
-                        });
-
-                    const rowsHtml = houseAthletes.map((ath, idx) => {
-                        const shortJap = ath.jantina === "Lelaki" ? "L" : (ath.jantina === "Perempuan" ? "P" : (ath.jantina || "L"));
-                        const cleanKelas = (ath.kelas || "").replace(/Prasekolah/gi, "PRA");
-                        return `
-                            <tr style="height: 35px;">
-                                <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center; font-weight: bold;">${idx + 1}</td>
-                                <td style="border: 1px solid #94a3b8; padding: 6px; text-transform: uppercase; font-weight: bold; font-size: 11px;">${ath.nama}</td>
-                                <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center;">${cleanKelas}</td>
-                                <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center; font-weight: bold;">${shortJap}</td>
-                                <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center;"></td>
-                                <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center;"></td>
-                                <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center;"></td>
-                                <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center;"></td>
-                                <td style="border: 1px solid #94a3b8; padding: 6px;"></td>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 11px; text-align: left;">
+                        <thead>
+                            <tr style="background: #cbd5e1; height: 45px;">
+                                <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 35px;">No</th>
+                                <th style="border: 1px solid #94a3b8; padding: 6px;">Nama Penuh Ahli / Atlet</th>
+                                <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 70px;">Kelas</th>
+                                <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 45px;">Jantina</th>
+                                <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 90px; font-size: 10px;">Latihan 1</th>
+                                <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 90px; font-size: 10px;">Latihan 2</th>
+                                <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 90px; font-size: 10px;">Hari Sukan</th>
+                                <th style="border: 1px solid #94a3b8; padding: 6px; width: 120px;">Tandatangan / Catatan</th>
                             </tr>
-                        `;
-                    }).join('');
+                        </thead>
+                        <tbody>
+                            ${rowsHtml || '<tr><td colspan="8" style="padding:15px; text-align:center; font-style:italic; color:#64748b;">Tiada ahli sukan didaftarkan di bawah rumah sukan ini.</td></tr>'}
+                        </tbody>
+                    </table>
 
-                    const meta = housesMetadata[targetData.houseName] || {};
-                const advisorsText = meta.guruPenasihat || "Belum Ditetapkan";
-
-                printContent = `
-                    <div style="font-family: sans-serif; padding: 15px; color: #1e293b;">
-                        <div style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 20px;">
-                            <img src="${logoUrl}" style="height: 60px;" />
-                            <h2 style="margin: 5px 0 0 0; text-transform: uppercase; font-size: 15px; letter-spacing: 0.5px; font-weight: bold;">BORANG SARINGAN SUKANTARA</h2>
-                            <h3 style="margin: 2px 0 0 0; color: #475569; font-size: 12px; text-transform: uppercase;">Kejohanan Sukan Tahunan SK Bikang ${activeYear}</h3>
+                    <div style="display: flex; justify-content: space-between; margin-top: 50px; font-size: 11px;">
+                        <div style="width: 220px; text-align: center;">
+                            <p style="margin: 0;">Disediakan oleh,</p>
+                            <div style="border-bottom: 1px solid #94a3b8; height: 50px; margin-bottom: 5px;"></div>
+                            <p style="margin: 0; font-weight: bold;">(_______________________)</p>
+                            <p style="margin: 2px 0 0 0; color: #475569; font-size: 10px;">Guru Penasihat Rumah ${targetData.houseName}</p>
                         </div>
-
-                        <div style="background: #f1f5f9; padding: 12px; border-radius: 8px; margin-bottom: 15px; font-size: 11px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; border: 1px solid #cbd5e1;">
-                            <div><strong>Rumah Sukan:</strong> Rumah ${targetData.houseName}</div>
-                            <div><strong>Slogan:</strong> "${meta.slogan || '-'}"</div>
-                            <div style="grid-column: span 2;"><strong>Guru Penasihat:</strong> ${advisorsText}</div>
+                        <div style="width: 220px; text-align: center;">
+                            <p style="margin: 0;">Disahkan oleh,</p>
+                            <div style="border-bottom: 1px solid #94a3b8; height: 50px; margin-bottom: 5px;"></div>
+                            <p style="margin: 0; font-weight: bold;">(_______________________)</p>
+                            <p style="margin: 2px 0 0 0; color: #475569; font-size: 10px;">Penyelaras Sukan / GPK Kokurikulum</p>
                         </div>
+                    </div>
+                </div>
+            `;
+        } else if (mode === 'sukantara_rumah' && targetData) {
+            const houseAthletes = athletes
+                .filter(a => a.rumah === targetData.houseName)
+                .sort((a, b) => {
+                    const classCompare = (a.kelas || "").localeCompare(b.kelas || "");
+                    if (classCompare !== 0) return classCompare;
+                    return (a.nama || "").localeCompare(b.nama || "");
+                });
 
-                        <table style="width: 100%; border-collapse: collapse; font-size: 11px; text-align: left;">
-                            <thead>
-                                <tr style="background: #cbd5e1; height: 45px;">
-                                    <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 35px;">No</th>
-                                    <th style="border: 1px solid #94a3b8; padding: 6px;">Nama Penuh Ahli / Atlet</th>
-                                    <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 70px;">Kelas</th>
-                                    <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 45px;">Jantina</th>
-                                    <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 95px; font-size: 10px;">Lompat Jauh</th>
-                                    <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 95px; font-size: 10px;">Lompat Tinggi</th>
-                                    <th style="border: 1px solid #94a3b8; padding: 4px; text-align: center; width: 95px; font-size: 10px;">
-                                        <div style="display: flex; flex-direction: column; line-height: 1.1; align-items: center; justify-content: center; font-weight: bold;">
-                                            <span>50M/</span>
-                                            <span>60M/80M</span>
-                                        </div>
-                                    </th>
-                                    <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 95px; font-size: 10px;">Lontar Peluru</th>
-                                    <th style="border: 1px solid #94a3b8; padding: 6px; width: 100px;">Catatan</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${rowsHtml || '<tr><td colspan="9" style="padding:15px; text-align:center; font-style:italic; color:#64748b;">Tiada ahli sukan didaftarkan di bawah rumah sukan ini.</td></tr>'}
-                            </tbody>
-                        </table>
+            const rowsHtml = houseAthletes.map((ath, idx) => {
+                const shortJap = ath.jantina === "Lelaki" ? "L" : (ath.jantina === "Perempuan" ? "P" : (ath.jantina || "L"));
+                const cleanKelas = (ath.kelas || "").replace(/Prasekolah/gi, "PRA");
+                return `
+                    <tr style="height: 35px;">
+                        <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center; font-weight: bold;">${idx + 1}</td>
+                        <td style="border: 1px solid #94a3b8; padding: 6px; text-transform: uppercase; font-weight: bold; font-size: 11px;">${ath.nama}</td>
+                        <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center;">${cleanKelas}</td>
+                        <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center; font-weight: bold;">${shortJap}</td>
+                        <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center;"></td>
+                        <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center;"></td>
+                        <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center;"></td>
+                        <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center;"></td>
+                        <td style="border: 1px solid #94a3b8; padding: 6px;"></td>
+                    </tr>
+                `;
+            }).join('');
 
-                        <div style="display: flex; justify-content: space-between; margin-top: 50px; font-size: 11px;">
-                                <div style="width: 220px; text-align: center;">
-                                    <p style="margin: 0;">Disediakan oleh,</p>
-                                    <div style="border-bottom: 1px solid #94a3b8; height: 50px; margin-bottom: 5px;"></div>
-                                    <p style="margin: 0; font-weight: bold;">(_______________________)</p>
-                                    <p style="margin: 2px 0 0 0; color: #475569; font-size: 10px;">Guru Penasihat Rumah ${targetData.houseName}</p>
-                                </div>
-                                <div style="width: 220px; text-align: center;">
-                                    <p style="margin: 0;">Disahkan oleh,</p>
-                                    <div style="border-bottom: 1px solid #94a3b8; height: 50px; margin-bottom: 5px;"></div>
-                                    <p style="margin: 0; font-weight: bold;">(_______________________)</p>
-                                    <p style="margin: 2px 0 0 0; color: #475569; font-size: 10px;">Penyelaras Sukan / GPK Kokurikulum</p>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                } else if (mode === 'sukantara_rumah' && targetData) {
-                    const houseAthletes = athletes
-                        .filter(a => a.rumah === targetData.houseName)
-                        .sort((a, b) => {
-                            const classCompare = (a.kelas || "").localeCompare(b.kelas || "");
-                            if (classCompare !== 0) return classCompare;
-                            return (a.nama || "").localeCompare(b.nama || "");
-                        });
+            const meta = housesMetadata[targetData.houseName] || {};
+            const advisorsText = meta.guruPenasihat || "Belum Ditetapkan";
 
-                    const rowsHtml = houseAthletes.map((ath, idx) => {
-                        const shortJap = ath.jantina === "Lelaki" ? "L" : (ath.jantina === "Perempuan" ? "P" : (ath.jantina || "L"));
-                        const cleanKelas = (ath.kelas || "").replace(/Prasekolah/gi, "PRA");
-                        return `
-                            <tr style="height: 35px;">
-                                <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center; font-weight: bold;">${idx + 1}</td>
-                                <td style="border: 1px solid #94a3b8; padding: 6px; text-transform: uppercase; font-weight: bold; font-size: 11px;">${ath.nama}</td>
-                                <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center;">${cleanKelas}</td>
-                                <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center; font-weight: bold;">${shortJap}</td>
-                                <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center;"></td>
-                                <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center;"></td>
-                                <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center;"></td>
-                                <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center;"></td>
-                                <td style="border: 1px solid #94a3b8; padding: 6px;"></td>
+            printContent = `
+                <div style="font-family: sans-serif; padding: 15px; color: #1e293b;">
+                    <div style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 20px;">
+                        <img src="${logoUrl}" style="height: 60px;" />
+                        <h2 style="margin: 5px 0 0 0; text-transform: uppercase; font-size: 15px; letter-spacing: 0.5px; font-weight: bold;">BORANG SARINGAN SUKANTARA</h2>
+                        <h3 style="margin: 2px 0 0 0; color: #475569; font-size: 12px; text-transform: uppercase;">Kejohanan Sukan Tahunan SK Bikang ${activeYear}</h3>
+                    </div>
+
+                    <div style="background: #f1f5f9; padding: 12px; border-radius: 8px; margin-bottom: 15px; font-size: 11px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; border: 1px solid #cbd5e1;">
+                        <div><strong>Rumah Sukan:</strong> Rumah ${targetData.houseName}</div>
+                        <div><strong>Slogan:</strong> "${meta.slogan || '-'}"</div>
+                        <div style="grid-column: span 2;"><strong>Guru Penasihat:</strong> ${advisorsText}</div>
+                    </div>
+
+                    <table style="width: 100%; border-collapse: collapse; font-size: 11px; text-align: left;">
+                        <thead>
+                            <tr style="background: #cbd5e1; height: 45px;">
+                                <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 35px;">No</th>
+                                <th style="border: 1px solid #94a3b8; padding: 6px;">Nama Penuh Ahli / Atlet</th>
+                                <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 70px;">Kelas</th>
+                                <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 45px;">Jantina</th>
+                                <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 95px; font-size: 10px;">Lompat Jauh</th>
+                                <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 95px; font-size: 10px;">Lompat Tinggi</th>
+                                <th style="border: 1px solid #94a3b8; padding: 4px; text-align: center; width: 95px; font-size: 10px;">
+                                    <div style="display: flex; flex-direction: column; line-height: 1.1; align-items: center; justify-content: center; font-weight: bold;">
+                                        <span>50M/</span>
+                                        <span>60M/80M</span>
+                                    </div>
+                                </th>
+                                <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 95px; font-size: 10px;">Lontar Peluru</th>
+                                <th style="border: 1px solid #94a3b8; padding: 6px; width: 100px;">Catatan</th>
                             </tr>
-                        `;
-                    }).join('');
+                        </thead>
+                        <tbody>
+                            ${rowsHtml || '<tr><td colspan="9" style="padding:15px; text-align:center; font-style:italic; color:#64748b;">Tiada ahli sukan didaftarkan di bawah rumah sukan ini.</td></tr>'}
+                        </tbody>
+                    </table>
 
-                    const meta = housesMetadata[targetData.houseName] || {};
-                const advisorsText = meta.guruPenasihat || "Belum Ditetapkan";
-
-                printContent = `
-                    <div style="font-family: sans-serif; padding: 15px; color: #1e293b;">
-                        <div style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 20px;">
-                            <img src="${logoUrl}" style="height: 60px;" />
-                            <h2 style="margin: 5px 0 0 0; text-transform: uppercase; font-size: 15px; letter-spacing: 0.5px; font-weight: bold;">BORANG SARINGAN SUKANTARA</h2>
-                            <h3 style="margin: 2px 0 0 0; color: #475569; font-size: 12px; text-transform: uppercase;">Kejohanan Sukan Tahunan SK Bikang ${activeYear}</h3>
+                    <div style="display: flex; justify-content: space-between; margin-top: 50px; font-size: 11px;">
+                        <div style="width: 220px; text-align: center;">
+                            <p style="margin: 0;">Disediakan oleh,</p>
+                            <div style="border-bottom: 1px solid #94a3b8; height: 50px; margin-bottom: 5px;"></div>
+                            <p style="margin: 0; font-weight: bold;">(_______________________)</p>
+                            <p style="margin: 2px 0 0 0; color: #475569; font-size: 10px;">Guru Penasihat Rumah ${targetData.houseName}</p>
                         </div>
-
-                        <div style="background: #f1f5f9; padding: 12px; border-radius: 8px; margin-bottom: 15px; font-size: 11px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; border: 1px solid #cbd5e1;">
-                            <div><strong>Rumah Sukan:</strong> Rumah ${targetData.houseName}</div>
-                            <div><strong>Slogan:</strong> "${meta.slogan || '-'}"</div>
-                            <div style="grid-column: span 2;"><strong>Guru Penasihat:</strong> ${advisorsText}</div>
+                        <div style="width: 220px; text-align: center;">
+                            <p style="margin: 0;">Disahkan oleh,</p>
+                            <div style="border-bottom: 1px solid #94a3b8; height: 50px; margin-bottom: 5px;"></div>
+                            <p style="margin: 0; font-weight: bold;">(_______________________)</p>
+                            <p style="margin: 2px 0 0 0; color: #475569; font-size: 10px;">Penyelaras Sukan / GPK Kokurikulum</p>
                         </div>
-
-                        <table style="width: 100%; border-collapse: collapse; font-size: 11px; text-align: left;">
-                            <thead>
-                                <tr style="background: #cbd5e1; height: 45px;">
-                                    <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 35px;">No</th>
-                                    <th style="border: 1px solid #94a3b8; padding: 6px;">Nama Penuh Ahli / Atlet</th>
-                                    <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 70px;">Kelas</th>
-                                    <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 45px;">Jantina</th>
-                                    <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 95px; font-size: 10px;">Lompat Jauh</th>
-                                    <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 95px; font-size: 10px;">Lompat Tinggi</th>
-                                    <th style="border: 1px solid #94a3b8; padding: 4px; text-align: center; width: 95px; font-size: 10px;">
-                                        <div style="display: flex; flex-direction: column; line-height: 1.1; align-items: center; justify-content: center; font-weight: bold;">
-                                            <span>50M</span>
-                                            <span>60M</span>
-                                            <span>80M</span>
-                                        </div>
-                                    </th>
-                                    <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 95px; font-size: 10px;">Lontar Peluru</th>
-                                    <th style="border: 1px solid #94a3b8; padding: 6px; width: 100px;">Catatan</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${rowsHtml || '<tr><td colspan="9" style="padding:15px; text-align:center; font-style:italic; color:#64748b;">Tiada ahli sukan didaftarkan di bawah rumah sukan ini.</td></tr>'}
-                            </tbody>
-                        </table>
-
-                        <div style="display: flex; justify-content: space-between; margin-top: 50px; font-size: 11px;">
-                                <div style="width: 220px; text-align: center;">
-                                    <p style="margin: 0;">Disediakan oleh,</p>
-                                    <div style="border-bottom: 1px solid #94a3b8; height: 50px; margin-bottom: 5px;"></div>
-                                    <p style="margin: 0; font-weight: bold;">(_______________________)</p>
-                                    <p style="margin: 2px 0 0 0; color: #475569; font-size: 10px;">Guru Penasihat Rumah ${targetData.houseName}</p>
-                                </div>
-                                <div style="width: 220px; text-align: center;">
-                                    <p style="margin: 0;">Disahkan oleh,</p>
-                                    <div style="border-bottom: 1px solid #94a3b8; height: 50px; margin-bottom: 5px;"></div>
-                                    <p style="margin: 0; font-weight: bold;">(_______________________)</p>
-                                    <p style="margin: 2px 0 0 0; color: #475569; font-size: 10px;">Penyelaras Sukan / GPK Kokurikulum</p>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                } else if (mode === 'rekod_keseluruhan') {
-                    const getRecordType = (eventName, eventJenis) => {
+                    </div>
+                </div>
+            `;
+        } else if (mode === 'rekod_keseluruhan') {
+            const getRecordType = (eventName, eventJenis) => {
                         const name = (eventName || "").toLowerCase();
                         if (name.includes("lompat jauh")) return "Jarak Lompatan";
                         if (name.includes("lompat tinggi")) return "Ketinggian Lompatan";

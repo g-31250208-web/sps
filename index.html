@@ -542,14 +542,22 @@
             };
 
             const checkAuthority = () => {
-                if (userRole !== "admin" && userRole !== "guru") {
-                    showToastMessage("Akses Dihalang: Sila log masuk dengan ID DELIMa KPM Guru atau Admin untuk melakukan tindakan ini.", "error");
-                    return false;
-                }
-                return true;
-            };
+            if (userRole !== "admin" && userRole !== "guru") {
+                showToastMessage("Akses Dihalang: Sila log masuk dengan ID DELIMa KPM Guru atau Admin untuk melakukan tindakan ini.", "error");
+                return false;
+            }
+            return true;
+        };
 
-            const syncWithGas = async (table, action, dataObj) => {
+        const checkAdminAuthority = () => {
+            if (userRole !== "admin") {
+                showToastMessage("Akses Dihalang: Hanya Admin Utama sahaja dibenarkan untuk mengakses fungsi pentadbiran ini.", "error");
+                return false;
+            }
+            return true;
+        };
+
+        const syncWithGas = async (table, action, dataObj) => {
                 if (!gasUrl) return;
                 try {
                     await fetch(gasUrl, {
@@ -869,7 +877,7 @@
             }, []);
 
             const handleSavePoints = async () => {
-                if (!checkAuthority()) return;
+                if (!checkAdminAuthority()) return;
                 try {
                     if (isCloudActive) {
                         await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('metadata').doc('points').set(pointsConfig);
@@ -954,7 +962,7 @@
 
             const handleSaveGas = async (e) => {
                 e.preventDefault();
-                if (!checkAuthority()) return;
+                if (!checkAdminAuthority()) return;
                 try {
                     if (isCloudActive) {
                         await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('metadata').doc('gas').set({ url: gasUrl });
@@ -968,7 +976,7 @@
             };
 
             const handleSaveConfig = async () => {
-                if (!checkAuthority()) return;
+                if (!checkAdminAuthority()) return;
                 try {
                     if (isCloudActive) {
                         await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('metadata').doc('config').set({ 
@@ -985,7 +993,7 @@
             };
 
             const handleSyncAllToGas = async () => {
-                if (!checkAuthority()) return;
+                if (!checkAdminAuthority()) return;
                 if (!gasUrl) {
                     showToastMessage("Sila kunci masuk pautan GAS URL yang sah terlebih dahulu.", "error");
                     return;
@@ -1016,7 +1024,7 @@
             };
 
             const handleBackup = () => {
-                if (!checkAuthority()) return;
+                if (!checkAdminAuthority()) return;
                 const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ athletes, events: eventsWithCode, results, heats, housesMetadata }));
                 const downloadAnchor = document.createElement('a');
                 downloadAnchor.setAttribute("href", dataStr);
@@ -1029,14 +1037,14 @@
             };
 
             const handleRestoreClick = () => {
-                if (!checkAuthority()) return;
+                if (!checkAdminAuthority()) return;
                 if (fileInputRef.current) {
                     fileInputRef.current.click();
                 }
             };
 
             const handleRestoreBackup = async (e) => {
-                if (!checkAuthority()) return;
+                if (!checkAdminAuthority()) return;
                 const file = e.target.files[0];
                 if (!file) return;
 
@@ -1097,7 +1105,7 @@
             };
 
             const handleResetDatabase = () => {
-                if (!checkAuthority()) return;
+                if (!checkAdminAuthority()) return;
                 setConfirmModal({
                     show: true,
                     title: "Tetapkan Semula Pangkalan Data?",
@@ -2424,7 +2432,7 @@
             };
 
             const handleArchiveAnnualRecords = async () => {
-                if (!checkAuthority()) return;
+                if (!checkAdminAuthority()) return;
                 if (!gasUrl) {
                     showToastMessage("Sila kunci masuk pautan GAS URL yang sah di menu setup pentadbir terlebih dahulu.", "error");
                     return;
@@ -2519,7 +2527,8 @@
                                     🌐 {lang === "BM" ? "BM / EN" : "EN / BM"}
                                 </button>
 
-                                {(userRole === "admin" || userRole === "guru") && (
+                                {}
+                                {userRole === "admin" && (
                                     <div className="relative inline-block shrink-0" ref={adminMenuRef}>
                                         <button 
                                             onClick={() => { setIsAdminMenuOpen(!isAdminMenuOpen); }}

@@ -241,131 +241,45 @@
             const [filterEvent, setFilterEvent] = useState("Semua");
             const [filterLogQuery, setFilterLogQuery] = useState("");
 
-            const [athleteForm, setAthleteForm] = useState({ id: "", nama: "", kelas: "", rumah: "Merah", jantina: "Lelaki", kategori: "L12" });
-            const [isEditingAthlete, setIsEditingAthlete] = useState(false);
-            const [isHouseSidebarOpen, setIsHouseSidebarOpen] = useState(false);
-            const [isEventSidebarOpen, setIsEventSidebarOpen] = useState(false);
-            
-            // New Athlete Management Sidebar states
-            const [isAddAthleteSidebarOpen, setIsAddAthleteSidebarOpen] = useState(false);
-            const [isAssignEventSidebarOpen, setIsAssignEventSidebarOpen] = useState(false);
-            
-            const [regMode, setRegMode] = useState("tunggal"); 
-            const [tsvInput, setTsvInput] = useState("");
-
-            // State untuk Pendaftaran Atlet ke Acara
-            const [selectedStudentId, setSelectedStudentId] = useState("");
-            const [studentSearchQuery, setStudentSearchQuery] = useState("");
-            const [noAtletInput, setNoAtletInput] = useState("");
-            const [selectedEventIds, setSelectedEventIds] = useState([]);
-            const [showSearchDropdown, setShowSearchDropdown] = useState(false);
-
-            const [eventForm, setEventForm] = useState({ id: "", nama: "", kategori: "L12", jenis: "Balapan", format: "Individu", tarikh: "", masa: "" });
-            const [isEditingEvent, setIsEditingEvent] = useState(false);
-            
-            const [isEditingHouse, setIsEditingHouse] = useState(false);
-            const [originalHouseKey, setOriginalHouseKey] = useState("");
-            
-            const [resultForm, setResultForm] = useState({ eventId: "", athleteId: "", kedudukan: "1", catatan: "" });
-            const [heatForm, setHeatForm] = useState({ eventId: "", athleteId: "", saringanNo: "1", catatan: "" });
-            const [activeStageTab, setActiveStageTab] = useState("saringan"); 
-
-            const [houseForm, setHouseForm] = useState({ nama: "", slogan: "", guruPenasihat: "", bonusPoints: 0, warnaLabel: "Ungu" });
-            const [newAdvisorText, setNewAdvisorText] = useState({});
-
-            const [announceFormText, setAnnounceFormText] = useState("");
-            const [showAnnounceForm, setShowAnnounceForm] = useState(false);
-
-            const [isArchiving, setIsArchiving] = useState(false);
-            const [certSearchQuery, setCertSearchQuery] = useState("");
-
-            const [toast, setToast] = useState({ show: false, message: "", type: "info" });
-            const [confirmModal, setConfirmModal] = useState({ show: false, title: "", message: "", onConfirm: null });
-            const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
-            const adminMenuRef = useRef(null);
-
-            const [isPrintMenuOpen, setIsPrintMenuOpen] = useState(false);
-            const printMenuRef = useRef(null);
-
-            const [showDiagModal, setShowDiagModal] = useState(false);
-            const [showGasModal, setShowGasModal] = useState(false);
-            const [showPointsModal, setShowPointsModal] = useState(false);
-
             const handleExportHouseMembersJSON = (houseName) => {
-            const houseAthletes = athletes
-                .filter(a => a.rumah === houseName)
-                .sort((a, b) => (a.nama || "").localeCompare(b.nama || ""));
-            
-            const exportData = houseAthletes.map((ath, index) => ({
-                bil: index + 1,
-                nama: ath.nama,
-                janti: ath.jantina || "Lelaki",
-                kelas: ath.kelas
-            }));
-            
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
-            const downloadAnchor = document.createElement('a');
-            downloadAnchor.setAttribute("href", dataStr);
-            downloadAnchor.setAttribute("download", `Ahli_Rumah_${houseName}_${activeYear}.json`);
-            document.body.appendChild(downloadAnchor);
-            downloadAnchor.click();
-            downloadAnchor.remove();
+                // Menyaring ahli yang berdaftar di bawah rumah sukan yang dipilih sahaja
+                const houseAthletes = athletes
+                    .filter(ath => ath.rumah === houseName)
+                    .sort((a, b) => (a.nama || "").localeCompare(b.nama || ""));
+                
+                // Memformat data dengan kemas: bil, nama, janti (jantina), kelas
+                const exportData = houseAthletes.map((ath, index) => ({
+                    bil: index + 1,
+                    nama: (ath.nama || "").toUpperCase(),
+                    janti: ath.jantina || "Lelaki",
+                    kelas: ath.kelas || "Tiada Kelas"
+                }));
+                
+                // Menjana fail muat turun JSON
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
+                const downloadAnchor = document.createElement('a');
+                downloadAnchor.setAttribute("href", dataStr);
+                downloadAnchor.setAttribute("download", `Ahli_Rumah_${houseName}_${activeYear}.json`);
+                document.body.appendChild(downloadAnchor);
+                downloadAnchor.click();
+                downloadAnchor.remove();
 
-            // Salin ke clipboard untuk kemudahan web app lain
-            const jsonText = JSON.stringify(exportData, null, 2);
-            const tempTextArea = document.createElement("textarea");
-            tempTextArea.value = jsonText;
-            document.body.appendChild(tempTextArea);
-            tempTextArea.select();
-            try {
-                document.execCommand('copy');
-                showToastMessage(`Senarai ahli Rumah ${houseName} berjaya dimuat turun & disalin ke papan klip!`, "success");
-            } catch (err) {
-                showToastMessage(`Senarai ahli Rumah ${houseName} berjaya dimuat turun!`, "success");
-            }
-            document.body.removeChild(tempTextArea);
-            
-            createLog("Eksport Ahli Rumah Sukan", `Mengeksport senarai ahli Rumah ${houseName} ke format JSON.`);
-        };
-
-        const [gasUrl, setGasUrl] = useState("");
-            const [isSyncingGas, setIsSyncingGas] = useState(false);
-
-            const pendaftaranAcaraRef = useRef(null); 
-
-            const [pointsConfig, setPointsConfig] = useState({
-                emas: 5,
-                perak: 3,
-                gangsa: 2,
-                keempat: 1,
-                penyertaan: 0
-            });
-
-            const [activeYear, setActiveYear] = useState(new Date().getFullYear().toString());
-
-            const [showSignatorySettings, setShowSignatorySettings] = useState(false);
-
-            const [certSignatory1Name, setCertSignatory1Name] = useState("Cikgu Jabdi Bin Bikang");
-            const [certSignatory1Title, setCertSignatory1Title] = useState("Guru Besar SK Bikang");
-            const [certSignatory2Name, setCertSignatory2Name] = useState("Cikgu GPK Kokurikulum");
-            const [certSignatory2Title, setCertSignatory2Title] = useState("GPK Kokurikulum SK Bikang");
-
-            const fileInputRef = useRef(null);
-            const logoUrl = "https://lh3.googleusercontent.com/d/1E8tjAd7j9DJaZgngDn38agUFCvwyUffa";
-
-            const createLog = async (action, details) => {
-                const user = auth.currentUser;
-                const email = user ? user.email : "Akaun Tanpa Nama (Sesi Rawak)";
-                const name = user ? (user.displayName || (user.isAnonymous ? "Sesi Pelawat" : "Urus Setia Guru")) : "Anonim";
-                const logId = "log_" + Date.now();
-                const logData = {
-                    id: logId,
-                    timestamp: new Date().toLocaleString('ms-MY'),
-                    userEmail: email,
-                    userName: name,
-                    action: action,
-                    details: details
-                };
+                // Menyalin salinan terus ke papan klip (clipboard) untuk keselarasan web app lain
+                const jsonText = JSON.stringify(exportData, null, 2);
+                const tempTextArea = document.createElement("textarea");
+                tempTextArea.value = jsonText;
+                document.body.appendChild(tempTextArea);
+                tempTextArea.select();
+                try {
+                    document.execCommand('copy');
+                    showToastMessage(`Senarai ahli Rumah ${houseName} (${houseAthletes.length} orang) berjaya dimuat turun & disalin ke papan klip!`, "success");
+                } catch (err) {
+                    showToastMessage(`Senarai ahli Rumah ${houseName} berjaya dimuat turun!`, "success");
+                }
+                document.body.removeChild(tempTextArea);
+                
+                createLog("Eksport Ahli Rumah Sukan", `Mengeksport senarai ahli Rumah ${houseName} sahaja ke format JSON.`);
+            };
 
                 try {
                     if (isCloudActive) {
@@ -2908,6 +2822,7 @@
                                                     <div className="flex gap-1.5">
                                                         <button onClick={() => executeBypassPrint('kehadiran_rumah', { houseName })} className="text-[10px] font-bold bg-slate-100 hover:bg-slate-200 px-2.5 py-1.5 rounded-lg flex items-center gap-1" title="Cetak Kehadiran">📝 Kehadiran</button>
                                                         <button onClick={() => executeBypassPrint('sukantara_rumah', { houseName })} className="text-[10px] font-bold bg-slate-100 hover:bg-slate-200 px-2.5 py-1.5 rounded-lg flex items-center gap-1" title="Cetak Borang Sukantara">🏅 Sukantara</button>
+                                                        {/* Butang Eksport yang akan mengeksport ahli rumah ini sahaja */}
                                                         <button onClick={() => handleExportHouseMembersJSON(houseName)} className="text-[10px] font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-2.5 py-1.5 rounded-lg flex items-center gap-1" title="Eksport Senarai Ahli ke JSON">📤 Eksport JSON</button>
                                                     </div>
                                                 </div>

@@ -381,12 +381,10 @@
             };
 
             const handleExportHouseMembersJSON = (houseName) => {
-                // Menyaring ahli yang berdaftar di bawah rumah sukan yang dipilih sahaja
                 const houseAthletes = (athletes || [])
                     .filter(ath => ath.rumah === houseName)
                     .sort((a, b) => (a.nama || "").localeCompare(b.nama || ""));
                 
-                // Memformat data dengan kemas: bil, nama, janti (jantina), kelas
                 const exportData = houseAthletes.map((ath, index) => ({
                     bil: index + 1,
                     nama: (ath.nama || "").toUpperCase(),
@@ -394,7 +392,6 @@
                     kelas: ath.kelas || "Tiada Kelas"
                 }));
                 
-                // Menjana fail muat turun JSON
                 const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
                 const downloadAnchor = document.createElement('a');
                 downloadAnchor.setAttribute("href", dataStr);
@@ -403,7 +400,6 @@
                 downloadAnchor.click();
                 downloadAnchor.remove();
 
-                // Menyalin salinan terus ke papan klip (clipboard)
                 const jsonText = JSON.stringify(exportData, null, 2);
                 const tempTextArea = document.createElement("textarea");
                 tempTextArea.value = jsonText;
@@ -1360,7 +1356,7 @@
                         runnersToPrint = filteredAthletes.map(ath => ({
                             nama: ath.nama || "",
                             kelas: ath.kelas || "",
-                            house: ath.rumah || "",
+                            rumah: ath.rumah || "",
                             lane: ""
                         }));
                     }
@@ -1372,7 +1368,7 @@
                             </td>
                             <td style="border: 1px solid #e2e8f0; padding: 8px; font-weight: 700;">${(ath.nama || "").toUpperCase()}</td>
                             <td style="border: 1px solid #e2e8f0; padding: 8px; text-align: center;">${ath.kelas}</td>
-                            <td style="border: 1px solid #e2e8f0; padding: 8px; text-align: center; font-weight: 700;">Rumah ${ath.rumah || ath.house}</td>
+                            <td style="border: 1px solid #e2e8f0; padding: 8px; text-align: center; font-weight: 700;">Rumah ${ath.rumah}</td>
                             <td style="border: 1px solid #e2e8f0; padding: 8px; text-align: center;">${ath.ranking ? `Saringan Rank: #${ath.ranking}` : '-'}</td>
                             <td style="border: 1px solid #e2e8f0; padding: 8px;"></td>
                         </tr>
@@ -2032,7 +2028,7 @@
                     }
 
                     const targetEvent = (events || []).find(ev => ev.id === resultForm.eventId);
-                    const targetAthlete = (athletes || []).find(a => a.id === block => block.athleteId);
+                    const targetAthlete = (athletes || []).find(a => a.id === resultForm.athleteId);
                     createLog("Kunci Keputusan Podium", `Mengunci masuk kedudukan ${resultForm.kedudukan} bagi ${targetAthlete?.nama || ""} dalam acara ${targetEvent?.nama || ""}`);
 
                     showToastMessage("Keputusan atlet berjaya dikunci masuk!");
@@ -2193,7 +2189,7 @@
                     ...housesMetadata,
                     [houseName]: {
                         ...currentMeta,
-                        guruPenasihat: existingAdvisors.join(', ')
+                        guruPenasihat: advisorsToText(existingAdvisors)
                     }
                 };
 
@@ -2212,6 +2208,10 @@
                 }
             };
 
+            const advisorsToText = (arr) => {
+                return arr.join(', ');
+            };
+
             const handleRemoveAdvisor = async (houseName, advisorName) => {
                 if (!checkAuthority()) return;
                 
@@ -2223,7 +2223,7 @@
                     ...housesMetadata,
                     [houseName]: {
                         ...currentMeta,
-                        guruPenasihat: filtered.join(', ')
+                        guruPenasihat: advisorsToText(filtered)
                     }
                 };
 
@@ -2458,7 +2458,7 @@
                                             <span className="text-[8px] bg-slate-950/10 px-1 rounded-md">▼</span>
                                         </button>
                                         {isAdminMenuOpen && (
-                                            <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-slate-200 py-2 text-slate-800 z-[9999] origin-top-right animate-in fade-in slide-in-from-top-2 duration-150">
+                                            <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-slate-200 py-2 text-slate-800 z-[9999] origin-top-right">
                                                 <div className="px-4 py-2 border-b border-slate-100 bg-slate-50 rounded-t-2xl">
                                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Operasi Pentadbiran</p>
                                                     <p className="text-xs text-indigo-600 font-semibold mt-0.5">{userRole === "admin" ? "Sekolah-7608 (Admin)" : "Akaun Guru"}</p>
@@ -2535,7 +2535,7 @@
                     {/* Kandungan Halaman Utama */}
                     <main className="max-w-7xl mx-auto px-4 py-6 flex-grow w-full">
                         
-                        {/* DASHBOARD TAB */}
+                        {}
                         {activeTab === "dashboard" && (
                             <div className="space-y-6">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -2644,7 +2644,7 @@
                                                                 </span>
                                                                 <span className="text-[10px] text-slate-400">Kategori: {alert.kategori} | ⏱️ {alert.masa || "--:--"}</span>
                                                             </div>
-                                                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${isDone ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800 animate-pulse"}`}>
+                                                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${isDone ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}`}>
                                                                 {isDone ? "Selesai" : "Mula"}
                                                             </span>
                                                         </div>
@@ -2657,7 +2657,7 @@
                             </div>
                         )}
 
-                        {/* RUMAH SUKAN TAB */}
+                        {}
                         {activeTab === "rumah_sukan" && (
                             <div className="space-y-6">
                                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
@@ -2886,7 +2886,7 @@
                             </div>
                         )}
 
-                        {/* ATLIT TAB */}
+                        {}
                         {activeTab === "atlit" && (
                             <div className="space-y-6">
                                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm mb-6">
@@ -3295,7 +3295,7 @@
                             </div>
                         )}
 
-                        {/* ACARA TAB */}
+                        {}
                         {activeTab === "acara" && (
                             <div className="space-y-6">
                                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
@@ -3431,7 +3431,7 @@
                             </div>
                         )}
 
-                        {/* KEPUTUSAN TAB */}
+                        {}
                         {activeTab === "keputusan" && (
                             <div className="space-y-6">
                                 <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
@@ -3587,7 +3587,7 @@
                             </div>
                         )}
 
-                        {/* PASCA SUKAN TAB */}
+                        {}
                         {activeTab === "pasca_sukan" && (
                             <div className="space-y-6">
                                 <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
@@ -3786,7 +3786,7 @@
                         </div>
                     )}
 
-                    {/* Tetingkap Pratinjau Cetak */}
+                    {}
                     {isPreviewModalOpen && (
                         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[10000] flex flex-col items-center justify-center p-4">
                             <div className="bg-white rounded-2xl shadow-2xl border w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden">

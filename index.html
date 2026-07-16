@@ -292,40 +292,43 @@
             const [showPointsModal, setShowPointsModal] = useState(false);
 
             const handleExportHouseMembersJSON = (houseName) => {
-                const houseAthletes = athletes.filter(a => a.rumah === houseName);
-                const exportData = houseAthletes.map(ath => ({
-                    nama: ath.nama,
-                    kelas: ath.kelas,
-                    jantina: ath.jantina,
-                    rumah_sukan: ath.rumah
-                }));
-                
-                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
-                const downloadAnchor = document.createElement('a');
-                downloadAnchor.setAttribute("href", dataStr);
-                downloadAnchor.setAttribute("download", `Ahli_Rumah_${houseName}_${activeYear}.json`);
-                document.body.appendChild(downloadAnchor);
-                downloadAnchor.click();
-                downloadAnchor.remove();
+            const houseAthletes = athletes
+                .filter(a => a.rumah === houseName)
+                .sort((a, b) => (a.nama || "").localeCompare(b.nama || ""));
+            
+            const exportData = houseAthletes.map((ath, index) => ({
+                bil: index + 1,
+                nama: ath.nama,
+                janti: ath.jantina || "Lelaki",
+                kelas: ath.kelas
+            }));
+            
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `Ahli_Rumah_${houseName}_${activeYear}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
 
-                // Salin ke clipboard untuk kemudahan web app lain
-                const jsonText = JSON.stringify(exportData, null, 2);
-                const tempTextArea = document.createElement("textarea");
-                tempTextArea.value = jsonText;
-                document.body.appendChild(tempTextArea);
-                tempTextArea.select();
-                try {
-                    document.execCommand('copy');
-                    showToastMessage(`Senarai ahli Rumah ${houseName} berjaya dimuat turun & disalin ke papan klip!`, "success");
-                } catch (err) {
-                    showToastMessage(`Senarai ahli Rumah ${houseName} berjaya dimuat turun!`, "success");
-                }
-                document.body.removeChild(tempTextArea);
-                
-                createLog("Eksport Ahli Rumah Sukan", `Mengeksport senarai ahli Rumah ${houseName} ke format JSON.`);
-            };
+            // Salin ke clipboard untuk kemudahan web app lain
+            const jsonText = JSON.stringify(exportData, null, 2);
+            const tempTextArea = document.createElement("textarea");
+            tempTextArea.value = jsonText;
+            document.body.appendChild(tempTextArea);
+            tempTextArea.select();
+            try {
+                document.execCommand('copy');
+                showToastMessage(`Senarai ahli Rumah ${houseName} berjaya dimuat turun & disalin ke papan klip!`, "success");
+            } catch (err) {
+                showToastMessage(`Senarai ahli Rumah ${houseName} berjaya dimuat turun!`, "success");
+            }
+            document.body.removeChild(tempTextArea);
+            
+            createLog("Eksport Ahli Rumah Sukan", `Mengeksport senarai ahli Rumah ${houseName} ke format JSON.`);
+        };
 
-            const [gasUrl, setGasUrl] = useState("");
+        const [gasUrl, setGasUrl] = useState("");
             const [isSyncingGas, setIsSyncingGas] = useState(false);
 
             const pendaftaranAcaraRef = useRef(null); 

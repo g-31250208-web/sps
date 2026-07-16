@@ -241,6 +241,145 @@
             const [filterEvent, setFilterEvent] = useState("Semua");
             const [filterLogQuery, setFilterLogQuery] = useState("");
 
+            const [selectedStudentId, setSelectedStudentId] = useState("");
+            const [studentSearchQuery, setStudentSearchQuery] = useState("");
+            const [noAtletInput, setNoAtletInput] = useState("");
+            const [selectedEventIds, setSelectedEventIds] = useState([]);
+            const [isAssignEventSidebarOpen, setIsAssignEventSidebarOpen] = useState(false);
+            const [showSearchDropdown, setShowSearchDropdown] = useState(false);
+
+            const [toast, setToast] = useState({ show: false, message: "", type: "info" });
+            const [confirmModal, setConfirmModal] = useState({ show: false, title: "", message: "", onConfirm: null });
+            const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
+            const [isPrintMenuOpen, setIsPrintMenuOpen] = useState(false);
+
+            const adminMenuRef = useRef(null);
+            const printMenuRef = useRef(null);
+            const fileInputRef = useRef(null);
+
+            const [showPointsModal, setShowPointsModal] = useState(false);
+            const [showGasModal, setShowGasModal] = useState(false);
+            const [showDiagModal, setShowDiagModal] = useState(false);
+
+            const [pointsConfig, setPointsConfig] = useState({
+                emas: 5,
+                perak: 3,
+                gangsa: 2,
+                keempat: 1,
+                penyertaan: 0
+            });
+
+            const [gasUrl, setGasUrl] = useState("");
+            const [activeYear, setActiveYear] = useState("2026");
+            const [isSyncingGas, setIsSyncingGas] = useState(false);
+
+            const [certSignatory1Name, setCertSignatory1Name] = useState("Cikgu Jabdi Bin Bikang");
+            const [certSignatory1Title, setCertSignatory1Title] = useState("Guru Besar SK Bikang");
+            const [certSignatory2Name, setCertSignatory2Name] = useState("Cikgu GPK Kokurikulum");
+            const [certSignatory2Title, setCertSignatory2Title] = useState("GPK Kokurikulum SK Bikang");
+
+            const [certSearchQuery, setCertSearchQuery] = useState("");
+            const [showSignatorySettings, setShowSignatorySettings] = useState(false);
+            const [isArchiving, setIsArchiving] = useState(false);
+
+            const logoUrl = "https://lh3.googleusercontent.com/d/1E8tjAd7j9DJaZgngDn38agUFCvwyUffa";
+
+            // Form States
+            const [athleteForm, setAthleteForm] = useState({ id: "", nama: "", kelas: "", rumah: "Merah", jantina: "Lelaki", kategori: "L12" });
+            const [isEditingAthlete, setIsEditingAthlete] = useState(false);
+            const [isAddAthleteSidebarOpen, setIsAddAthleteSidebarOpen] = useState(false);
+            const [regMode, setRegMode] = useState("tunggal");
+            const [tsvInput, setTsvInput] = useState("");
+
+            const [eventForm, setEventForm] = useState({ id: "", nama: "", kategori: "L12", jenis: "Balapan", format: "Individu", tarikh: "", masa: "" });
+            const [isEditingEvent, setIsEditingEvent] = useState(false);
+            const [isEventSidebarOpen, setIsEventSidebarOpen] = useState(false);
+
+            const [heatForm, setHeatForm] = useState({ eventId: "", athleteId: "", saringanNo: "1", catatan: "" });
+            const [activeStageTab, setActiveStageTab] = useState("saringan");
+
+            const [resultForm, setResultForm] = useState({ eventId: "", athleteId: "", kedudukan: "1", catatan: "" });
+
+            const [houseForm, setHouseForm] = useState({ nama: "", slogan: "", guruPenasihat: "", bonusPoints: 0, warnaLabel: "Ungu" });
+            const [isEditingHouse, setIsEditingHouse] = useState(false);
+            const [isHouseSidebarOpen, setIsHouseSidebarOpen] = useState(false);
+            const [originalHouseKey, setOriginalHouseKey] = useState("");
+            const [newAdvisorText, setNewAdvisorText] = useState({});
+
+            const [announceFormText, setAnnounceFormText] = useState("");
+            const [showAnnounceForm, setShowAnnounceForm] = useState(false);
+
+            const createLog = async (action, details) => {
+                const logId = "log_" + Date.now();
+                const logData = {
+                    id: logId,
+                    timestamp: new Date().toLocaleString('ms-MY'),
+                    userEmail: currentUser ? (currentUser.email || "Anonym") : "Pelawat",
+                    userName: currentUser ? (currentUser.displayName || "Sesi Anon") : "Pelawat",
+                    action,
+                    details
+                };
+
+                try {
+                    if (isCloudActive) {
+                        await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('logs').doc(logId).set(logData);
+                    } else {
+                        setLogs(prev => [logData, ...prev]);
+                    }
+                } catch (e) {
+                    console.error("Gagal merekod log aktiviti:", e);
+                }
+            };
+
+            const checkAuthority = () => {
+                if (userRole !== "admin" && userRole !== "guru") {
+                    showToastMessage("Akses Dihalang: Sila log masuk dengan ID DELIMa KPM Guru atau Admin untuk melakukan tindakan ini.", "error");
+                    return false;
+                }
+                return true;
+            };
+
+            const checkAdminAuthority = () => {
+                if (userRole !== "admin") {
+                    showToastMessage("Akses Dihalang: Hanya Admin Utama sahaja dibenarkan untuk mengakses fungsi pentadbiran ini.", "error");
+                    return false;
+                }
+                return true;
+            };
+
+            const syncWithGas = async (table, action, dataObj) => {
+                if (!gasUrl) return;
+                try {
+                    await fetch(gasUrl, {
+                        method: 'POST',
+                        mode: 'no-cors', 
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action, table, data: dataObj })
+                    });
+                } catch (e) {
+                    console.error("Ralat komunikasi GAS:", e);
+                }
+            };
+
+            const handleGoogleLogin = async () => {
+                const provider = new firebase.auth.GoogleAuthProvider();
+                try {
+                    await auth.signInWithPopup(provider);
+                    setIsAdminMenuOpen(false);
+                } catch (error) {
+                    showToastMessage("Log masuk gagal: " + error.message, "error");
+                }
+            };
+
+            const handleLogout = async () => {
+                try {
+                    await auth.signOut();
+                    showToastMessage("Log keluar berjaya!", "success");
+                } catch (error) {
+                    showToastMessage("Ralat ketika log keluar: " + error.message, "error");
+                }
+            };
+
             const handleExportHouseMembersJSON = (houseName) => {
                 // Menyaring ahli yang berdaftar di bawah rumah sukan yang dipilih sahaja
                 const houseAthletes = athletes
@@ -281,16 +420,136 @@
                 createLog("Eksport Ahli Rumah Sukan", `Mengeksport senarai ahli Rumah ${houseName} sahaja ke format JSON.`);
             };
 
-                try {
-                    if (isCloudActive) {
-                        await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('logs').doc(logId).set(logData);
+            useEffect(() => {
+                const unsubscribe = auth.onAuthStateChanged(async (user) => {
+                    if (user) {
+                        setCurrentUser(user);
+                        setIsCloudActive(true);
                     } else {
-                        setLogs(prev => [logData, ...prev]);
+                        setCurrentUser(null);
+                        setUserRole("pelawat");
+                        try {
+                            await auth.signInAnonymously();
+                            setIsCloudActive(true);
+                        } catch (e) {
+                            console.warn("Firestore offline fallback.", e);
+                            setIsCloudActive(false);
+                        }
                     }
-                } catch (e) {
-                    console.error("Gagal merekod log aktiviti:", e);
+                });
+                return () => unsubscribe();
+            }, []);
+
+            useEffect(() => {
+                if (!currentUser) return;
+                const email = currentUser.email || "";
+                
+                if (email === "sekolah-7608@moe-dl.edu.my") {
+                    setUserRole("admin");
+                    showToastMessage("Akses Pentadbir Utama Diterima!", "success");
+                } else if (adminList.some(admin => (admin.email || "").toLowerCase() === email.toLowerCase())) {
+                    setUserRole("admin");
+                    showToastMessage("Akses Pentadbir Utama Bersama Diterima!", "success");
+                } else if (email.endsWith("@moe-dl.edu.my") || email.endsWith("@moe.edu.my")) {
+                    setUserRole("guru");
+                    showToastMessage("Akses Urus Setia Guru Diterima!", "success");
+                } else if (!currentUser.isAnonymous) {
+                    setUserRole("pelawat");
+                    showToastMessage("Akaun Peribadi: Sesi Sukan Aktif sebagai Pembaca (Lihat Sahaja).", "warning");
                 }
-            };
+            }, [currentUser, adminList]);
+
+            useEffect(() => {
+                if (!isCloudActive) return;
+
+                const pathAthletes = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('athletes');
+                const pathEvents = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('events');
+                const pathResults = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('results');
+                const pathHeats = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('heats');
+                const pathMeta = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('metadata');
+                const pathAnnouncements = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('announcements');
+                const pathLogs = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('logs');
+                const pathAdmins = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('admins');
+
+                const unsubAthletes = pathAthletes.onSnapshot((snapshot) => {
+                    const data = [];
+                    snapshot.forEach(doc => data.push({ id: doc.id, ...doc.data() }));
+                    setAthletes(data);
+                }, (e) => console.error(e));
+
+                const unsubEvents = pathEvents.onSnapshot((snapshot) => {
+                    const data = [];
+                    snapshot.forEach(doc => data.push({ id: doc.id, ...doc.data() }));
+                    setEvents(data);
+                }, (e) => console.error(e));
+
+                const unsubResults = pathResults.onSnapshot((snapshot) => {
+                    const data = [];
+                    snapshot.forEach(doc => data.push({ id: doc.id, ...doc.data() }));
+                    setResults(data);
+                }, (e) => console.error(e));
+
+                const unsubHeats = pathHeats.onSnapshot((snapshot) => {
+                    const data = [];
+                    snapshot.forEach(doc => data.push({ id: doc.id, ...doc.data() }));
+                    setHeats(data);
+                }, (e) => console.error(e));
+
+                const unsubMeta = pathMeta.doc('houses').onSnapshot((doc) => {
+                    if (doc.exists) setHousesMetadata(doc.data());
+                }, (e) => console.error(e));
+
+                const unsubPoints = pathMeta.doc('points').onSnapshot((doc) => {
+                    if (doc.exists) setPointsConfig(doc.data());
+                }, (e) => console.error(e));
+
+                const unsubGas = pathMeta.doc('gas').onSnapshot((doc) => {
+                    if (doc.exists) setGasUrl(doc.data().url || "");
+                }, (e) => console.error(e));
+
+                const unsubConfig = pathMeta.doc('config').onSnapshot((doc) => {
+                    if (doc.exists) {
+                        const data = doc.data();
+                        if (data.activeYear) setActiveYear(data.activeYear);
+                        if (data.maxIndividu !== undefined) setMaxIndividu(data.maxIndividu);
+                        if (data.maxKumpulan !== undefined) setMaxKumpulan(data.maxKumpulan);
+                    }
+                }, (e) => console.error(e));
+
+                const unsubAnnouncements = pathAnnouncements.onSnapshot((snapshot) => {
+                    const data = [];
+                    snapshot.forEach(doc => data.push({ id: doc.id, ...doc.data() }));
+                    data.sort((a, b) => b.id.localeCompare(a.id));
+                    setAnnouncements(data);
+                }, (e) => console.error(e));
+
+                const unsubLogs = pathLogs.onSnapshot((snapshot) => {
+                    const data = [];
+                    snapshot.forEach(doc => data.push({ id: doc.id, ...doc.data() }));
+                    data.sort((a, b) => b.id.localeCompare(a.id));
+                    setLogs(data);
+                }, (e) => console.error(e));
+
+                const unsubAdmins = pathAdmins.onSnapshot((snapshot) => {
+                    const data = [];
+                    snapshot.forEach(doc => data.push({ id: doc.id, ...doc.data() }));
+                    setAdminList(data);
+                }, (e) => console.error(e));
+
+                return () => {
+                    unsubAthletes();
+                    unsubEvents();
+                    unsubResults();
+                    unsubHeats();
+                    unsubMeta();
+                    unsubPoints();
+                    unsubGas();
+                    unsubConfig();
+                    unsubAnnouncements();
+                    unsubLogs();
+                    unsubAdmins();
+                };
+            }, [isCloudActive]);
 
             const bestAthletesByCategory = useMemo(() => {
                 const athletePoints = {};
@@ -454,186 +713,6 @@
                     showToastMessage("Ralat menyimpan maklumat pendaftaran acara atlet.", "error");
                 }
             };
-
-            const checkAuthority = () => {
-            if (userRole !== "admin" && userRole !== "guru") {
-                showToastMessage("Akses Dihalang: Sila log masuk dengan ID DELIMa KPM Guru atau Admin untuk melakukan tindakan ini.", "error");
-                return false;
-            }
-            return true;
-        };
-
-        const checkAdminAuthority = () => {
-            if (userRole !== "admin") {
-                showToastMessage("Akses Dihalang: Hanya Admin Utama sahaja dibenarkan untuk mengakses fungsi pentadbiran ini.", "error");
-                return false;
-            }
-            return true;
-        };
-
-        const syncWithGas = async (table, action, dataObj) => {
-                if (!gasUrl) return;
-                try {
-                    await fetch(gasUrl, {
-                        method: 'POST',
-                        mode: 'no-cors', 
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ action, table, data: dataObj })
-                    });
-                } catch (e) {
-                    console.error("Ralat komunikasi GAS:", e);
-                }
-            };
-
-            const handleGoogleLogin = async () => {
-                const provider = new firebase.auth.GoogleAuthProvider();
-                try {
-                    await auth.signInWithPopup(provider);
-                    setIsAdminMenuOpen(false);
-                } catch (error) {
-                    showToastMessage("Log masuk gagal: " + error.message, "error");
-                }
-            };
-
-            const handleLogout = async () => {
-                try {
-                    await auth.signOut();
-                    showToastMessage("Log keluar berjaya!", "success");
-                } catch (error) {
-                    showToastMessage("Ralat ketika log keluar: " + error.message, "error");
-                }
-            };
-
-            useEffect(() => {
-                const unsubscribe = auth.onAuthStateChanged(async (user) => {
-                    if (user) {
-                        setCurrentUser(user);
-                        setIsCloudActive(true);
-                    } else {
-                        setCurrentUser(null);
-                        setUserRole("pelawat");
-                        try {
-                            await auth.signInAnonymously();
-                            setIsCloudActive(true);
-                        } catch (e) {
-                            console.warn("Firestore offline fallback.", e);
-                            setIsCloudActive(false);
-                        }
-                    }
-                });
-                return () => unsubscribe();
-            }, []);
-
-            useEffect(() => {
-                if (!currentUser) return;
-                const email = currentUser.email || "";
-                
-                if (email === "sekolah-7608@moe-dl.edu.my") {
-                    setUserRole("admin");
-                    showToastMessage("Akses Pentadbir Utama Diterima!", "success");
-                } else if (adminList.some(admin => (admin.email || "").toLowerCase() === email.toLowerCase())) {
-                    setUserRole("admin");
-                    showToastMessage("Akses Pentadbir Utama Bersama Diterima!", "success");
-                } else if (email.endsWith("@moe-dl.edu.my") || email.endsWith("@moe.edu.my")) {
-                    setUserRole("guru");
-                    showToastMessage("Akses Urus Setia Guru Diterima!", "success");
-                } else if (!currentUser.isAnonymous) {
-                    setUserRole("pelawat");
-                    showToastMessage("Akaun Peribadi: Sesi Sukan Aktif sebagai Pembaca (Lihat Sahaja).", "warning");
-                }
-            }, [currentUser, adminList]);
-
-            useEffect(() => {
-                if (!isCloudActive) return;
-
-                const pathAthletes = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('athletes');
-                const pathEvents = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('events');
-                const pathResults = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('results');
-                const pathHeats = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('heats');
-                const pathMeta = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('metadata');
-                const pathAnnouncements = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('announcements');
-                const pathLogs = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('logs');
-                const pathAdmins = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('admins');
-
-                const unsubAthletes = pathAthletes.onSnapshot((snapshot) => {
-                    const data = [];
-                    snapshot.forEach(doc => data.push({ id: doc.id, ...doc.data() }));
-                    setAthletes(data);
-                }, (e) => console.error(e));
-
-                const unsubEvents = pathEvents.onSnapshot((snapshot) => {
-                    const data = [];
-                    snapshot.forEach(doc => data.push({ id: doc.id, ...doc.data() }));
-                    setEvents(data);
-                }, (e) => console.error(e));
-
-                const unsubResults = pathResults.onSnapshot((snapshot) => {
-                    const data = [];
-                    snapshot.forEach(doc => data.push({ id: doc.id, ...doc.data() }));
-                    setResults(data);
-                }, (e) => console.error(e));
-
-                const unsubHeats = pathHeats.onSnapshot((snapshot) => {
-                    const data = [];
-                    snapshot.forEach(doc => data.push({ id: doc.id, ...doc.data() }));
-                    setHeats(data);
-                }, (e) => console.error(e));
-
-                const unsubMeta = pathMeta.doc('houses').onSnapshot((doc) => {
-                    if (doc.exists) setHousesMetadata(doc.data());
-                }, (e) => console.error(e));
-
-                const unsubPoints = pathMeta.doc('points').onSnapshot((doc) => {
-                    if (doc.exists) setPointsConfig(doc.data());
-                }, (e) => console.error(e));
-
-                const unsubGas = pathMeta.doc('gas').onSnapshot((doc) => {
-                    if (doc.exists) setGasUrl(doc.data().url || "");
-                }, (e) => console.error(e));
-
-                const unsubConfig = pathMeta.doc('config').onSnapshot((doc) => {
-                    if (doc.exists) {
-                        const data = doc.data();
-                        if (data.activeYear) setActiveYear(data.activeYear);
-                        if (data.maxIndividu !== undefined) setMaxIndividu(data.maxIndividu);
-                        if (data.maxKumpulan !== undefined) setMaxKumpulan(data.maxKumpulan);
-                    }
-                }, (e) => console.error(e));
-
-                const unsubAnnouncements = pathAnnouncements.onSnapshot((snapshot) => {
-                    const data = [];
-                    snapshot.forEach(doc => data.push({ id: doc.id, ...doc.data() }));
-                    data.sort((a, b) => b.id.localeCompare(a.id));
-                    setAnnouncements(data);
-                }, (e) => console.error(e));
-
-                const unsubLogs = pathLogs.onSnapshot((snapshot) => {
-                    const data = [];
-                    snapshot.forEach(doc => data.push({ id: doc.id, ...doc.data() }));
-                    data.sort((a, b) => b.id.localeCompare(a.id));
-                    setLogs(data);
-                }, (e) => console.error(e));
-
-                const unsubAdmins = pathAdmins.onSnapshot((snapshot) => {
-                    const data = [];
-                    snapshot.forEach(doc => data.push({ id: doc.id, ...doc.data() }));
-                    setAdminList(data);
-                }, (e) => console.error(e));
-
-                return () => {
-                    unsubAthletes();
-                    unsubEvents();
-                    unsubResults();
-                    unsubHeats();
-                    unsubMeta();
-                    unsubPoints();
-                    unsubGas();
-                    unsubConfig();
-                    unsubAnnouncements();
-                    unsubLogs();
-                    unsubAdmins();
-                };
-            }, [isCloudActive]);
 
             const houseStandings = useMemo(() => {
                 const houses = {};
@@ -2055,34 +2134,34 @@
                 
                 const cleanName = houseForm.nama.trim();
                 if (!cleanName || housesMetadata[cleanName]) {
-                  showToastMessage("Ralat: Nama rumah sukan tidak sah atau sudah didaftarkan.", "error");
-                  return;
+                    showToastMessage("Ralat: Nama rumah sukan tidak sah atau sudah didaftarkan.", "error");
+                    return;
                 }
 
                 const updated = {
-                  ...housesMetadata,
-                  [cleanName]: {
-                    slogan: houseForm.slogan.trim() || "Slogan Juara",
-                    guruPenasihat: "",
-                    bonusPoints: parseInt(houseForm.bonusPoints) || 0,
-                    warnaLabel: houseForm.warnaLabel
-                  }
+                    ...housesMetadata,
+                    [cleanName]: {
+                        slogan: houseForm.slogan.trim() || "Slogan Juara",
+                        guruPenasihat: "",
+                        bonusPoints: parseInt(houseForm.bonusPoints) || 0,
+                        warnaLabel: houseForm.warnaLabel
+                    }
                 };
 
                 try {
-                  if (isCloudActive) {
-                    await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('metadata').doc('houses').set(updated);
-                    await syncWithGas("houses", "save", { id: cleanName, name: `Rumah ${cleanName}`, slogan: houseForm.slogan, guruPenasihat: "", bonusPoints: parseInt(houseForm.bonusPoints) || 0, warnaLabel: houseForm.warnaLabel });
-                  } else {
-                    setHousesMetadata(updated);
-                  }
+                    if (isCloudActive) {
+                        await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('metadata').doc('houses').set(updated);
+                        await syncWithGas("houses", "save", { id: cleanName, name: `Rumah ${cleanName}`, slogan: houseForm.slogan, guruPenasihat: "", bonusPoints: parseInt(houseForm.bonusPoints) || 0, warnaLabel: houseForm.warnaLabel });
+                    } else {
+                        setHousesMetadata(updated);
+                    }
 
-                  createLog("Daftar Rumah Sukan", `Menambah rumah sukan baru bernama Rumah ${cleanName} (${houseForm.warnaLabel})`);
+                    createLog("Daftar Rumah Sukan", `Menambah rumah sukan baru bernama Rumah ${cleanName} (${houseForm.warnaLabel})`);
 
-                  setHouseForm({ nama: "", slogan: "", guruPenasihat: "", bonusPoints: 0, warnaLabel: "Ungu" });
-                  showToastMessage(`Rumah ${cleanName} berjaya ditambah!`);
+                    setHouseForm({ nama: "", slogan: "", guruPenasihat: "", bonusPoints: 0, warnaLabel: "Ungu" });
+                    showToastMessage(`Rumah ${cleanName} berjaya ditambah!`);
                 } catch (err) {
-                  showToastMessage("Ralat menyimpan rumah sukan baru.", "error");
+                    showToastMessage("Ralat menyimpan rumah sukan baru.", "error");
                 }
             };
 
@@ -2176,19 +2255,19 @@
                 };
 
                 try {
-                  if (isCloudActive) {
-                    await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('metadata').doc('houses').set(updatedMeta);
-                    await syncWithGas("houses", "save", { id: houseName, name: `Rumah ${houseName}`, slogan: currentMeta.slogan, guruPenasihat: existingAdvisors.join(', '), bonusPoints: currentMeta.bonusPoints, warnaLabel: currentMeta.warnaLabel });
-                  } else {
-                    setHousesMetadata(updatedMeta);
-                  }
+                    if (isCloudActive) {
+                        await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('metadata').doc('houses').set(updatedMeta);
+                        await syncWithGas("houses", "save", { id: houseName, name: `Rumah ${houseName}`, slogan: currentMeta.slogan, guruPenasihat: existingAdvisors.join(', '), bonusPoints: currentMeta.bonusPoints, warnaLabel: currentMeta.warnaLabel });
+                    } else {
+                        setHousesMetadata(updatedMeta);
+                    }
 
-                  createLog("Tambah Guru Penasihat", `Mendaftarkan Cikgu ${nameToAdd} sebagai guru penasihat Rumah ${houseName}`);
+                    createLog("Tambah Guru Penasihat", `Mendaftarkan Cikgu ${nameToAdd} sebagai guru penasihat Rumah ${houseName}`);
 
-                  setNewAdvisorText({ ...newAdvisorText, [houseName]: "" });
-                  showToastMessage(`Cikgu ${nameToAdd} berjaya ditambah.`);
+                    setNewAdvisorText({ ...newAdvisorText, [houseName]: "" });
+                    showToastMessage(`Cikgu ${nameToAdd} berjaya ditambah.`);
                 } catch (err) {
-                  showToastMessage("Ralat menambah guru penasihat.", "error");
+                    showToastMessage("Ralat menambah guru penasihat.", "error");
                 }
             };
 
@@ -2236,10 +2315,10 @@
                 if (!announceFormText.trim()) return;
 
                 const newNotice = {
-                  id: "ann_" + Date.now(),
-                  text: announceFormText.trim(),
-                  date: new Date().toLocaleDateString('ms-MY'),
-                  author: userRole === "admin" ? "Pentadbir Sukan" : (currentUser?.displayName || "Urus Setia Guru")
+                    id: "ann_" + Date.now(),
+                    text: announceFormText.trim(),
+                    date: new Date().toLocaleDateString('ms-MY'),
+                    author: userRole === "admin" ? "Pentadbir Sukan" : (currentUser?.displayName || "Urus Setia Guru")
                 };
 
                 try {
@@ -2441,7 +2520,7 @@
                                     🌐 {lang === "BM" ? "BM / EN" : "EN / BM"}
                                 </button>
 
-                                {}
+                                {/* Panel Pentadbir Eksklusif Admin Utama sahaja */}
                                 {userRole === "admin" && (
                                     <div className="relative inline-block shrink-0" ref={adminMenuRef}>
                                         <button 
@@ -2531,7 +2610,7 @@
                         </div>
                     </div>
 
-                    {}
+                    {/* Kandungan Halaman Utama */}
                     <main className="max-w-7xl mx-auto px-4 py-6 flex-grow w-full">
                         
                         {/* DASHBOARD TAB */}
@@ -2767,7 +2846,7 @@
                                     </div>
                                 )}
 
-                                {}
+                                {/* Grid Rumah Sukan */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     {Object.keys(housesMetadata).map(houseName => {
                                         const meta = housesMetadata[houseName];
@@ -2943,7 +3022,7 @@
                                     </div>
                                 </div>
 
-                                {}
+                                {/* Sidebar Drawer Overlay & Container Atlet */}
                                 {isAddAthleteSidebarOpen && (
                                     <div className="fixed inset-0 z-[100] flex justify-end">
                                         <div 
@@ -3064,7 +3143,7 @@
                                     </div>
                                 )}
 
-                                {}
+                                {/* Sidebar Daftar Acara & No. Atlet */}
                                 {isAssignEventSidebarOpen && (
                                     <div className="fixed inset-0 z-[100] flex justify-end">
                                         <div 
@@ -3192,7 +3271,7 @@
                                     </div>
                                 )}
 
-                                {}
+                                {/* Senarai Rasmi Atlet */}
                                 <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm relative">
                                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b pb-3 mb-4">
                                         <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
@@ -3298,7 +3377,7 @@
                                                                             setIsAddAthleteSidebarOpen(true);
                                                                         }} 
                                                                         className="p-1 text-blue-600 hover:bg-blue-50 rounded" 
-                                                                        title="Sunting Atlet"
+                                                                        title="Sunting Profil Atlet"
                                                                     >
                                                                         ✏️
                                                                     </button>
@@ -3459,7 +3538,7 @@
                                     </div>
                                 )}
 
-                                {}
+                                {/* Senarai Penjadualan Acara */}
                                 <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
                                     <h3 className="text-sm font-bold text-slate-900 border-b pb-3 mb-4 uppercase tracking-wider">Senarai Penjadualan Rasmi Acara</h3>
                                     <div className="space-y-3">
@@ -3490,7 +3569,7 @@
                                                                         showToastMessage(`Profil acara ${ev.nama} sedia dikemaskini dalam Sidebar.`, "info");
                                                                     }}
                                                                     className="p-1.5 bg-white hover:bg-indigo-50 border rounded-lg text-indigo-600 transition-colors"
-                                                                    title="Edit Acara"
+                                                                    title="Sunting Acara"
                                                                 >
                                                                     ✏️
                                                                 </button>
@@ -3725,7 +3804,7 @@
                                         )}
                                     </div>
 
-                                    {}
+                                    {/* Hasil Rekod Semasa */}
                                     <div className="lg:col-span-2 space-y-6">
                                         {selectedEventObject && selectedEventObject.jenis === "Balapan" && activeStageTab === "saringan" ? (
                                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -3860,6 +3939,7 @@
                                     </div>
                                 </div>
 
+                                {/* Olahragawan Olahragawati */}
                                 <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm mt-6">
                                     <div className="border-b pb-3 mb-5">
                                         <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-2">

@@ -221,6 +221,9 @@
             const [isCloudActive, setIsCloudActive] = useState(false);
             const [activeTab, setActiveTab] = useState("dashboard");
 
+            const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+            const [passcodeInput, setPasscodeInput] = useState("");
+
             const [athletes, setAthletes] = useState(INITIAL_ATHLETES);
             const [events, setEvents] = useState(INITIAL_EVENTS);
             const [results, setResults] = useState(INITIAL_RESULTS);
@@ -393,15 +396,64 @@
                 const provider = new firebase.auth.GoogleAuthProvider();
                 try {
                     await auth.signInWithPopup(provider);
+                    setIsLoginModalOpen(false);
                     setIsAdminMenuOpen(false);
                 } catch (error) {
-                    showToastMessage("Log masuk gagal: " + error.message, "error");
+                    showToastMessage("Log masuk Google gagal: " + error.message, "error");
+                }
+            };
+
+            const handlePasscodeLogin = (e) => {
+                e.preventDefault();
+                const trimmed = passcodeInput.trim();
+                
+                // Kunci laluan lalai untuk sekolah SK Bikang
+                const defaultAdminPass = "ADMIN7608";
+                const defaultGuruPass = "GURU7608";
+
+                if (trimmed === defaultAdminPass) {
+                    localStorage.setItem('sps_local_role', 'admin');
+                    localStorage.setItem('sps_local_name', 'Pentadbir Utama (Manual)');
+                    localStorage.setItem('sps_local_email', 'sekolah-7608@moe-dl.edu.my');
+                    
+                    setCurrentUser({
+                        displayName: 'Pentadbir Utama',
+                        email: 'sekolah-7608@moe-dl.edu.my',
+                        isAnonymous: false
+                    });
+                    setUserRole('admin');
+                    showToastMessage("Log Masuk Pentadbir Utama Berjaya (Kunci Laluan)!", "success");
+                    setIsLoginModalOpen(false);
+                    setPasscodeInput("");
+                    createLog("Log Masuk Kunci Laluan", "Melog masuk sebagai Pentadbir Utama melalui bypass.");
+                } else if (trimmed === defaultGuruPass) {
+                    localStorage.setItem('sps_local_role', 'guru');
+                    localStorage.setItem('sps_local_name', 'Urus Setia Guru (Manual)');
+                    localStorage.setItem('sps_local_email', 'guru@moe-dl.edu.my');
+                    
+                    setCurrentUser({
+                        displayName: 'Urus Setia Guru',
+                        email: 'guru@moe-dl.edu.my',
+                        isAnonymous: false
+                    });
+                    setUserRole('guru');
+                    showToastMessage("Log Masuk Urus Setia Guru Berjaya (Kunci Laluan)!", "success");
+                    setIsLoginModalOpen(false);
+                    setPasscodeInput("");
+                    createLog("Log Masuk Kunci Laluan", "Melog masuk sebagai Urus Setia Guru melalui bypass.");
+                } else {
+                    showToastMessage("Kunci Laluan salah! Sila hubungi Pentadbir Sistem.", "error");
                 }
             };
 
             const handleLogout = async () => {
                 try {
+                    localStorage.removeItem('sps_local_role');
+                    localStorage.removeItem('sps_local_name');
+                    localStorage.removeItem('sps_local_email');
                     await auth.signOut();
+                    setCurrentUser(null);
+                    setUserRole("pelawat");
                     showToastMessage("Log keluar berjaya!", "success");
                 } catch (error) {
                     showToastMessage("Ralat ketika log keluar: " + error.message, "error");
@@ -663,6 +715,33 @@ service cloud.firestore {
                     showToastMessage("Akaun Peribadi: Sesi Sukan Aktif sebagai Pembaca (Lihat Sahaja).", "warning");
                 }
             }, [currentUser, adminList]);
+
+            useEffect(() => {
+                const unsubscribe = auth.onAuthStateChanged((user) => {
+                    if (user) {
+                        setCurrentUser(user);
+                        setIsCloudActive(true);
+                    } else {
+                        // Semak sekiranya ada sesi log masuk manual kunci laluan aktif pada localstorage
+                        const cachedRole = localStorage.getItem('sps_local_role');
+                        const cachedName = localStorage.getItem('sps_local_name');
+                        const cachedEmail = localStorage.getItem('sps_local_email');
+                        if (cachedRole && cachedName) {
+                            setCurrentUser({
+                                displayName: cachedName,
+                                email: cachedEmail || "guru@moe-dl.edu.my",
+                                isAnonymous: false
+                            });
+                            setUserRole(cachedRole);
+                            setIsCloudActive(true);
+                        } else {
+                            setCurrentUser(null);
+                            setUserRole("pelawat");
+                        }
+                    }
+                });
+                return () => unsubscribe();
+            }, []);
 
             useEffect(() => {
                 if (!isCloudActive) return;
@@ -2732,11 +2811,11 @@ service cloud.firestore {
                                             👥 Pelawat
                                         </span>
                                         <button 
-                                            onClick={handleGoogleLogin}
+                                            onClick={() => setIsLoginModalOpen(true)}
                                             className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-1.5 rounded-xl text-xs flex items-center gap-2 transition-all shadow-md shadow-indigo-600/20 shrink-0"
                                         >
                                             <LogInIcon />
-                                            <span>Masuk Google / DELIMa</span>
+                                            <span>Masuk Guru / Admin</span>
                                         </button>
                                     </div>
                                 )}
@@ -3959,6 +4038,68 @@ service cloud.firestore {
                     {toast.show && (
                         <div className="fixed bottom-5 right-5 z-[10000] max-w-sm p-4 rounded-xl shadow-2xl bg-slate-900 text-white text-xs font-bold flex items-center gap-3">
                             <p>{toast.message}</p>
+                        </div>
+                    )}
+
+                    {}
+                    {isLoginModalOpen && (
+                        <div className="fixed inset-0 bg-slate-900/75 backdrop-blur-sm z-[10000] flex items-center justify-center p-4">
+                            <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-md w-full overflow-hidden animate-in zoom-in-95 duration-150">
+                                <div className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white px-6 py-5 flex justify-between items-center">
+                                    <div>
+                                        <h3 className="text-sm font-black uppercase tracking-wider">🔒 LOG MASUK PENTADBIRAN</h3>
+                                        <p className="text-[10px] text-indigo-200 mt-0.5">Sila pilih kaedah sambungan anda</p>
+                                    </div>
+                                    <button onClick={() => setIsLoginModalOpen(false)} className="text-slate-400 hover:text-white text-lg font-bold">✕</button>
+                                </div>
+
+                                <div className="p-6 space-y-6">
+                                    {/* Pilihan 1: Google Login */}
+                                    <div className="space-y-2">
+                                        <label className="block text-[11px] font-bold text-slate-400 uppercase">Pilihan A: Log Masuk Automatik</label>
+                                        <button 
+                                            onClick={handleGoogleLogin}
+                                            className="w-full bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 font-extrabold py-3 rounded-2xl flex items-center justify-center gap-2.5 transition-all text-xs shadow-sm hover:scale-[1.02] active:scale-95"
+                                        >
+                                            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" />
+                                            <span>Sumpah Masuk Google / DELIMa</span>
+                                        </button>
+                                        <p className="text-[9.5px] text-slate-400 leading-relaxed text-center">
+                                            Sesuai jika akaun DELIMa atau Google anda tidak disekat oleh pentadbir institusi.
+                                        </p>
+                                    </div>
+
+                                    <div className="relative flex py-1 items-center">
+                                        <div className="flex-grow border-t border-slate-200"></div>
+                                        <span className="flex-shrink mx-4 text-slate-400 text-[10px] font-bold uppercase">ATAU</span>
+                                        <div className="flex-grow border-t border-slate-200"></div>
+                                    </div>
+
+                                    {/* Pilihan 2: Passcode Bypass */}
+                                    <div className="space-y-3">
+                                        <label className="block text-[11px] font-bold text-slate-400 uppercase">Pilihan B: Guna Kunci Laluan Manual</label>
+                                        <form onSubmit={handlePasscodeLogin} className="space-y-3">
+                                            <input 
+                                                type="password"
+                                                required
+                                                value={passcodeInput}
+                                                onChange={(e) => setPasscodeInput(e.target.value)}
+                                                placeholder="Masukkan Kunci Laluan Pentadbir..."
+                                                className="w-full p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 text-center font-mono tracking-widest text-sm text-slate-800 bg-slate-50 focus:outline-none"
+                                            />
+                                            <button 
+                                                type="submit"
+                                                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold py-3 rounded-2xl transition-all text-xs shadow-md shadow-indigo-600/10 hover:scale-[1.02] active:scale-95"
+                                            >
+                                                Log Masuk Kunci Laluan
+                                            </button>
+                                        </form>
+                                        <div className="bg-amber-50 border border-amber-200 p-3 rounded-xl text-[10px] text-amber-800 leading-relaxed">
+                                            📌 **Nota Kecemasan:** Sekiranya akaun DELIMa Google Workspace anda disekat, gunakan kod bypass **`ADMIN7608`** untuk Admin Utama atau **`GURU7608`** untuk Guru Penasihat.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     )}
 

@@ -638,7 +638,7 @@
                     {/* DIALOG KONFIRMASI */}
                     {confirmModal.show && (
                         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-                            <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl animate-bounce-short">
+                            <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
                                 <h3 className="text-xl font-bold text-slate-800 mb-2">{confirmModal.title}</h3>
                                 <p className="text-slate-600 mb-6">{confirmModal.message}</p>
                                 <div className="flex justify-end space-x-3">
@@ -915,7 +915,7 @@
                                                     {/* Papan Markah & Jantina (Diletakkan di sebelah kiri) */}
                                                     <div className="flex items-center justify-between py-2.5 px-4 bg-slate-50 rounded-2xl mb-4 text-xs">
                                                         <div className="flex items-center space-x-4">
-                                                            <span className="font-extrabold text-indigo-950">Jumlah: {stats.total} Ahli</span>
+                                                            <span className="font-extrabold text-indigo-950">Jumlah {stats.total} ahli</span>
                                                             <div className="flex items-center space-x-2.5">
                                                                 <span className="px-2 py-0.5 bg-blue-100 text-blue-700 font-bold rounded">L: {stats.L}</span>
                                                                 <span className="px-2 py-0.5 bg-pink-100 text-pink-700 font-bold rounded">P: {stats.P}</span>
@@ -959,7 +959,7 @@
                             </div>
                         )}
 
-                        {/* TAB C: PENGURUSAN ATLET */}
+                        {}
                         {activeTab === "athletes" && (
                             <div className="space-y-6">
                                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -1305,7 +1305,7 @@
 
                         {/* TAB F: SUMBER KOD & INTEGRASI (RESOURCES) */}
                         {activeTab === "resources" && (
-                            <div className="space-y-6 animate-fade-in">
+                            <div className="space-y-6">
                                 <h3 className="text-2xl font-extrabold text-slate-800">{t.resources}</h3>
                                 <p className="text-sm text-slate-600 leading-relaxed">
                                     Gunakan skrip di bawah untuk mengaktifkan fungsi sinkronisasi masa nyata bagi portal sekolah tersuai baharu anda.

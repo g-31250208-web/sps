@@ -1895,23 +1895,52 @@
 
                     const logAction = isEditingEvent ? "Sunting Acara Sukan" : "Daftar Acara Sukan";
                     const logDetails = isEditingEvent
-                        ? `Mengemas kini maklumat acara: ${eventForm.nama} (${eventForm.kategori})`
-                        : `Mendaftarkan acara kejohanan baharu: ${eventForm.nama} (${eventForm.kategori})`;
-                    
-                    createLog(logAction, logDetails);
+                ? `Mengemas kini maklumat acara: ${eventForm.nama} (${eventForm.kategori})`
+                : `Mendaftarkan acara kejohanan baharu: ${eventForm.nama} (${eventForm.kategori})`;
+            
+            createLog(logAction, logDetails);
 
-                    showToastMessage(isEditingEvent ? "Acara sukan dikemaskini!" : "Acara sukan baru ditambah!");
-                    setEventForm({ id: "", nama: "", kategori: "L12", jenis: "Balapan", format: "Individu", tarikh: "", masa: "" });
-                    setIsEditingEvent(false);
-                    setIsEventSidebarOpen(false);
-                } catch (err) {
-                    showToastMessage("Ralat menyimpan acara sukan.", "error");
+            showToastMessage(isEditingEvent ? "Acara sukan dikemaskini!" : "Acara sukan baru ditambah!");
+            setEventForm({ id: "", nama: "", kategori: "L12", jenis: "Balapan", format: "Individu", tarikh: "", masa: "" });
+            setIsEditingEvent(false);
+            setIsEventSidebarOpen(false);
+        } catch (err) {
+            showToastMessage("Ralat menyimpan acara sukan.", "error");
+        }
+    };
+
+    const handleDeleteAllEvents = () => {
+        if (!checkAdminAuthority()) return;
+        setConfirmModal({
+            show: true,
+            title: "⚠️ Padam Semua Acara Sukan?",
+            message: "Adakah anda pasti ingin memadam SEMUA acara sukan yang berdaftar? Tindakan ini akan memadam semua rekod keputusan pingat dan saringan berkaitan acara-acara ini secara kekal!",
+            onConfirm: async () => {
+                try {
+                    if (isCloudActive) {
+                        const eventsRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('events');
+                        const evSnap = await eventsRef.get();
+                        await Promise.all(evSnap.docs.map(doc => doc.ref.delete()));
+                        
+                        // Delete all events from GAS
+                        for (const ev of (events || [])) {
+                            await syncWithGas("events", "delete", { id: ev.id });
+                        }
+                    }
+                    setEvents([]);
+                    createLog("Hapus Semua Acara Sukan", "Memadamkan keseluruhan senarai acara sukan kejohanan secara pukal.");
+                    setConfirmModal({ show: false });
+                    showToastMessage("Semua acara sukan berjaya dihapuskan sepenuhnya.", "success");
+                } catch (e) {
+                    showToastMessage("Ralat memadamkan semua acara sukan.", "error");
                 }
-            };
+            }
+        });
+    };
 
-            const handleDeleteEvent = (eventId) => {
-                if (!checkAuthority()) return;
-                const targetEvent = (events || []).find(e => e.id === eventId);
+    const handleDeleteEvent = (eventId) => {
+        if (!checkAuthority()) return;
+        const targetEvent = (events || []).find(e => e.id === eventId);
                 setConfirmModal({
                     show: true,
                     title: "Hapus Acara Sukan?",
@@ -3400,12 +3429,22 @@
                                 )}
 
                                 {/* Senarai Penjadualan Acara */}
-                                <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
-                                    <h3 className="text-sm font-bold text-slate-900 border-b pb-3 mb-4 uppercase tracking-wider">Senarai Penjadualan Rasmi</h3>
-                                    <div className="space-y-3">
-                                        {eventsWithCode.length === 0 ? (
-                                            <p className="text-xs text-slate-400 italic text-center py-6">Tiada sebarang acara sukan berdaftar.</p>
-                                        ) : (
+                        <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
+                            <div className="flex justify-between items-center border-b pb-3 mb-4">
+                                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Senarai Penjadualan Rasmi</h3>
+                                {userRole === "admin" && (
+                                    <button 
+                                        onClick={handleDeleteAllEvents}
+                                        className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs px-3.5 py-1.5 rounded-xl shadow-md transition-all flex items-center gap-1.5 hover:scale-105 active:scale-95 shrink-0"
+                                    >
+                                        <span>🗑️ Padam Semua Acara</span>
+                                    </button>
+                                )}
+                            </div>
+                            <div className="space-y-3">
+                                {eventsWithCode.length === 0 ? (
+                                    <p className="text-xs text-slate-400 italic text-center py-6">Tiada sebarang acara sukan berdaftar.</p>
+                                ) : (
                                             eventsWithCode.map((ev) => (
                                                 <div key={ev.id} className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 rounded-xl bg-slate-50 border text-xs font-semibold">
                                                     <div className="flex items-center gap-3">

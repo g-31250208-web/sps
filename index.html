@@ -166,10 +166,8 @@
             const [athleteForm, setAthleteForm] = useState({ id: "", nama: "", noAtlet: "", kelas: "", rumah: "Merah", jantina: "Lelaki", kategori: "L12" });
             const [eventForm, setEventForm] = useState({ id: "", nama: "", kategori: "L12", jenis: "Balapan", tarikh: "", masa: "" });
             const [resultForm, setResultForm] = useState({ id: "", eventId: "", athleteId: "", kedudukan: "1", catatan: "" });
-            const [announceText, setAnnounceText] = useState("");
 
             const [filterHouse, setFilterHouse] = useState("Semua");
-            const [filterCategory, setFilterCategory] = useState("Semua");
             const [bulkTsv, setBulkTsv] = useState("");
             const [isBulkMode, setIsBulkMode] = useState(false);
 
@@ -224,29 +222,37 @@
                         }
                     });
 
-                    // Penyahselarasan Firestore secara Masa Nyata (Real-time)
+                    // Penyahselarasan Firestore secara Masa Nyata dengan Pengendali Ralat (Menghalang Whitescreen)
                     const unsubAthletes = db.collection("athletes").onSnapshot(snap => {
                         let list = [];
                         snap.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
                         if (list.length > 0) setAthletes(list);
+                    }, err => {
+                        console.warn("Segerak Atlet Firestore disekat (mod offline aktif):", err.message);
                     });
 
                     const unsubEvents = db.collection("events").onSnapshot(snap => {
                         let list = [];
                         snap.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
                         if (list.length > 0) setEvents(list);
+                    }, err => {
+                        console.warn("Segerak Acara Firestore disekat (mod offline aktif):", err.message);
                     });
 
                     const unsubResults = db.collection("results").onSnapshot(snap => {
                         let list = [];
                         snap.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
                         if (list.length > 0) setResults(list);
+                    }, err => {
+                        console.warn("Segerak Keputusan Firestore disekat (mod offline aktif):", err.message);
                     });
 
                     const unsubAnnounce = db.collection("announcements").onSnapshot(snap => {
                         let list = [];
                         snap.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
                         if (list.length > 0) setAnnouncements(list.sort((a,b) => b.date.localeCompare(a.date)));
+                    }, err => {
+                        console.warn("Segerak Hebahan Firestore disekat (mod offline aktif):", err.message);
                     });
 
                     return () => {
@@ -293,8 +299,8 @@
 
             const sortedCategories = useMemo(() => {
                 const rawCats = [
-                    ...athletes.map(a => a.kategori),
-                    ...events.map(e => e.kategori)
+                    ...(athletes || []).map(a => a.kategori),
+                    ...(events || []).map(e => e.kategori)
                 ].filter(Boolean);
                 const uniqueCats = Array.from(new Set(rawCats));
                 return uniqueCats.sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
@@ -310,8 +316,8 @@
                     Kuning: { emas: 0, perak: 0, gangsa: 0, keempat: 0 }
                 };
 
-                results.forEach(res => {
-                    const ath = athletes.find(a => a.id === res.athleteId);
+                (results || []).forEach(res => {
+                    const ath = (athletes || []).find(a => a.id === res.athleteId);
                     if (ath && counts[ath.rumah]) {
                         if (res.kedudukan === "1") {
                             counts[ath.rumah].emas += 1;
@@ -351,7 +357,7 @@
             };
 
             const getHouseMemberStats = (houseName) => {
-                const members = athletes.filter(a => a.rumah === houseName);
+                const members = (athletes || []).filter(a => a.rumah === houseName);
                 const L = members.filter(a => a.jantina === "Lelaki").length;
                 const P = members.filter(a => a.jantina === "Perempuan").length;
                 return { total: members.length, L, P };
@@ -896,7 +902,7 @@
                                         const h = houses[name];
                                         const preset = COLOR_PRESETS[name] || COLOR_PRESETS.Merah;
                                         const stats = getHouseMemberStats(name);
-                                        const listAthletes = athletes.filter(a => a.rumah === name).sort((a,b) => a.nama.localeCompare(b.nama));
+                                        const listAthletes = (athletes || []).filter(a => a.rumah === name).sort((a,b) => a.nama.localeCompare(b.nama));
 
                                         return (
                                             <div key={name} className="bg-white rounded-3xl p-6 shadow-md border-l-8 flex flex-col justify-between" style={{ borderLeftColor: preset.warna.includes('red') ? '#ef4444' : preset.warna.includes('blue') ? '#3b82f6' : preset.warna.includes('emerald') ? '#10b981' : '#f59e0b' }}>
@@ -959,7 +965,7 @@
                             </div>
                         )}
 
-                        {}
+                        {/* TAB C: PENDAFTARAN ATLET */}
                         {activeTab === "athletes" && (
                             <div className="space-y-6">
                                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">

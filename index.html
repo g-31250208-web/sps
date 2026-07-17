@@ -1840,22 +1840,35 @@
                 }
 
                 try {
-                    showToastMessage(`Sedang mendaftarkan ${parsedAthletes.length} ahli secara bundle...`, "info");
+                    showToastMessage(`Sedang mendaftarkan ${parsedAthletes.length} ahli ke Awan...`, "info");
                     
                     if (isCloudActive) {
-                        for (let i = 0; i < parsedAthletes.length; i++) {
-                            const ath = parsedAthletes[i];
-                            const docId = "A_" + (Date.now() + i);
+                        // FASA 1: Tulis ke Firestore secara SELARI (Parallel Promise) -> Kurang dari 1 saat!
+                        const promises = parsedAthletes.map((ath, index) => {
+                            const docId = "A_" + (Date.now() + index);
                             const updatedAthlete = { ...ath, id: docId };
-                            await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('athletes').doc(docId).set(updatedAthlete);
-                            await syncWithGas("students", "save", { 
-                                id: docId, 
-                                name: ath.nama, 
-                                class: ath.kelas, 
-                                house: ath.rumah, 
-                                jantina: ath.jantina, 
-                                kategori: ath.kategori 
-                            });
+                            return db.collection('artifacts').doc(appId).collection('public').doc('data').collection('athletes').doc(docId).set(updatedAthlete)
+                                .then(() => ({ docId, ath }));
+                        });
+                        
+                        const savedResults = await Promise.all(promises);
+                        
+                        // FASA 2: Penyelarasan ke Google Sheets secara berkumpulan (Batched Throttling) untuk elak Timeout
+                        showToastMessage(`Fasa 1 Berjaya: ${parsedAthletes.length} ahli telah didaftarkan. Sedang menyelaraskan Google Sheets...`, "success");
+                        
+                        const chunkSize = 5; // Hantar 5 rekod serentak setiap kali panggilan
+                        for (let i = 0; i < savedResults.length; i += chunkSize) {
+                            const chunk = savedResults.slice(i, i + chunkSize);
+                            await Promise.all(chunk.map(({ docId, ath }) => 
+                                syncWithGas("students", "save", { 
+                                    id: docId, 
+                                    name: ath.nama, 
+                                    class: ath.kelas, 
+                                    house: ath.rumah, 
+                                    gender: ath.jantina, 
+                                    tahap: ath.kategori 
+                                })
+                            ));
                         }
                     } else {
                         const localAdded = parsedAthletes.map((ath, index) => ({
@@ -1867,7 +1880,7 @@
 
                     createLog("Daftar Atlet Kelompok (Bundle)", `Berjaya mendaftarkan ${parsedAthletes.length} atlet sukan baru`);
 
-                    showToastMessage(`Berjaya mendaftarkan ${parsedAthletes.length} ahli baharu secara bundle!`, "success");
+                    showToastMessage(`Berjaya mendaftarkan & menyelaraskan ${parsedAthletes.length} ahli baharu!`, "success");
                     setTsvInput("");
                     setRegMode("tunggal");
                     setIsAddAthleteSidebarOpen(false);
@@ -1898,52 +1911,52 @@
 
                     const logAction = isEditingEvent ? "Sunting Acara Sukan" : "Daftar Acara Sukan";
                     const logDetails = isEditingEvent
-                ? `Mengemas kini maklumat acara: ${eventForm.nama} (${eventForm.kategori})`
-                : `Mendaftarkan acara kejohanan baharu: ${eventForm.nama} (${eventForm.kategori})`;
-            
-            createLog(logAction, logDetails);
+                        ? `Mengemas kini maklumat acara: ${eventForm.nama} (${eventForm.kategori})`
+                        : `Mendaftarkan acara kejohanan baharu: ${eventForm.nama} (${eventForm.kategori})`;
+                    
+                    createLog(logAction, logDetails);
 
-            showToastMessage(isEditingEvent ? "Acara sukan dikemaskini!" : "Acara sukan baru ditambah!");
-            setEventForm({ id: "", nama: "", kategori: "L12", jenis: "Balapan", format: "Individu", tarikh: "", masa: "" });
-            setIsEditingEvent(false);
-            setIsEventSidebarOpen(false);
-        } catch (err) {
-            showToastMessage("Ralat menyimpan acara sukan.", "error");
-        }
-    };
+                    showToastMessage(isEditingEvent ? "Acara sukan dikemaskini!" : "Acara sukan baru ditambah!");
+                    setEventForm({ id: "", nama: "", kategori: "L12", jenis: "Balapan", format: "Individu", tarikh: "", masa: "" });
+                    setIsEditingEvent(false);
+                    setIsEventSidebarOpen(false);
+                } catch (err) {
+                    showToastMessage("Ralat menyimpan acara sukan.", "error");
+                }
+            };
 
-    const handleDeleteAllEvents = () => {
-        if (!checkAdminAuthority()) return;
-        setConfirmModal({
-            show: true,
-            title: "⚠️ Padam Semua Acara Sukan?",
-            message: "Adakah anda pasti ingin memadam SEMUA acara sukan yang berdaftar? Tindakan ini akan memadam semua rekod keputusan pingat dan saringan berkaitan acara-acara ini secara kekal!",
-            onConfirm: async () => {
-                try {
-                    if (isCloudActive) {
-                        const eventsRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('events');
-                        const evSnap = await eventsRef.get();
-                        await Promise.all(evSnap.docs.map(doc => doc.ref.delete()));
-                        
-                        // Delete all events from GAS
-                        for (const ev of (events || [])) {
-                            await syncWithGas("events", "delete", { id: ev.id });
+            const handleDeleteAllEvents = () => {
+                if (!checkAdminAuthority()) return;
+                setConfirmModal({
+                    show: true,
+                    title: "⚠️ Padam Semua Acara Sukan?",
+                    message: "Adakah anda pasti ingin memadam SEMUA acara sukan yang berdaftar? Tindakan ini akan memadam semua rekod keputusan pingat dan saringan berkaitan acara-acara ini secara kekal!",
+                    onConfirm: async () => {
+                        try {
+                            if (isCloudActive) {
+                                const eventsRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('events');
+                                const evSnap = await eventsRef.get();
+                                await Promise.all(evSnap.docs.map(doc => doc.ref.delete()));
+                                
+                                // Delete all events from GAS
+                                for (const ev of (events || [])) {
+                                    await syncWithGas("events", "delete", { id: ev.id });
+                                }
+                            }
+                            setEvents([]);
+                            createLog("Hapus Semua Acara Sukan", "Memadamkan keseluruhan senarai acara sukan kejohanan secara pukal.");
+                            setConfirmModal({ show: false });
+                            showToastMessage("Semua acara sukan berjaya dihapuskan sepenuhnya.", "success");
+                        } catch (e) {
+                            showToastMessage("Ralat memadamkan semua acara sukan.", "error");
                         }
                     }
-                    setEvents([]);
-                    createLog("Hapus Semua Acara Sukan", "Memadamkan keseluruhan senarai acara sukan kejohanan secara pukal.");
-                    setConfirmModal({ show: false });
-                    showToastMessage("Semua acara sukan berjaya dihapuskan sepenuhnya.", "success");
-                } catch (e) {
-                    showToastMessage("Ralat memadamkan semua acara sukan.", "error");
-                }
-            }
-        });
-    };
+                });
+            };
 
-    const handleDeleteEvent = (eventId) => {
-        if (!checkAuthority()) return;
-        const targetEvent = (events || []).find(e => e.id === eventId);
+            const handleDeleteEvent = (eventId) => {
+                if (!checkAuthority()) return;
+                const targetEvent = (events || []).find(e => e.id === eventId);
                 setConfirmModal({
                     show: true,
                     title: "Hapus Acara Sukan?",
@@ -2567,7 +2580,6 @@
                     {/* Kandungan Halaman Utama */}
                     <main className="max-w-7xl mx-auto px-4 py-6 flex-grow w-full">
                         
-                        {}
                         {activeTab === "dashboard" && (
                             <div className="space-y-6">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -2689,7 +2701,6 @@
                             </div>
                         )}
 
-                        {}
                         {activeTab === "rumah_sukan" && (
                             <div className="space-y-6">
                                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
@@ -2843,7 +2854,6 @@
                                                     <div className="flex gap-1.5">
                                                         <button onClick={() => executeBypassPrint('kehadiran_rumah', { houseName })} className="text-[10px] font-bold bg-slate-100 hover:bg-slate-200 px-2.5 py-1.5 rounded-lg flex items-center gap-1" title="Cetak Kehadiran">📝 Kehadiran</button>
                                                         <button onClick={() => executeBypassPrint('sukantara_rumah', { houseName })} className="text-[10px] font-bold bg-slate-100 hover:bg-slate-200 px-2.5 py-1.5 rounded-lg flex items-center gap-1" title="Cetak Borang Sukantara">🏅 Sukantara</button>
-                                                        {/* Butang Eksport Ahli Rumah yang Ditapis sahaja */}
                                                         <button onClick={() => handleExportHouseMembersJSON(houseName)} className="text-[10px] font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-2.5 py-1.5 rounded-lg flex items-center gap-1" title="Eksport Ahli Rumah Ini sahaja">📤 Eksport JSON</button>
                                                     </div>
                                                 </div>
@@ -2880,7 +2890,6 @@
                                                     )}
                                                 </div>
 
-                                                {/* Pembetulan Paparan Jumlah Ahli Kumulatif Pra ke Tahun 6 */}
                                                 <div className="border-t pt-3 space-y-2">
                                                     <div className="flex justify-between items-center mb-1">
                                                         <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">🏃‍♂️ SENARAI AHLI RUMAH</h4>
@@ -2918,7 +2927,6 @@
                             </div>
                         )}
 
-                        {}
                         {activeTab === "atlit" && (
                             <div className="space-y-6">
                                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm mb-6">
@@ -3324,7 +3332,6 @@
                             </div>
                         )}
 
-                        {}
                         {activeTab === "acara" && (
                             <div className="space-y-6">
                                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
@@ -3496,22 +3503,22 @@
                                 )}
 
                                 {/* Senarai Penjadualan Acara */}
-                        <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
-                            <div className="flex justify-between items-center border-b pb-3 mb-4">
-                                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Senarai Penjadualan Rasmi</h3>
-                                {userRole === "admin" && (
-                                    <button 
-                                        onClick={handleDeleteAllEvents}
-                                        className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs px-3.5 py-1.5 rounded-xl shadow-md transition-all flex items-center gap-1.5 hover:scale-105 active:scale-95 shrink-0"
-                                    >
-                                        <span>🗑️ Padam Semua Acara</span>
-                                    </button>
-                                )}
-                            </div>
-                            <div className="space-y-3">
-                                {eventsWithCode.length === 0 ? (
-                                    <p className="text-xs text-slate-400 italic text-center py-6">Tiada sebarang acara sukan berdaftar.</p>
-                                ) : (
+                                <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
+                                    <div className="flex justify-between items-center border-b pb-3 mb-4">
+                                        <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Senarai Penjadualan Rasmi</h3>
+                                        {userRole === "admin" && (
+                                            <button 
+                                                onClick={handleDeleteAllEvents}
+                                                className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs px-3.5 py-1.5 rounded-xl shadow-md transition-all flex items-center gap-1.5 hover:scale-105 active:scale-95 shrink-0"
+                                            >
+                                                <span>🗑️ Padam Semua Acara</span>
+                                            </button>
+                                        )}
+                                    </div>
+                                    <div className="space-y-3">
+                                        {eventsWithCode.length === 0 ? (
+                                            <p className="text-xs text-slate-400 italic text-center py-6">Tiada sebarang acara sukan berdaftar.</p>
+                                        ) : (
                                             eventsWithCode.map((ev) => (
                                                 <div key={ev.id} className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 rounded-xl bg-slate-50 border text-xs font-semibold">
                                                     <div className="flex items-center gap-3">
@@ -3537,7 +3544,6 @@
                             </div>
                         )}
 
-                        {}
                         {activeTab === "keputusan" && (
                             <div className="space-y-6">
                                 <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
@@ -3693,7 +3699,6 @@
                             </div>
                         )}
 
-                        {}
                         {activeTab === "pasca_sukan" && (
                             <div className="space-y-6">
                                 <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
@@ -3892,7 +3897,6 @@
                         </div>
                     )}
 
-                    {}
                     {isPreviewModalOpen && (
                         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[10000] flex flex-col items-center justify-center p-4">
                             <div className="bg-white rounded-2xl shadow-2xl border w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden">

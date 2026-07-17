@@ -284,6 +284,12 @@
 
             const [categories, setCategories] = useState(["L12", "P12", "L9", "P9", "Prasekolah", "Terbuka"]);
 
+            const sortedCategories = useMemo(() => {
+                return [...categories].sort((a, b) => 
+                    a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })
+                );
+            }, [categories]);
+
             const logoUrl = "https://lh3.googleusercontent.com/d/1E8tjAd7j9DJaZgngDn38agUFCvwyUffa";
 
             // Form States
@@ -587,7 +593,7 @@
 
                 const leaders = {};
 
-                categories.forEach(cat => {
+                sortedCategories.forEach(cat => {
                     const candidates = Object.values(athletePoints).filter(ap => ap.athlete.kategori === cat);
                     
                     candidates.sort((a, b) => {
@@ -601,7 +607,7 @@
                 });
 
                 return leaders;
-            }, [results, athletes, pointsConfig, categories]);
+            }, [results, athletes, pointsConfig, sortedCategories]);
 
             const eventsWithCode = useMemo(() => {
                 const uniqueDates = Array.from(new Set((events || []).map(e => e.tarikh).filter(Boolean))).sort();
@@ -3053,7 +3059,7 @@
                                                             <div>
                                                                 <label className="block text-slate-500 mb-1">Kategori Umur</label>
                                                                 <select value={athleteForm.kategori} onChange={(e) => setAthleteForm({ ...athleteForm, kategori: e.target.value })} className="w-full p-2.5 border rounded-xl bg-white font-bold">
-                                                                    {categories.map(cat => (
+                                                                    {sortedCategories.map(cat => (
                                                                         <option key={cat} value={cat}>{cat}</option>
                                                                     ))}
                                                                 </select>
@@ -3394,7 +3400,7 @@
                                                             <label className="block text-slate-500 mb-1">Kategori Umur</label>
                                                             <div className="flex gap-1.5 mb-1">
                                                                 <select value={eventForm.kategori} onChange={(e) => setEventForm({ ...eventForm, kategori: e.target.value })} className="flex-1 p-2.5 border rounded-xl bg-white font-bold">
-                                                                    {categories.map(cat => (
+                                                                    {sortedCategories.map(cat => (
                                                                         <option key={cat} value={cat}>{cat}</option>
                                                                     ))}
                                                                 </select>

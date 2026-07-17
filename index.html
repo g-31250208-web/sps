@@ -3086,7 +3086,10 @@ service cloud.firestore {
                                         const cls = COLOR_PRESETS[meta.warnaLabel] || { bg: "bg-slate-100", text: "text-slate-700", warna: "bg-slate-500", teks: "text-slate-600" };
                                         const houseMembers = (groupedByClass[houseName]) || {};
                                         const advisors = meta.guruPenasihat ? meta.guruPenasihat.split(',').map(s => s.trim()).filter(Boolean) : [];
-                                        const totalHouseMembersCount = (athletes || []).filter(a => a.rumah === houseName).length;
+                                        const houseAthletesList = (athletes || []).filter(a => a.rumah === houseName);
+                                        const totalHouseMembersCount = houseAthletesList.length;
+                                        const totalLelakiCount = houseAthletesList.filter(a => a.jantina === "Lelaki").length;
+                                        const totalPerempuanCount = houseAthletesList.filter(a => a.jantina === "Perempuan").length;
 
                                         return (
                                             <div key={houseName} className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm space-y-4 hover:shadow-md transition-shadow">
@@ -3161,9 +3164,17 @@ service cloud.firestore {
                                                 <div className="border-t pt-3 space-y-2">
                                                     <div className="flex justify-between items-center mb-1">
                                                         <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">🏃‍♂️ SENARAI AHLI RUMAH</h4>
-                                                        <span className="text-[11px] font-extrabold text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-lg">
-                                                            (Jumlah {totalHouseMembersCount} ahli)
-                                                        </span>
+                                                        <div className="flex items-center gap-1.5">
+                                                            <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2.5 py-0.5 rounded-lg" title="Lelaki">
+                                                                L: {totalLelakiCount}
+                                                            </span>
+                                                            <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-2.5 py-0.5 rounded-lg" title="Perempuan">
+                                                                P: {totalPerempuanCount}
+                                                            </span>
+                                                            <span className="text-[11px] font-extrabold text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-lg">
+                                                                (Jumlah {totalHouseMembersCount} ahli)
+                                                            </span>
+                                                        </div>
                                                     </div>
                                                     <div className="max-h-48 overflow-y-auto pr-1 space-y-3">
                                                         {Object.keys(houseMembers).length === 0 ? (

@@ -110,12 +110,12 @@
         };
 
         const COLOR_PRESETS = {
-            Merah: { bg: "bg-red-100", text: "text-red-700", warna: "bg-red-500", teks: "text-red-600", glow: "hover:shadow-[0_0_20px_rgba(239,68,68,0.4)] hover:border-red-300" },
-            Biru: { bg: "bg-blue-100", text: "text-blue-700", warna: "bg-blue-500", teks: "text-blue-600", glow: "hover:shadow-[0_0_20px_rgba(59,130,246,0.4)] hover:border-blue-300" },
-            Hijau: { bg: "bg-emerald-100", text: "text-emerald-700", warna: "bg-emerald-500", teks: "text-emerald-600", glow: "hover:shadow-[0_0_20px_rgba(16,185,129,0.4)] hover:border-emerald-300" },
-            Kuning: { bg: "bg-amber-100", text: "text-amber-700", warna: "bg-amber-400", teks: "text-amber-500", glow: "hover:shadow-[0_0_20px_rgba(251,191,36,0.4)] hover:border-amber-300" },
-            Ungu: { bg: "bg-purple-100", text: "text-purple-700", warna: "bg-purple-500", teks: "text-purple-600", glow: "hover:shadow-[0_0_20px_rgba(168,85,247,0.4)] hover:border-purple-300" },
-            Oren: { bg: "bg-orange-100", text: "text-orange-700", warna: "bg-orange-500", teks: "text-orange-600", glow: "hover:shadow-[0_0_20px_rgba(249,115,22,0.4)] hover:border-orange-300" }
+            Merah: { bg: "bg-red-100", text: "text-red-700", warna: "bg-red-500", teks: "text-red-600", glow: "hover:shadow-[0_0_20px_rgba(239,68,68,0.4)] hover:border-red-300", emoji: "🦁" },
+            Biru: { bg: "bg-blue-100", text: "text-blue-700", warna: "bg-blue-500", teks: "text-blue-600", glow: "hover:shadow-[0_0_20px_rgba(59,130,246,0.4)] hover:border-blue-300", emoji: "🦅" },
+            Hijau: { bg: "bg-emerald-100", text: "text-emerald-700", warna: "bg-emerald-500", teks: "text-emerald-600", glow: "hover:shadow-[0_0_20px_rgba(16,185,129,0.4)] hover:border-emerald-300", emoji: "🐉" },
+            Kuning: { bg: "bg-amber-100", text: "text-amber-700", warna: "bg-amber-400", teks: "text-amber-500", glow: "hover:shadow-[0_0_20px_rgba(251,191,36,0.4)] hover:border-amber-300", emoji: "https://lh3.googleusercontent.com/d/1_ZGQfCeIIPtpZLBJd9TWy6NTiR6v8Lzb" },
+            Ungu: { bg: "bg-purple-100", text: "text-purple-700", warna: "bg-purple-500", teks: "text-purple-600", glow: "hover:shadow-[0_0_20px_rgba(168,85,247,0.4)] hover:border-purple-300", emoji: "🔮" },
+            Oren: { bg: "bg-orange-100", text: "text-orange-700", warna: "bg-orange-500", teks: "text-orange-600", glow: "hover:shadow-[0_0_20px_rgba(249,115,22,0.4)] hover:border-orange-300", emoji: "🦊" }
         };
 
         const TrendingUpIcon = () => (
@@ -198,6 +198,24 @@
                 [arr[i], arr[j]] = [arr[j], arr[i]];
             }
             return arr;
+        };
+
+        const renderEmblem = (emblem, sizeClass = "w-6 h-6") => {
+            if (!emblem) return <span className="text-xl">🏆</span>;
+            if (emblem.startsWith("http") || emblem.startsWith("/") || emblem.includes(".")) {
+                return (
+                    <img 
+                        src={emblem} 
+                        className={`${sizeClass} object-contain inline-block rounded`} 
+                        alt="logo" 
+                        onError={(e) => { 
+                            e.target.onerror = null; 
+                            e.target.src = "https://placehold.co/40x40/f59e0b/ffffff?text=K"; 
+                        }} 
+                    />
+                );
+            }
+            return <span className="text-xl filter drop-shadow">{emblem}</span>;
         };
 
         const HISTORICAL_CHAMPIONSHIP_RECORDS = [
@@ -1008,6 +1026,7 @@ service cloud.firestore {
                         warna: preset.warna,
                         teks: preset.teks,
                         glow: preset.glow,
+                        emoji: preset.emoji || "🏆",
                         slogan: meta.slogan || ""
                     };
                 });
@@ -2858,7 +2877,10 @@ service cloud.firestore {
                                             <div className="flex justify-between items-start">
                                                 <div>
                                                     <span className="text-[10px] font-black uppercase text-slate-400">Kedudukan #{idx+1}</span>
-                                                    <h3 className="text-lg font-black text-slate-800">Rumah {h.nama}</h3>
+                                                    <h3 className="text-lg font-black text-slate-800 flex items-center gap-2">
+                                                        {renderEmblem(h.emoji, "w-6 h-6")}
+                                                        <span>Rumah {h.nama}</span>
+                                                    </h3>
                                                 </div>
                                                 <span className={`text-2xl sm:text-3xl font-black ${h.teks}`}>{h.mata} <span className="text-xs font-bold text-slate-400">mata</span></span>
                                             </div>
@@ -3083,7 +3105,7 @@ service cloud.firestore {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     {Object.keys(housesMetadata || INITIAL_HOUSES_METADATA).map(houseName => {
                                         const meta = housesMetadata[houseName] || {};
-                                        const cls = COLOR_PRESETS[meta.warnaLabel] || { bg: "bg-slate-100", text: "text-slate-700", warna: "bg-slate-500", teks: "text-slate-600" };
+                                        const cls = COLOR_PRESETS[meta.warnaLabel] || { bg: "bg-slate-100", text: "text-slate-700", warna: "bg-slate-500", teks: "text-slate-600", emoji: "🏆" };
                                         const houseMembers = (groupedByClass[houseName]) || {};
                                         const advisors = meta.guruPenasihat ? meta.guruPenasihat.split(',').map(s => s.trim()).filter(Boolean) : [];
                                         const houseAthletesList = (athletes || []).filter(a => a.rumah === houseName);
@@ -3095,6 +3117,7 @@ service cloud.firestore {
                                             <div key={houseName} className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm space-y-4 hover:shadow-md transition-shadow">
                                                 <div className="flex justify-between items-center border-b pb-3">
                                                     <div className="flex items-center gap-2">
+                                                        {renderEmblem(cls.emoji, "w-6 h-6")}
                                                         <h3 className="text-sm font-black text-slate-900 uppercase font-bold">
                                                             Rumah {houseName}
                                                         </h3>

@@ -110,12 +110,12 @@
         };
 
         const COLOR_PRESETS = {
-            Merah: { bg: "bg-red-100", text: "text-red-700", warna: "bg-red-500", teks: "text-red-600", glow: "hover:shadow-[0_0_20px_rgba(239,68,68,0.4)] hover:border-red-300", emoji: "🦁" },
-            Biru: { bg: "bg-blue-100", text: "text-blue-700", warna: "bg-blue-500", teks: "text-blue-600", glow: "hover:shadow-[0_0_20px_rgba(59,130,246,0.4)] hover:border-blue-300", emoji: "🦅" },
-            Hijau: { bg: "bg-emerald-100", text: "text-emerald-700", warna: "bg-emerald-500", teks: "text-emerald-600", glow: "hover:shadow-[0_0_20px_rgba(16,185,129,0.4)] hover:border-emerald-300", emoji: "🐉" },
+            Merah: { bg: "bg-red-100", text: "text-red-700", warna: "bg-red-500", teks: "text-red-600", glow: "hover:shadow-[0_0_20px_rgba(239,68,68,0.4)] hover:border-red-300", emoji: "" },
+            Biru: { bg: "bg-blue-100", text: "text-blue-700", warna: "bg-blue-500", teks: "text-blue-600", glow: "hover:shadow-[0_0_20px_rgba(59,130,246,0.4)] hover:border-blue-300", emoji: "" },
+            Hijau: { bg: "bg-emerald-100", text: "text-emerald-700", warna: "bg-emerald-500", teks: "text-emerald-600", glow: "hover:shadow-[0_0_20px_rgba(16,185,129,0.4)] hover:border-emerald-300", emoji: "" },
             Kuning: { bg: "bg-amber-100", text: "text-amber-700", warna: "bg-amber-400", teks: "text-amber-500", glow: "hover:shadow-[0_0_20px_rgba(251,191,36,0.4)] hover:border-amber-300", emoji: "https://lh3.googleusercontent.com/d/1_ZGQfCeIIPtpZLBJd9TWy6NTiR6v8Lzb" },
-            Ungu: { bg: "bg-purple-100", text: "text-purple-700", warna: "bg-purple-500", teks: "text-purple-600", glow: "hover:shadow-[0_0_20px_rgba(168,85,247,0.4)] hover:border-purple-300", emoji: "🔮" },
-            Oren: { bg: "bg-orange-100", text: "text-orange-700", warna: "bg-orange-500", teks: "text-orange-600", glow: "hover:shadow-[0_0_20px_rgba(249,115,22,0.4)] hover:border-orange-300", emoji: "🦊" }
+            Ungu: { bg: "bg-purple-100", text: "text-purple-700", warna: "bg-purple-500", teks: "text-purple-600", glow: "hover:shadow-[0_0_20px_rgba(168,85,247,0.4)] hover:border-purple-300", emoji: "" },
+            Oren: { bg: "bg-orange-100", text: "text-orange-700", warna: "bg-orange-500", teks: "text-orange-600", glow: "hover:shadow-[0_0_20px_rgba(249,115,22,0.4)] hover:border-orange-300", emoji: "" }
         };
 
         const TrendingUpIcon = () => (
@@ -201,7 +201,7 @@
         };
 
         const renderEmblem = (emblem, sizeClass = "w-6 h-6") => {
-            if (!emblem) return <span className="text-xl">🏆</span>;
+            if (!emblem) return null;
             if (emblem.startsWith("http") || emblem.startsWith("/") || emblem.includes(".")) {
                 return (
                     <img 

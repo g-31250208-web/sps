@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistem Pengurusan Sukan SPS-SK Bikang</title>
+    <title>Sistem Pengurusan Sukan SPS-SK</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts -->
@@ -56,7 +56,7 @@
     <script type="text/babel" data-presets="react-classic">
         const { useState, useEffect, useMemo, useRef } = React;
 
-        const firebaseConfig = {
+        const DEFAULT_FIREBASE_CONFIG = {
             apiKey: "AIzaSyAJ5LrENOSzRkClehZmu3dy3JKrt6QvtcU",
             authDomain: "sps-skb-d8256.firebaseapp.com",
             projectId: "sps-skb-d8256",
@@ -65,13 +65,34 @@
             appId: "1:322634427088:web:7f6858760d588e49190cd5"
         };
 
-        // Inisialisasi Firebase secara selamat
+        const DEFAULT_SCHOOL_NAME = "SK BIKANG";
+        const DEFAULT_SCHOOL_SUBTITLE = "Kejohanan Sukan Tahunan Sekolah";
+
+        // Membaca tetapan kustom sekolah daripada localStorage (Multi-Tenant Engine)
+        let activeFirebaseConfig = DEFAULT_FIREBASE_CONFIG;
+        let isCustomConfigUsed = false;
+        
+        const cachedConfigRaw = localStorage.getItem('sps_custom_firebase_config');
+        if (cachedConfigRaw) {
+            try {
+                activeFirebaseConfig = JSON.parse(cachedConfigRaw);
+                isCustomConfigUsed = true;
+            } catch (e) {
+                console.error("Gagal membaca konfigurasi Firebase tersuai, kembali ke tetapan SK Bikang.", e);
+            }
+        }
+
+        const activeSchoolName = localStorage.getItem('sps_school_name') || DEFAULT_SCHOOL_NAME;
+        const activeSchoolSubtitle = localStorage.getItem('sps_school_subtitle') || DEFAULT_SCHOOL_SUBTITLE;
+        const activeCustomGasUrl = localStorage.getItem('sps_custom_gas_url') || "";
+
+        // Inisialisasi Firebase secara selamat menggunakan konfigurasi aktif
         if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
+            firebase.initializeApp(activeFirebaseConfig);
         }
         const auth = firebase.auth();
         const db = firebase.firestore();
-        const appId = "sps-skb-d8256";
+        const appId = activeFirebaseConfig.projectId || "sps-skb-d8256";
 
         // Pembersihan Data Demo / Sifar Asal
         const INITIAL_ATHLETES = [];
@@ -129,8 +150,8 @@
 
         const translations = {
             BM: {
-                title: "Portal Sukan SPS-SK Bikang",
-                subtitle: "Kejohanan Sukan Tahunan Sekolah",
+                title: `Portal Sukan SPS-${activeSchoolName}`,
+                subtitle: activeSchoolSubtitle,
                 dashboard: "📊 Papan Pemuka",
                 rumah_sukan: "🏠 Rumah Sukan",
                 atlit: "🏃‍♂️ Pengurusan Atlet",
@@ -143,22 +164,6 @@
                 announcement: "📢 Hebahan Semasa Kejohanan",
                 addAnnounce: "Tambah Hebahan Baru",
                 noAnnounce: "Tiada sebarang hebahan rasmi buat masa ini."
-            },
-            EN: {
-                title: "SPS-SK Bikang Sports Portal",
-                subtitle: "School Annual Athletics Championship",
-                dashboard: "📊 Dashboard",
-                rumah_sukan: "🏠 Sports Houses",
-                atlit: "🏃‍♂️ Athlete Management",
-                acara: "⏱️ Event Management",
-                keputusan: "🏅 Results & Heats",
-                pasca_sukan: "🏆 Post-Sports",
-                points: "Sports House Standings",
-                currentEvents: "Championship Live Status",
-                noEvents: "No events are currently ongoing.",
-                announcement: "📢 Tournament Announcements",
-                addAnnounce: "Add New Announcement",
-                noAnnounce: "No official announcements posted yet."
             }
         };
 
@@ -224,6 +229,16 @@
             const [announcements, setAnnouncements] = useState(DEFAULT_ANNOUNCEMENTS);
             const [logs, setLogs] = useState(INITIAL_LOGS);
 
+            // Setup Sekolah Baru Modal States
+            const [showSchoolSetupModal, setShowSchoolSetupModal] = useState(false);
+            const [schoolSetupTab, setSchoolSetupTab] = useState("config"); // "config", "gas_script", "firebase_rules"
+            const [setupSchoolName, setSetupSchoolName] = useState(activeSchoolName);
+            const [setupSchoolSubtitle, setSetupSchoolSubtitle] = useState(activeSchoolSubtitle);
+            const [setupFirebaseConfigRaw, setSetupFirebaseConfigRaw] = useState(
+                isCustomConfigUsed ? JSON.stringify(activeFirebaseConfig, null, 2) : ""
+            );
+            const [setupGasUrl, setSetupGasUrl] = useState(activeCustomGasUrl);
+
             // Print Preview Modal states
             const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
             const [previewContent, setPreviewContent] = useState("");
@@ -269,7 +284,7 @@
                 penyertaan: 0
             });
 
-            const [gasUrl, setGasUrl] = useState("");
+            const [gasUrl, setGasUrl] = useState(activeCustomGasUrl || "");
             const [activeYear, setActiveYear] = useState("2026");
             const [isSyncingGas, setIsSyncingGas] = useState(false);
 
@@ -284,6 +299,7 @@
 
             const [categories, setCategories] = useState(["L12", "P12", "L9", "P9", "Prasekolah", "Terbuka"]);
 
+            // Isih Kategori mengikut urutan huruf A-Z, kemudian nombor 1-99
             const sortedCategories = useMemo(() => {
                 return [...categories].sort((a, b) => 
                     a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })
@@ -356,9 +372,10 @@
             };
 
             const syncWithGas = async (table, action, dataObj) => {
-                if (!gasUrl) return;
+                const activeGasUrl = gasUrl || setupGasUrl;
+                if (!activeGasUrl) return;
                 try {
-                    await fetch(gasUrl, {
+                    await fetch(activeGasUrl, {
                         method: 'POST',
                         mode: 'no-cors', 
                         headers: { 'Content-Type': 'application/json' },
@@ -386,6 +403,207 @@
                 } catch (error) {
                     showToastMessage("Ralat ketika log keluar: " + error.message, "error");
                 }
+            };
+
+            const rawGasCodeString = `/**
+ * =====================================================================================
+ * 🏆 SISTEM PENGURUSAN SUKAN SEKOLAH - GOOGLE APPS SCRIPT DATABASE ENGINE
+ * =====================================================================================
+ */
+const TABLE_HEADERS = {
+  "houses": ["id", "name", "color", "icon", "bonusPoints", "guruPenasihat"],
+  "students": ["id", "name", "noPeserta", "class", "tahap", "house", "gender"],
+  "events": ["id", "name", "category", "level", "date", "time", "eventType"],
+  "results": ["id", "eventId", "gold", "goldRecord", "silver", "silverRecord", "bronze", "bronzeRecord", "fourth", "fourthRecord"]
+};
+
+function doGet(e) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const result = {
+      houses: readSheetData(ss, "houses"),
+      students: readSheetData(ss, "students"),
+      events: readSheetData(ss, "events"),
+      results: readSheetData(ss, "results")
+    };
+    return ContentService.createTextOutput(JSON.stringify({ success: true, data: result }))
+                         .setMimeType(ContentService.MimeType.JSON);
+  } catch (error) {
+    return ContentService.createTextOutput(JSON.stringify({ success: false, error: error.toString() }))
+                         .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function doPost(e) {
+  try {
+    const postData = JSON.parse(e.postData.contents);
+    const action = postData.action; 
+    const targetTable = postData.table; 
+    const payload = postData.data;
+    
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let sheet = ss.getSheetByName(targetTable);
+    if (!sheet) {
+      sheet = ss.insertSheet(targetTable);
+      setupSheetHeaders(sheet, targetTable, payload);
+    }
+    if (action === "save") {
+      upsertRow(sheet, payload);
+    } else if (action === "delete") {
+      deleteRow(sheet, payload.id);
+    }
+    return ContentService.createTextOutput(JSON.stringify({ success: true }))
+                         .setMimeType(ContentService.MimeType.JSON);
+  } catch (error) {
+    return ContentService.createTextOutput(JSON.stringify({ success: false, error: error.toString() }))
+                         .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function readSheetData(ss, sheetName) {
+  let sheet = ss.getSheetByName(sheetName);
+  if (!sheet) {
+    sheet = ss.insertSheet(sheetName);
+    setupSheetHeaders(sheet, sheetName, null);
+    return [];
+  }
+  const rows = sheet.getDataRange().getValues();
+  if (rows.length <= 1) return [];
+  const headers = rows[0];
+  const data = [];
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+    const obj = {};
+    for (let j = 0; j < headers.length; j++) {
+      obj[headers[j]] = row[j];
+    }
+    data.push(obj);
+  }
+  return data;
+}
+
+function setupSheetHeaders(sheet, tableName, sampleData) {
+  let headers = TABLE_HEADERS[tableName] || [];
+  if (headers.length === 0 && sampleData) {
+    headers = Object.keys(sampleData);
+  }
+  if (headers.length > 0) {
+    sheet.appendRow(headers);
+    sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold").setBackground("#e2e8f0");
+    sheet.setFrozenRows(1);
+  }
+}
+
+function upsertRow(sheet, dataObj) {
+  const rows = sheet.getDataRange().getValues();
+  const headers = rows[0];
+  const idColIndex = headers.indexOf("id");
+  if (idColIndex === -1) return;
+  const rowData = headers.map(header => dataObj[header] || "");
+  let rowIndexToUpdate = -1;
+  for (let i = 1; i < rows.length; i++) {
+    if (rows[i][idColIndex] == dataObj.id) {
+      rowIndexToUpdate = i + 1;
+      break;
+    }
+  }
+  if (rowIndexToUpdate !== -1) {
+    sheet.getRange(rowIndexToUpdate, 1, 1, rowData.length).setValues([rowData]);
+  } else {
+    sheet.appendRow(rowData);
+  }
+}
+
+function deleteRow(sheet, id) {
+  const rows = sheet.getDataRange().getValues();
+  const headers = rows[0];
+  const idColIndex = headers.indexOf("id");
+  if (idColIndex === -1) return;
+  for (let i = 1; i < rows.length; i++) {
+    if (rows[i][idColIndex] == id) {
+      sheet.deleteRow(i + 1);
+      break;
+    }
+  }
+}`;
+
+            const rawFirebaseRulesString = `rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Peraturan Multi-School untuk Pendaftaran Awan Sukan Sekolah
+    match /artifacts/{appId}/public/data/{collectionName}/{documentId} {
+      allow read, write: if request.auth != null;
+    }
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}`;
+
+            const handleCopyToClipboard = (text, typeName) => {
+                const tempTextArea = document.createElement("textarea");
+                tempTextArea.value = text;
+                document.body.appendChild(tempTextArea);
+                tempTextArea.select();
+                try {
+                    document.execCommand('copy');
+                    showToastMessage(`Salinan Kod bagi ${typeName} berjaya disalin ke papan klip!`, "success");
+                } catch (err) {
+                    showToastMessage(`Gagal menyalin secara automatik. Sila pilih kod dan salin manual.`, "error");
+                }
+                document.body.removeChild(tempTextArea);
+            };
+
+            const handleSaveSchoolSetup = (e) => {
+                e.preventDefault();
+                
+                // Sahkan format JSON Firebase Config
+                if (setupFirebaseConfigRaw.trim()) {
+                    try {
+                        JSON.parse(setupFirebaseConfigRaw.trim());
+                    } catch (err) {
+                        showToastMessage("Ralat: Format Konfigurasi Firebase JSON tidak sah. Sila pastikan format JSON ditaip dengan betul.", "error");
+                        return;
+                    }
+                }
+
+                localStorage.setItem('sps_school_name', setupSchoolName.trim() || DEFAULT_SCHOOL_NAME);
+                localStorage.setItem('sps_school_subtitle', setupSchoolSubtitle.trim() || DEFAULT_SCHOOL_SUBTITLE);
+                
+                if (setupFirebaseConfigRaw.trim()) {
+                    localStorage.setItem('sps_custom_firebase_config', setupFirebaseConfigRaw.trim());
+                } else {
+                    localStorage.removeItem('sps_custom_firebase_config');
+                }
+
+                if (setupGasUrl.trim()) {
+                    localStorage.setItem('sps_custom_gas_url', setupGasUrl.trim());
+                } else {
+                    localStorage.removeItem('sps_custom_gas_url');
+                }
+
+                showToastMessage("Sistem berjaya dikemas kini! Memuat semula halaman...", "success");
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            };
+
+            const handleResetSchoolToDefault = () => {
+                setConfirmModal({
+                    show: true,
+                    title: "Tetapkan semula ke Lalai (Default)?",
+                    message: "Tindakan ini akan memadamkan tetapan sekolah tersuai anda dan mengembalikan portal kepada pangkalan data asal SK Bikang. Seterusnya halaman akan dimuat semula.",
+                    onConfirm: () => {
+                        localStorage.removeItem('sps_school_name');
+                        localStorage.removeItem('sps_school_subtitle');
+                        localStorage.removeItem('sps_custom_firebase_config');
+                        localStorage.removeItem('sps_custom_gas_url');
+                        showToastMessage("Mengembalikan sistem ke mod asal SK Bikang...", "success");
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1200);
+                    }
+                });
             };
 
             const handleExportHouseMembersJSON = (houseName) => {
@@ -423,26 +641,6 @@
                 
                 createLog("Eksport Ahli Rumah Sukan", `Mengeksport senarai ahli Rumah ${houseName} sahaja ke format JSON.`);
             };
-
-            useEffect(() => {
-                const unsubscribe = auth.onAuthStateChanged(async (user) => {
-                    if (user) {
-                        setCurrentUser(user);
-                        setIsCloudActive(true);
-                    } else {
-                        setCurrentUser(null);
-                        setUserRole("pelawat");
-                        try {
-                            await auth.signInAnonymously();
-                            setIsCloudActive(true);
-                        } catch (e) {
-                            console.warn("Firestore offline fallback.", e);
-                            setIsCloudActive(false);
-                        }
-                    }
-                });
-                return () => unsubscribe();
-            }, []);
 
             useEffect(() => {
                 if (!currentUser) return;
@@ -992,7 +1190,8 @@
 
             const handleSyncAllToGas = async () => {
                 if (!checkAdminAuthority()) return;
-                if (!gasUrl) {
+                const activeGasUrl = gasUrl || setupGasUrl;
+                if (!activeGasUrl) {
                     showToastMessage("Sila kunci masuk pautan GAS URL yang sah terlebih dahulu.", "error");
                     return;
                 }
@@ -1792,8 +1991,7 @@
 
                     let kategori = "L12";
                     const rawKategori = row[kategoriIdx]?.trim().toUpperCase();
-                    const validKategori = ["L12", "P12", "L9", "P9", "Prasekolah", "Terbuka"];
-                    if (validKategori.includes(rawKategori)) {
+                    if (sortedCategories.includes(rawKategori)) {
                         kategori = rawKategori;
                     } else {
                         if (rawKategori?.includes("PRA")) kategori = "Prasekolah";
@@ -1828,7 +2026,7 @@
             const parsedAthletesPreview = useMemo(() => {
                 const res = handleParseTSV();
                 return Array.isArray(res) ? res : [];
-            }, [tsvInput, housesMetadata]);
+            }, [tsvInput, housesMetadata, sortedCategories]);
 
             const handleTsvSubmit = async (e) => {
                 e.preventDefault();
@@ -1849,7 +2047,6 @@
                     showToastMessage(`Sedang mendaftarkan ${parsedAthletes.length} ahli ke Awan...`, "info");
                     
                     if (isCloudActive) {
-                        // FASA 1: Tulis ke Firestore secara SELARI (Parallel Promise) -> Kurang dari 1 saat!
                         const promises = parsedAthletes.map((ath, index) => {
                             const docId = "A_" + (Date.now() + index);
                             const updatedAthlete = { ...ath, id: docId };
@@ -1858,11 +2055,9 @@
                         });
                         
                         const savedResults = await Promise.all(promises);
-                        
-                        // FASA 2: Penyelarasan ke Google Sheets secara berkumpulan (Batched Throttling) untuk elak Timeout
                         showToastMessage(`Fasa 1 Berjaya: ${parsedAthletes.length} ahli telah didaftarkan. Sedang menyelaraskan Google Sheets...`, "success");
                         
-                        const chunkSize = 5; // Hantar 5 rekod serentak setiap kali panggilan
+                        const chunkSize = 5; 
                         for (let i = 0; i < savedResults.length; i += chunkSize) {
                             const chunk = savedResults.slice(i, i + chunkSize);
                             await Promise.all(chunk.map(({ docId, ath }) => 
@@ -1885,7 +2080,6 @@
                     }
 
                     createLog("Daftar Atlet Kelompok (Bundle)", `Berjaya mendaftarkan ${parsedAthletes.length} atlet sukan baru`);
-
                     showToastMessage(`Berjaya mendaftarkan & menyelaraskan ${parsedAthletes.length} ahli baharu!`, "success");
                     setTsvInput("");
                     setRegMode("tunggal");
@@ -1944,7 +2138,6 @@
                                 const evSnap = await eventsRef.get();
                                 await Promise.all(evSnap.docs.map(doc => doc.ref.delete()));
                                 
-                                // Delete all events from GAS
                                 for (const ev of (events || [])) {
                                     await syncWithGas("events", "delete", { id: ev.id });
                                 }
@@ -1977,7 +2170,6 @@
                             }
 
                             createLog("Hapus Acara Sukan", `Memadam acara sukan [${targetEvent?.kodAcara || ""}] ${targetEvent?.nama || ""}`);
-
                             setConfirmModal({ show: false });
                             showToastMessage("Acara sukan berjaya dihapus.");
                         } catch (e) {
@@ -2026,7 +2218,6 @@
             const handleDeleteHeat = (heatId) => {
                 if (!checkAuthority()) return;
                 const targetHeat = (heats || []).find(h => h.id === heatId);
-                const targetEvent = (events || []).find(ev => ev.id === targetHeat?.eventId);
                 const targetAthlete = (athletes || []).find(a => a.id === targetHeat?.athleteId);
 
                 setConfirmModal({
@@ -2040,9 +2231,7 @@
                             } else {
                                 setHeats((heats || []).filter(h => h.id !== heatId));
                             }
-
                             createLog("Hapus Catatan Saringan", `Memadam rekod larian saringan ${targetHeat?.saringanNo || ""} bagi ${targetAthlete?.nama || ""}`);
-
                             setConfirmModal({ show: false });
                             showToastMessage("Rekod saringan dihapus.");
                         } catch (e) {
@@ -2092,7 +2281,6 @@
             const handleDeleteResult = async (resId) => {
                 if (!checkAuthority()) return;
                 const targetRes = (results || []).find(r => r.id === resId);
-                const targetEvent = (events || []).find(ev => ev.id === targetRes?.eventId);
                 const targetAthlete = (athletes || []).find(a => a.id === targetRes?.athleteId);
 
                 setConfirmModal({
@@ -2107,9 +2295,7 @@
                             } else {
                                 setResults((results || []).filter(r => r.id !== resId));
                             }
-
                             createLog("Hapus Keputusan Podium", `Membatalkan keputusan kedudukan ke-${targetRes?.kedudukan || ""} bagi ${targetAthlete?.nama || ""}`);
-
                             setConfirmModal({ show: false });
                             showToastMessage("Catatan pingat dibatalkan.");
                         } catch (e) {
@@ -2146,9 +2332,7 @@
                     } else {
                         setHousesMetadata(updated);
                     }
-
                     createLog("Daftar Rumah Sukan", `Menambah rumah sukan baru bernama Rumah ${cleanName}`);
-
                     setHouseForm({ nama: "", slogan: "", guruPenasihat: "", bonusPoints: 0, warnaLabel: "Ungu" });
                     showToastMessage(`Rumah ${cleanName} berjaya ditambah!`);
                 } catch (err) {
@@ -2193,7 +2377,6 @@
                 try {
                     if (isCloudActive) {
                         await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('metadata').doc('houses').set(updatedMetadata);
-                        
                         if (newName !== oldName) {
                             const affectedAthletes = (athletes || []).filter(a => a.rumah === oldName);
                             for (const ath of affectedAthletes) {
@@ -2222,7 +2405,6 @@
 
             const handleAddAdvisor = async (houseName) => {
                 if (!checkAuthority()) return;
-                
                 const nameToAdd = newAdvisorText[houseName]?.trim();
                 if (!nameToAdd) return;
                 
@@ -2250,7 +2432,6 @@
                     } else {
                         setHousesMetadata(updatedMeta);
                     }
-
                     createLog("Tambah Guru Penasihat", `Mendaftarkan Cikgu ${nameToAdd} di Rumah ${houseName}`);
                     setNewAdvisorText({ ...newAdvisorText, [houseName]: "" });
                     showToastMessage(`Cikgu ${nameToAdd} berjaya ditambah.`);
@@ -2284,7 +2465,6 @@
                     } else {
                         setHousesMetadata(updatedMeta);
                     }
-
                     createLog("Buang Guru Penasihat", `Mengeluarkan Cikgu ${advisorName} dari Rumah ${houseName}`);
                     showToastMessage(`Cikgu ${advisorName} berjaya dikeluarkan.`);
                 } catch (err) {
@@ -2310,7 +2490,6 @@
                     } else {
                         setAnnouncements([newNotice, ...(announcements || [])]);
                     }
-
                     createLog("Terbit Hebahan", `Menerbitkan pengumuman kejohanan: "${announceFormText.trim().substring(0, 40)}..."`);
                     setAnnounceFormText("");
                     setShowAnnounceForm(false);
@@ -2329,7 +2508,6 @@
                     } else {
                         setAnnouncements((announcements || []).filter(a => a.id !== id));
                     }
-
                     createLog("Hapus Hebahan", `Memadam hebahan: "${targetNotice?.text?.substring(0, 40)}..."`);
                     showToastMessage("Hebahan berjaya dikeluarkan.");
                 } catch (e) {
@@ -2352,9 +2530,7 @@
                             } else {
                                 setAthletes((athletes || []).filter(a => a.id !== athleteId));
                             }
-
                             createLog("Hapus Atlet", `Memadam rekod atlet bernama ${targetAthlete?.nama || ""}`);
-
                             setConfirmModal({ show: false });
                             showToastMessage("Rekod atlet berjaya dihapus.");
                         } catch (e) {
@@ -2377,43 +2553,15 @@
                 );
             }, [athletes, selectedEventObject]);
 
-            const checkRecordBreakStatus = (eventName, category, currentRecordText) => {
-                if (!currentRecordText) return null;
-                
-                const history = HISTORICAL_CHAMPIONSHIP_RECORDS.find(
-                    r => (r.eventName || "").toLowerCase().trim() === (eventName || "").toLowerCase().trim() && r.category === category
-                );
-                
-                if (!history) return null;
-
-                const curVal = parseTimeToSeconds(currentRecordText);
-                const histVal = parseTimeToSeconds(history.recordText);
-
-                if (curVal === Infinity || histVal === Infinity) return null;
-
-                if (history.isTrack) {
-                    if (curVal < histVal) {
-                        return { broken: true, oldRecord: history.recordText, oldHolder: `${history.athlete} (${history.year})` };
-                    }
-                } else {
-                    const curFloat = parseFloat(currentRecordText.replace(/[^\d.]/g, '')) || 0;
-                    const histFloat = parseFloat(history.recordText.replace(/[^\d.]/g, '')) || 0;
-                    if (curFloat > histFloat) {
-                        return { broken: true, oldRecord: history.recordText, oldHolder: `${history.athlete} (${history.year})` };
-                    }
-                }
-                return null;
-            };
-
             const handleArchiveAnnualRecords = async () => {
                 if (!checkAdminAuthority()) return;
-                if (!gasUrl) {
+                const activeGasUrl = gasUrl || setupGasUrl;
+                if (!activeGasUrl) {
                     showToastMessage("Sila kunci masuk pautan GAS URL yang sah di menu setup pentadbir terlebih dahulu.", "error");
                     return;
                 }
 
                 const goldResults = (results || []).filter(r => r.kedudukan === "1");
-
                 if (goldResults.length === 0) {
                     showToastMessage(`Tiada rekod keputusan Johan (Emas) ditemui untuk diarkibkan bagi tahun ${activeYear} buat masa ini.`, "error");
                     return;
@@ -2441,12 +2589,10 @@
                                 catatanRekod: res.catatan,
                                 tarikhKemaskini: new Date().toLocaleDateString('ms-MY')
                             };
-
                             await syncWithGas(`rekod_kejohanan_${activeYear}`, "save", archiveData);
                             successCount++;
                         }
                     }
-
                     createLog("Arkib Rekod Sukan", `Mengarkibkan ${successCount} rekod pencapaian Emas tahun ${activeYear}`);
                     showToastMessage(`Berjaya mengarkibkan ${successCount} rekod johan ${activeYear}!`, "success");
                 } catch (e) {
@@ -2472,11 +2618,11 @@
                             <div className="flex items-center gap-4">
                                 <img 
                                     src="https://lh3.googleusercontent.com/d/1E8tjAd7j9DJaZgngDn38agUFCvwyUffa" 
-                                    alt="Logo SK Bikang" 
+                                    alt="Logo Sukan Sekolah" 
                                     className="w-[66px] h-[66px] object-contain"
                                     onError={(e) => {
                                         e.target.onerror = null;
-                                        e.target.src = "https://placehold.co/66x66/ffffff/1e3a8a?text=SKB";
+                                        e.target.src = "https://placehold.co/66x66/ffffff/1e3a8a?text=SPS";
                                     }}
                                 />
                                 <div>
@@ -2485,6 +2631,11 @@
                                         <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold ${isCloudActive ? "bg-emerald-500/20 text-emerald-300" : "bg-amber-500/20 text-amber-300"}`}>
                                             ● {isCloudActive ? "Awan Aktif 🟢" : "Mod Lokal 🟡"}
                                         </span>
+                                        {isCustomConfigUsed && (
+                                            <span className="bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded text-[10px] font-bold">
+                                                ⚙️ Kustom
+                                            </span>
+                                        )}
                                     </h1>
                                     <p className="text-xs text-indigo-200 font-medium">{t.subtitle} ({activeYear})</p>
                                 </div>
@@ -2496,6 +2647,15 @@
                                     className="bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1 border border-white/10 shrink-0"
                                 >
                                     🌐 {lang === "BM" ? "BM / EN" : "EN / BM"}
+                                </button>
+
+                                {/* Butang Setup Sekolah Baru (Dinamik Multi-School) */}
+                                <button 
+                                    onClick={() => setShowSchoolSetupModal(true)}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1 border border-blue-500 transition-all shrink-0 shadow"
+                                    title="Papan Konfigurasi Multi-School"
+                                >
+                                    ⚙️ Setup Sekolah Baharu
                                 </button>
 
                                 {/* Panel Pentadbir Eksklusif Admin Utama sahaja */}
@@ -2512,7 +2672,7 @@
                                             <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-slate-200 py-2 text-slate-800 z-[9999] origin-top-right">
                                                 <div className="px-4 py-2 border-b border-slate-100 bg-slate-50 rounded-t-2xl">
                                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Operasi Pentadbiran</p>
-                                                    <p className="text-xs text-indigo-600 font-semibold mt-0.5">{userRole === "admin" ? "Sekolah-7608 (Admin)" : "Akaun Guru"}</p>
+                                                    <p className="text-xs text-indigo-600 font-semibold mt-0.5">{userRole === "admin" ? "Sistem Pentadbir" : "Akaun Guru"}</p>
                                                 </div>
                                                 <button onClick={() => { setShowDiagModal(true); setIsAdminMenuOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-semibold flex items-center gap-2">ℹ️ Info Diag</button>
                                                 <button onClick={() => { setShowGasModal(true); setIsAdminMenuOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-semibold flex items-center gap-2">⚡ Setup GAS API</button>
@@ -2736,7 +2896,6 @@
                                     )}
                                 </div>
 
-                                {/* Sidebar Drawer Overlay & Container Rumah Sukan */}
                                 {isHouseSidebarOpen && (
                                     <div className="fixed inset-0 z-[100] flex justify-end">
                                         <div 
@@ -2750,7 +2909,7 @@
                                                     <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">
                                                         {isEditingHouse ? "✏️ Sunting Rumah Sukan" : "🏠 Tambah Rumah Sukan"}
                                                     </h3>
-                                                    <p className="text-[10px] text-slate-400 font-semibold mt-0.5">SPS-SK Bikang Control Panel</p>
+                                                    <p className="text-[10px] text-slate-400 font-semibold mt-0.5">SPS Control Panel</p>
                                                 </div>
                                                 <button 
                                                     onClick={() => setIsHouseSidebarOpen(false)}
@@ -2979,7 +3138,6 @@
                                     </div>
                                 </div>
 
-                                {/* Sidebar Drawer Overlay & Container Atlet */}
                                 {isAddAthleteSidebarOpen && (
                                     <div className="fixed inset-0 z-[100] flex justify-end">
                                         <div 
@@ -2993,7 +3151,7 @@
                                                     <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider font-bold">
                                                         {isEditingAthlete ? "✏️ Sunting Profil Atlet" : "🏃‍♂️ Daftar Atlet Baharu"}
                                                     </h3>
-                                                    <p className="text-[10px] text-slate-400 font-semibold mt-0.5">SPS-SK Bikang Control Panel</p>
+                                                    <p className="text-[10px] text-slate-400 font-semibold mt-0.5">SPS Control Panel</p>
                                                 </div>
                                                 <button 
                                                     onClick={() => setIsAddAthleteSidebarOpen(false)}
@@ -3111,7 +3269,7 @@
                                                     <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">
                                                         📋 Daftar Acara & No. Atlet
                                                     </h3>
-                                                    <p className="text-[10px] text-slate-400 font-semibold mt-0.5">SPS-SK Bikang Control Panel</p>
+                                                    <p className="text-[10px] text-slate-400 font-semibold mt-0.5">SPS Control Panel</p>
                                                 </div>
                                                 <button 
                                                     onClick={() => setIsAssignEventSidebarOpen(false)}
@@ -3363,7 +3521,6 @@
                                     )}
                                 </div>
 
-                                {/* Sidebar Drawer Overlay & Container Acara */}
                                 {isEventSidebarOpen && (
                                     <div className="fixed inset-0 z-[100] flex justify-end">
                                         <div 
@@ -3824,6 +3981,169 @@
                                     />
                                     <button type="submit" className="w-full bg-indigo-600 text-white font-bold py-2.5 rounded-xl shadow-md">Simpan Pautan GAS URL</button>
                                 </form>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* MODAL SETUP SEKOLAH BARU (Multi-School & SaaS Customizations) */}
+                    {showSchoolSetupModal && (
+                        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[10000] flex items-center justify-center p-4 overflow-y-auto">
+                            <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-2xl w-full h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-150">
+                                <div className="bg-slate-950 text-white px-6 py-4 flex justify-between items-center">
+                                    <div>
+                                        <h3 className="text-sm font-black uppercase tracking-wider flex items-center gap-2">
+                                            <span>⚙️ Panel Setup Sekolah Baharu</span>
+                                        </h3>
+                                        <p className="text-[10px] text-slate-400 mt-0.5">Sesuaikan aplikasi web ini dengan infrastruktur sekolah anda sendiri</p>
+                                    </div>
+                                    <button onClick={() => setShowSchoolSetupModal(false)} className="text-slate-400 hover:text-white text-lg font-bold">✕</button>
+                                </div>
+
+                                {/* Menu Tab Setup */}
+                                <div className="bg-slate-100 border-b flex overflow-x-auto text-xs font-bold text-slate-600 p-2 gap-1 shrink-0">
+                                    <button 
+                                        onClick={() => setSchoolSetupTab("config")}
+                                        className={`px-4 py-2 rounded-xl transition-all ${schoolSetupTab === 'config' ? 'bg-white text-indigo-700 shadow-sm' : 'hover:bg-slate-200'}`}
+                                    >
+                                        ⚙️ Konfigurasi Portal
+                                    </button>
+                                    <button 
+                                        onClick={() => setSchoolSetupTab("gas_script")}
+                                        className={`px-4 py-2 rounded-xl transition-all ${schoolSetupTab === 'gas_script' ? 'bg-white text-indigo-700 shadow-sm' : 'hover:bg-slate-200'}`}
+                                    >
+                                        📑 Skrip Google Sheets (GAS)
+                                    </button>
+                                    <button 
+                                        onClick={() => setSchoolSetupTab("firebase_rules")}
+                                        className={`px-4 py-2 rounded-xl transition-all ${schoolSetupTab === 'firebase_rules' ? 'bg-white text-indigo-700 shadow-sm' : 'hover:bg-slate-200'}`}
+                                    >
+                                        🛡️ Peraturan Firebase (Rules)
+                                    </button>
+                                </div>
+
+                                <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                                    {schoolSetupTab === "config" && (
+                                        <form onSubmit={handleSaveSchoolSetup} className="space-y-4 text-xs font-semibold">
+                                            <div className="bg-slate-50 p-4 border rounded-2xl border-slate-200">
+                                                <h4 className="font-extrabold text-slate-800 mb-2 uppercase">1. Penjenamaan Sekolah</h4>
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <div>
+                                                        <label className="block text-slate-500 mb-1">Nama Singkatan Sekolah</label>
+                                                        <input 
+                                                            type="text" 
+                                                            required
+                                                            value={setupSchoolName} 
+                                                            onChange={(e) => setSetupSchoolName(e.target.value)} 
+                                                            className="w-full p-2.5 border rounded-xl"
+                                                            placeholder="Cth: SK BIKANG"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-slate-500 mb-1">Slogan / Tajuk Kejohanan</label>
+                                                        <input 
+                                                            type="text" 
+                                                            required
+                                                            value={setupSchoolSubtitle} 
+                                                            onChange={(e) => setSetupSchoolSubtitle(e.target.value)} 
+                                                            className="w-full p-2.5 border rounded-xl"
+                                                            placeholder="Cth: Kejohanan Sukan Tahunan Sekolah"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="bg-slate-50 p-4 border rounded-2xl border-slate-200">
+                                                <h4 className="font-extrabold text-slate-800 mb-2 uppercase">2. Pangkalan Data Awan (Firebase Setup)</h4>
+                                                <p className="text-[10px] text-slate-400 mb-2 leading-relaxed">
+                                                    Salin dan tampal objek JSON konfigurasi aplikasi web Firebase yang anda perolehi daripada Firebase Console. <br />
+                                                    Kosongkan ruangan ini untuk terus menggunakan Firebase Projek Sekolah SK Bikang sebagai demo.
+                                                </p>
+                                                <label className="block text-slate-500 mb-1">Firebase Configuration Object (JSON)</label>
+                                                <textarea 
+                                                    rows="5"
+                                                    value={setupFirebaseConfigRaw}
+                                                    onChange={(e) => setSetupFirebaseConfigRaw(e.target.value)}
+                                                    placeholder='{&#10;  "apiKey": "AIzaSy...",&#10;  "authDomain": "...",&#10;  "projectId": "...",&#10;  "storageBucket": "...",&#10;  "messagingSenderId": "...",&#10;  "appId": "..."&#10;}'
+                                                    className="w-full p-3 font-mono text-[10px] border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                                />
+                                            </div>
+
+                                            <div className="bg-slate-50 p-4 border rounded-2xl border-slate-200">
+                                                <h4 className="font-extrabold text-slate-800 mb-2 uppercase">3. Integrasi Google Sheets (GAS API)</h4>
+                                                <label className="block text-slate-500 mb-1">Pautan Google Apps Script URL (GAS)</label>
+                                                <input 
+                                                    type="url"
+                                                    value={setupGasUrl}
+                                                    onChange={(e) => setSetupGasUrl(e.target.value)}
+                                                    placeholder="https://script.google.com/macros/s/.../exec"
+                                                    className="w-full p-2.5 border rounded-xl font-mono text-[10px]"
+                                                />
+                                            </div>
+
+                                            <div className="flex gap-2">
+                                                <button 
+                                                    type="button"
+                                                    onClick={handleResetSchoolToDefault}
+                                                    className="flex-1 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 py-3 rounded-xl font-bold transition-all text-xs"
+                                                >
+                                                    🔄 Kembali ke SK Bikang
+                                                </button>
+                                                <button 
+                                                    type="submit"
+                                                    className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-bold transition-all text-xs shadow-md"
+                                                >
+                                                    💾 Simpan & Muat Semula
+                                                </button>
+                                            </div>
+                                        </form>
+                                    )}
+
+                                    {schoolSetupTab === "gas_script" && (
+                                        <div className="space-y-4">
+                                            <div className="bg-blue-50 text-blue-800 p-4 rounded-2xl border border-blue-100 text-xs leading-relaxed">
+                                                💡 **Panduan Tindakan:** Cipta satu hamparan **Google Sheets** baharu, klik **Extensions ➔ Apps Script**, padamkan kod lalai dan tampalkan kod lengkap di bawah. Jalankan fungsi dan muatkan pautan sebagai **Web App** (akses: *Anyone*).
+                                            </div>
+                                            <div className="flex justify-between items-center text-xs font-bold text-slate-500 mb-1">
+                                                <span>KOD SUMBER GOOGLE APPS SCRIPT (code.gs)</span>
+                                                <button 
+                                                    onClick={() => handleCopyToClipboard(rawGasCodeString, "Google Apps Script")}
+                                                    className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-lg border border-indigo-100"
+                                                >
+                                                    📋 Salin Kod Apps Script
+                                                </button>
+                                            </div>
+                                            <textarea 
+                                                rows="10"
+                                                readOnly
+                                                value={rawGasCodeString}
+                                                className="w-full p-3 font-mono text-[9px] border bg-slate-50 rounded-xl outline-none"
+                                            />
+                                        </div>
+                                    )}
+
+                                    {schoolSetupTab === "firebase_rules" && (
+                                        <div className="space-y-4">
+                                            <div className="bg-amber-50 text-amber-800 p-4 rounded-2xl border border-amber-100 text-xs leading-relaxed">
+                                                ⚠️ **PENTING:** Untuk membenarkan penulisan pangkalan data kustom yang lancar, tampalkan peraturan di bawah ke dalam tab **Rules** pada **Cloud Firestore Database** di Firebase Console anda.
+                                            </div>
+                                            <div className="flex justify-between items-center text-xs font-bold text-slate-500 mb-1">
+                                                <span>FIRESTORE DATABASE SECURITY RULES</span>
+                                                <button 
+                                                    onClick={() => handleCopyToClipboard(rawFirebaseRulesString, "Firestore Rules")}
+                                                    className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-lg border border-indigo-100"
+                                                >
+                                                    📋 Salin Peraturan Firebase
+                                                </button>
+                                            </div>
+                                            <textarea 
+                                                rows="10"
+                                                readOnly
+                                                value={rawFirebaseRulesString}
+                                                className="w-full p-3 font-mono text-[10px] border bg-slate-50 rounded-xl outline-none"
+                                            />
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     )}

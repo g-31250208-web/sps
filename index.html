@@ -315,6 +315,9 @@
             const [regMode, setRegMode] = useState("tunggal");
             const [tsvInput, setTsvInput] = useState("");
 
+            // Toggle paparan Butang Setup Sekolah Baharu (Tutup secara lalai)
+            const [showSetupBtn, setShowSetupBtn] = useState(false);
+
             const [eventForm, setEventForm] = useState({ id: "", nama: "", kategori: "L12", jenis: "Balapan", format: "Individu", tarikh: "", masa: "" });
             const [isEditingEvent, setIsEditingEvent] = useState(false);
             const [isEventSidebarOpen, setIsEventSidebarOpen] = useState(false);
@@ -2649,14 +2652,16 @@ service cloud.firestore {
                                     🌐 {lang === "BM" ? "BM / EN" : "EN / BM"}
                                 </button>
 
-                                {/* Butang Setup Sekolah Baru (Dinamik Multi-School) */}
-                                <button 
-                                    onClick={() => setShowSchoolSetupModal(true)}
-                                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1 border border-blue-500 transition-all shrink-0 shadow"
-                                    title="Papan Konfigurasi Multi-School"
-                                >
-                                    ⚙️ Setup Sekolah Baharu
-                                </button>
+                                {/* Butang Setup Sekolah Baru (Dinamik Multi-School - Hanya muncul jika suis toggle dihidupkan) */}
+                                {showSetupBtn && (
+                                    <button 
+                                        onClick={() => setShowSchoolSetupModal(true)}
+                                        className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1 border border-blue-500 transition-all shrink-0 shadow animate-in fade-in zoom-in-95 duration-150"
+                                        title="Papan Konfigurasi Multi-School"
+                                    >
+                                        ⚙️ Setup Sekolah Baharu
+                                    </button>
+                                )}
 
                                 {/* Panel Pentadbir Eksklusif Admin Utama sahaja */}
                                 {userRole === "admin" && (
@@ -2674,6 +2679,25 @@ service cloud.firestore {
                                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Operasi Pentadbiran</p>
                                                     <p className="text-xs text-indigo-600 font-semibold mt-0.5">{userRole === "admin" ? "Sistem Pentadbir" : "Akaun Guru"}</p>
                                                 </div>
+
+                                                {/* Suis Toggle untuk keluarkan butang setup sekolah baharu */}
+                                                <div className="px-4 py-2.5 hover:bg-slate-50 flex items-center justify-between border-b border-slate-100 text-xs font-semibold">
+                                                    <span className="text-slate-700 flex items-center gap-1.5">
+                                                        <span>⚙️ Papar Butang Setup</span>
+                                                    </span>
+                                                    <button 
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            const nextVal = !showSetupBtn;
+                                                            setShowSetupBtn(nextVal);
+                                                            showToastMessage(nextVal ? "Butang Setup Sekolah Baharu dipaparkan di header!" : "Butang Setup Sekolah Baharu disembunyikan.");
+                                                        }}
+                                                        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${showSetupBtn ? 'bg-indigo-600' : 'bg-slate-200'}`}
+                                                    >
+                                                        <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${showSetupBtn ? 'translate-x-4' : 'translate-x-0'}`} />
+                                                    </button>
+                                                </div>
+
                                                 <button onClick={() => { setShowDiagModal(true); setIsAdminMenuOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-semibold flex items-center gap-2">ℹ️ Info Diag</button>
                                                 <button onClick={() => { setShowGasModal(true); setIsAdminMenuOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-semibold flex items-center gap-2">⚡ Setup GAS API</button>
                                                 <button onClick={() => { setShowPointsModal(true); setIsAdminMenuOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-semibold flex items-center gap-2">⚙️ Tetapan Mata & Tahun</button>

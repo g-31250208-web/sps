@@ -696,20 +696,31 @@ service cloud.firestore {
             };
 
             const handleExportHouseMembersJSON = (houseName) => {
-                const houseAthletes = (athletes || [])
-                    .filter(ath => ath.rumah === houseName)
-                    .sort((a, b) => (a.nama || "").localeCompare(b.nama || ""));
+            const houseAthletes = (athletes || [])
+                .filter(ath => ath.rumah === houseName)
+                .sort((a, b) => (a.nama || "").localeCompare(b.nama || ""));
+            
+            const exportData = houseAthletes.map((ath, index) => {
+                // Penyelarasan jantina yang jitu (Lelaki / Perempuan)
+                let jantinaSukan = "Lelaki";
+                const jantRaw = (ath.jantina || "").trim().toLowerCase();
+                if (jantRaw.startsWith('p') || jantRaw.includes('perempuan')) {
+                    jantinaSukan = "Perempuan";
+                }
                 
-                const exportData = houseAthletes.map((ath, index) => ({
+                return {
                     bil: index + 1,
                     nama: (ath.nama || "").toUpperCase(),
-                    janti: ath.jantina === "Lelaki" ? "L" : "P",
-                    kelas: ath.kelas || "Tiada Kelas"
-                }));
-                
-                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
-                const downloadAnchor = document.createElement('a');
-                downloadAnchor.setAttribute("href", dataStr);
+                    jantina: jantinaSukan,
+                    singkatan_jantina: jantinaSukan === "Lelaki" ? "L" : "P",
+                    kelas: ath.kelas || "Tiada Kelas",
+                    kategori: ath.kategori || "Tiada Kategori"
+                };
+            });
+            
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
                 downloadAnchor.setAttribute("download", `Ahli_Rumah_${houseName}_${activeYear}.json`);
                 document.body.appendChild(downloadAnchor);
                 downloadAnchor.click();

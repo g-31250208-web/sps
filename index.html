@@ -282,6 +282,8 @@
             const [showSignatorySettings, setShowSignatorySettings] = useState(false);
             const [isArchiving, setIsArchiving] = useState(false);
 
+            const [categories, setCategories] = useState(["L12", "P12", "L9", "P9", "Prasekolah", "Terbuka"]);
+
             const logoUrl = "https://lh3.googleusercontent.com/d/1E8tjAd7j9DJaZgngDn38agUFCvwyUffa";
 
             // Form States
@@ -509,6 +511,7 @@
                         if (data.activeYear) setActiveYear(data.activeYear);
                         if (data.maxIndividu !== undefined) setMaxIndividu(data.maxIndividu);
                         if (data.maxKumpulan !== undefined) setMaxKumpulan(data.maxKumpulan);
+                        if (data.categories !== undefined) setCategories(data.categories);
                     }
                 }, (e) => console.error(e));
 
@@ -582,7 +585,6 @@
                     athletePoints[res.athleteId].points += pts;
                 });
 
-                const categories = ["L12", "P12", "L9", "P9", "Prasekolah", "Terbuka"];
                 const leaders = {};
 
                 categories.forEach(cat => {
@@ -599,7 +601,7 @@
                 });
 
                 return leaders;
-            }, [results, athletes, pointsConfig]);
+            }, [results, athletes, pointsConfig, categories]);
 
             const eventsWithCode = useMemo(() => {
                 const uniqueDates = Array.from(new Set((events || []).map(e => e.tarikh).filter(Boolean))).sort();
@@ -971,7 +973,8 @@
                         await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('metadata').doc('config').set({ 
                             activeYear,
                             maxIndividu,
-                            maxKumpulan
+                            maxKumpulan,
+                            categories
                         });
                     }
                     createLog("Ubah Had & Tahun Kejohanan", `Menukar tahun kejohanan kepada ${activeYear} (Had Individu: ${maxIndividu}, Had Kumpulan: ${maxKumpulan})`);
@@ -3041,13 +3044,10 @@
                                                             </div>
                                                             <div>
                                                                 <label className="block text-slate-500 mb-1">Kategori Umur</label>
-                                                                <select value={athleteForm.kategori} onChange={(e) => setAthleteForm({ ...athleteForm, kategori: e.target.value })} className="w-full p-2.5 border rounded-xl bg-white">
-                                                                    <option value="L12">L12 (Lelaki B12)</option>
-                                                                    <option value="P12">P12 (Perempuan B12)</option>
-                                                                    <option value="L9">L9 (Lelaki B9)</option>
-                                                                    <option value="P9">P9 (Perempuan B9)</option>
-                                                                    <option value="Prasekolah">Prasekolah</option>
-                                                                    <option value="Terbuka">Terbuka / Wakil Kelas</option>
+                                                                <select value={athleteForm.kategori} onChange={(e) => setAthleteForm({ ...athleteForm, kategori: e.target.value })} className="w-full p-2.5 border rounded-xl bg-white font-bold">
+                                                                    {categories.map(cat => (
+                                                                        <option key={cat} value={cat}>{cat}</option>
+                                                                    ))}
                                                                 </select>
                                                             </div>
                                                         </div>
@@ -3385,13 +3385,80 @@
                                                     <div className="grid grid-cols-2 gap-3">
                                                         <div>
                                                             <label className="block text-slate-500 mb-1">Kategori Umur</label>
-                                                            <select value={eventForm.kategori} onChange={(e) => setEventForm({ ...eventForm, kategori: e.target.value })} className="w-full p-2.5 border rounded-xl bg-white">
-                                                                <option value="L12">L12 (Lelaki B12)</option>
-                                                                <option value="P12">P12 (Perempuan B12)</option>
-                                                                <option value="L9">L9 (Lelaki B9)</option>
-                                                                <option value="P9">P9 (Perempuan B9)</option>
-                                                                <option value="Prasekolah">Prasekolah</option>
-                                                            </select>
+                                                            <div className="flex gap-1.5 mb-1">
+                                                                <select value={eventForm.kategori} onChange={(e) => setEventForm({ ...eventForm, kategori: e.target.value })} className="flex-1 p-2.5 border rounded-xl bg-white font-bold">
+                                                                    {categories.map(cat => (
+                                                                        <option key={cat} value={cat}>{cat}</option>
+                                                                    ))}
+                                                                </select>
+                                                                {userRole === "admin" && (
+                                                                    <button 
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                            const toDelete = eventForm.kategori;
+                                                                            if (!toDelete) return;
+                                                                            setConfirmModal({
+                                                                                show: true,
+                                                                                title: "Hapus Kategori?",
+                                                                                message: `Adakah anda pasti ingin memadam kategori "${toDelete}" daripada dropdown?`,
+                                                                                onConfirm: async () => {
+                                                                                    const updated = categories.filter(c => c !== toDelete);
+                                                                                    setCategories(updated);
+                                                                                    if (isCloudActive) {
+                                                                                        await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('metadata').doc('config').set({ 
+                                                                                            activeYear, maxIndividu, maxKumpulan, categories: updated
+                                                                                        }, { merge: true });
+                                                                                    }
+                                                                                    createLog("Hapus Kategori", `Memadam kategori "${toDelete}" daripada senarai`);
+                                                                                    setEventForm(prev => ({ ...prev, kategori: updated[0] || "" }));
+                                                                                    setConfirmModal({ show: false });
+                                                                                    showToastMessage(`Kategori "${toDelete}" berjaya dipadam.`);
+                                                                                }
+                                                                            });
+                                                                        }}
+                                                                        className="bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1 rounded-xl border border-red-200 font-bold"
+                                                                        title="Padam kategori terpilih"
+                                                                    >
+                                                                        ❌
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                            {userRole === "admin" && (
+                                                                <div className="flex gap-1.5 mt-1.5">
+                                                                    <input 
+                                                                        type="text" 
+                                                                        placeholder="Kategori baru..." 
+                                                                        id="new-category-input"
+                                                                        className="flex-1 p-1.5 border rounded-lg text-[11px] font-bold focus:outline-none bg-white"
+                                                                    />
+                                                                    <button 
+                                                                        type="button"
+                                                                        onClick={async () => {
+                                                                            const input = document.getElementById("new-category-input");
+                                                                            const newVal = input ? input.value.trim() : "";
+                                                                            if (!newVal) return;
+                                                                            if (categories.includes(newVal)) {
+                                                                                showToastMessage("Kategori sudah wujud!", "error");
+                                                                                return;
+                                                                            }
+                                                                            const updated = [...categories, newVal];
+                                                                            setCategories(updated);
+                                                                            if (isCloudActive) {
+                                                                                await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('metadata').doc('config').set({ 
+                                                                                    activeYear, maxIndividu, maxKumpulan, categories: updated
+                                                                                }, { merge: true });
+                                                                            }
+                                                                            createLog("Tambah Kategori", `Menambah kategori baharu "${newVal}"`);
+                                                                            if (input) input.value = "";
+                                                                            setEventForm(prev => ({ ...prev, kategori: newVal }));
+                                                                            showToastMessage(`Kategori "${newVal}" berjaya ditambah!`);
+                                                                        }}
+                                                                        className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-1 rounded-lg text-[11px] font-bold whitespace-nowrap border border-indigo-100"
+                                                                    >
+                                                                        ➕ Tambah
+                                                                    </button>
+                                                                </div>
+                                                            )}
                                                         </div>
                                                         <div>
                                                             <label className="block text-slate-500 mb-1">Format Acara</label>

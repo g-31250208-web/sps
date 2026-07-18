@@ -292,6 +292,7 @@
             const [filterHouse, setFilterHouse] = useState("Semua");
             const [filterEvent, setFilterEvent] = useState("Semua");
             const [filterLogQuery, setFilterLogQuery] = useState("");
+            const [activeDropdownHouse, setActiveDropdownHouse] = useState(null);
 
             const [selectedStudentId, setSelectedStudentId] = useState("");
             const [studentSearchQuery, setStudentSearchQuery] = useState("");
@@ -3239,21 +3240,44 @@ service cloud.firestore {
                                                     <div className="flex flex-wrap gap-1.5">
                                                         <button onClick={() => executeBypassPrint('kehadiran_rumah', { houseName })} className="text-[10px] font-bold bg-slate-100 hover:bg-slate-200 px-2.5 py-1.5 rounded-lg flex items-center gap-1" title="Cetak Kehadiran">📝 Kehadiran</button>
                                                         <button onClick={() => executeBypassPrint('sukantara_rumah', { houseName })} className="text-[10px] font-bold bg-slate-100 hover:bg-slate-200 px-2.5 py-1.5 rounded-lg flex items-center gap-1" title="Cetak Borang Sukantara">🏅 Sukantara</button>
-                                                        <button onClick={() => handleExportHouseMembersJSON(houseName)} className="text-[10px] font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-2.5 py-1.5 rounded-lg flex items-center gap-1" title="Eksport Ahli Rumah Ini sahaja">📤 Eksport</button>
-                                                        {userRole !== "pelawat" && (
+                                                        
+                                                        {/* Menu Dropdown Bersepadu Urus Data Ahli */}
+                                                        <div className="relative inline-block text-left">
                                                             <button 
-                                                                onClick={() => {
-                                                                    setImportTargetHouse(houseName);
-                                                                    setTimeout(() => {
-                                                                        if (houseFileInputRef.current) houseFileInputRef.current.click();
-                                                                    }, 50);
-                                                                }}
-                                                                className="text-[10px] font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-2.5 py-1.5 rounded-lg flex items-center gap-1" 
-                                                                title="Import Ahli Rumah daripada fail JSON"
+                                                                onClick={() => setActiveDropdownHouse(activeDropdownHouse === houseName ? null : houseName)} 
+                                                                className="text-[10px] font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-2.5 py-1.5 rounded-lg flex items-center gap-1"
+                                                                title="Eksport atau Import Ahli Rumah Sukan"
                                                             >
-                                                                📥 Import
+                                                                ⚙️ Urus Data <span className="text-[8px]">▼</span>
                                                             </button>
-                                                        )}
+                                                            {activeDropdownHouse === houseName && (
+                                                                <div className="absolute right-0 mt-1 w-32 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-50 text-left">
+                                                                    <button 
+                                                                        onClick={() => {
+                                                                            handleExportHouseMembersJSON(houseName);
+                                                                            setActiveDropdownHouse(null);
+                                                                        }} 
+                                                                        className="w-full text-left px-3 py-2 text-[10px] hover:bg-indigo-50 font-bold flex items-center gap-1.5 text-indigo-700"
+                                                                    >
+                                                                        📤 Eksport (JSON)
+                                                                    </button>
+                                                                    {userRole !== "pelawat" && (
+                                                                        <button 
+                                                                            onClick={() => {
+                                                                                setImportTargetHouse(houseName);
+                                                                                setTimeout(() => {
+                                                                                    if (houseFileInputRef.current) houseFileInputRef.current.click();
+                                                                                }, 50);
+                                                                                setActiveDropdownHouse(null);
+                                                                            }} 
+                                                                            className="w-full text-left px-3 py-2 text-[10px] hover:bg-indigo-50 font-bold flex items-center gap-1.5 text-emerald-700 border-t border-slate-100"
+                                                                        >
+                                                                            📥 Import (JSON)
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </div>
                                                 <p className="text-xs font-semibold text-slate-400 italic">"{meta.slogan || 'Saga Membara Selamanya Juara'}"</p>

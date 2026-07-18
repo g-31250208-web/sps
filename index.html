@@ -122,12 +122,12 @@
         };
 
         const COLOR_PRESETS = {
-            Merah: { bg: "bg-red-100", text: "text-red-700", warna: "bg-red-500", teks: "text-red-600", glow: "hover:shadow-[0_0_20px_rgba(239,68,68,0.4)] hover:border-red-300", emoji: "" },
-            Biru: { bg: "bg-blue-100", text: "text-blue-700", warna: "bg-blue-500", teks: "text-blue-600", glow: "hover:shadow-[0_0_20px_rgba(59,130,246,0.4)] hover:border-blue-300", emoji: "" },
-            Hijau: { bg: "bg-emerald-100", text: "text-emerald-700", warna: "bg-emerald-500", teks: "text-emerald-600", glow: "hover:shadow-[0_0_20px_rgba(16,185,129,0.4)] hover:border-emerald-300", emoji: "" },
-            Kuning: { bg: "bg-amber-100", text: "text-amber-700", warna: "bg-amber-400", teks: "text-amber-500", glow: "hover:shadow-[0_0_20px_rgba(251,191,36,0.4)] hover:border-amber-300", emoji: "https://lh3.googleusercontent.com/d/1_ZGQfCeIIPtpZLBJd9TWy6NTiR6v8Lzb" },
-            Ungu: { bg: "bg-purple-100", text: "text-purple-700", warna: "bg-purple-500", teks: "text-purple-600", glow: "hover:shadow-[0_0_20px_rgba(168,85,247,0.4)] hover:border-purple-300", emoji: "" },
-            Oren: { bg: "bg-orange-100", text: "text-orange-700", warna: "bg-orange-500", teks: "text-orange-600", glow: "hover:shadow-[0_0_20px_rgba(249,115,22,0.4)] hover:border-orange-300", emoji: "" }
+            Merah: { bg: "bg-red-100", text: "text-red-700", warna: "bg-red-500", teks: "text-red-600", glow: "hover:shadow-[0_0_20px_rgba(239,68,68,0.4)] hover:border-red-300", emoji: "🏆" },
+            Biru: { bg: "bg-blue-100", text: "text-blue-700", warna: "bg-blue-500", teks: "text-blue-600", glow: "hover:shadow-[0_0_20px_rgba(59,130,246,0.4)] hover:border-blue-300", emoji: "🏆" },
+            Hijau: { bg: "bg-emerald-100", text: "text-emerald-700", warna: "bg-emerald-500", teks: "text-emerald-600", glow: "hover:shadow-[0_0_20px_rgba(16,185,129,0.4)] hover:border-emerald-300", emoji: "🏆" },
+            Kuning: { bg: "bg-amber-100", text: "text-amber-700", warna: "bg-amber-400", teks: "text-amber-500", glow: "hover:shadow-[0_0_20px_rgba(251,191,36,0.4)] hover:border-amber-300", emoji: "🏆" },
+            Ungu: { bg: "bg-purple-100", text: "text-purple-700", warna: "bg-purple-500", teks: "text-purple-600", glow: "hover:shadow-[0_0_20px_rgba(168,85,247,0.4)] hover:border-purple-300", emoji: "🏆" },
+            Oren: { bg: "bg-orange-100", text: "text-orange-700", warna: "bg-orange-500", teks: "text-orange-600", glow: "hover:shadow-[0_0_20px_rgba(249,115,22,0.4)] hover:border-orange-300", emoji: "🏆" }
         };
 
         const TrendingUpIcon = () => (
@@ -195,17 +195,16 @@
             }
         };
 
-        // Pemetaan kategori secara dinamik (Friendly Label Mapper)
         const getFriendlyCategory = (cat) => {
             if (!cat) return "";
             const mapping = {
-                "L12": "L12",
-                "P12": "P12",
-                "L9": "L9",
-                "P9": "P9",
-                "L7": "L7",
-                "P7": "P7",
-                "Prasekolah": "Prasekolah",
+                "L12": "L12 (12 Tahun)",
+                "P12": "P12 (12 Tahun)",
+                "L9": "L9 (9 Tahun)",
+                "P9": "P9 (9 Tahun)",
+                "L7": "L7 (7 Tahun)",
+                "P7": "P7 (7 Tahun)",
+                "Prasekolah": "Prasekolah (6 Tahun)",
                 "Terbuka": "Terbuka"
             };
             return mapping[cat] || cat;
@@ -262,25 +261,31 @@
             return <span className="text-xl filter drop-shadow">{emblem}</span>;
         };
 
-        const HISTORICAL_CHAMPIONSHIP_RECORDS = [
-
-        ];
-
         function App() {
+            // 1. Kawalan Utama & Sesi
             const [lang, setLang] = useState('BM');
-            
-            const t = useMemo(() => {
-                return translations[lang] || translations.BM;
-            }, [lang]);
-
             const [currentUser, setCurrentUser] = useState(null);
             const [userRole, setUserRole] = useState("pelawat"); 
             const [isCloudActive, setIsCloudActive] = useState(false);
             const [activeTab, setActiveTab] = useState("dashboard");
 
+            // 2. Modals & Sidebars
             const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
             const [passcodeInput, setPasscodeInput] = useState("");
+            const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
+            const [isPrintMenuOpen, setIsPrintMenuOpen] = useState(false);
+            const [showDiagModal, setShowDiagModal] = useState(false);
+            const [showPointsModal, setShowPointsModal] = useState(false);
+            const [showGasModal, setShowGasModal] = useState(false);
+            const [showSchoolSetupModal, setShowSchoolSetupModal] = useState(false);
+            const [showAdminsModal, setShowAdminsModal] = useState(false);
+            const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+            const [isAddAthleteSidebarOpen, setIsAddAthleteSidebarOpen] = useState(false);
+            const [isEventSidebarOpen, setIsEventSidebarOpen] = useState(false);
+            const [isAssignEventSidebarOpen, setIsAssignEventSidebarOpen] = useState(false);
+            const [isHouseSidebarOpen, setIsHouseSidebarOpen] = useState(false);
 
+            // 3. Storan Data
             const [athletes, setAthletes] = useState(INITIAL_ATHLETES);
             const [events, setEvents] = useState(INITIAL_EVENTS);
             const [results, setResults] = useState(INITIAL_RESULTS);
@@ -288,9 +293,80 @@
             const [housesMetadata, setHousesMetadata] = useState(INITIAL_HOUSES_METADATA);
             const [announcements, setAnnouncements] = useState(DEFAULT_ANNOUNCEMENTS);
             const [logs, setLogs] = useState(INITIAL_LOGS);
+            const [adminList, setAdminList] = useState([]);
 
-            // Pengisytiharan Kategori Umur - Dimulakan secara bersih tanpa kategori lalai hardcoded
+            // 4. Konfigurasi Sistem Dinamik
+            const [activeYear, setActiveYear] = useState(new Date().getFullYear().toString());
+            const [maxIndividu, setMaxIndividu] = useState(3);
+            const [maxKumpulan, setMaxKumpulan] = useState(2);
+            // Kategori dimulakan kosong (tiada kategori lalai ter-hardcoded)
             const [categories, setCategories] = useState([]);
+            const [pointsConfig, setPointsConfig] = useState({ emas: 5, perak: 3, gangsa: 2, keempat: 1 });
+            const [gasUrl, setGasUrl] = useState(activeCustomGasUrl);
+
+            // 5. Borang Kemasukan Data
+            const [athleteForm, setAthleteForm] = useState({ id: "", nama: "", kelas: "", rumah: "Merah", jantina: "Lelaki", kategori: "" });
+            const [isEditingAthlete, setIsEditingAthlete] = useState(false);
+            const [regMode, setRegMode] = useState("tunggal");
+            const [tsvInput, setTsvInput] = useState("");
+
+            const [eventForm, setEventForm] = useState({ id: "", nama: "", kategori: "", jenis: "Balapan", format: "Individu", tarikh: "", masa: "" });
+            const [isEditingEvent, setIsEditingEvent] = useState(false);
+
+            const [heatForm, setHeatForm] = useState({ eventId: "", athleteId: "", saringanNo: "1", catatan: "" });
+            const [activeStageTab, setActiveStageTab] = useState("saringan");
+
+            const [resultForm, setResultForm] = useState({ eventId: "", athleteId: "", kedudukan: "1", catatan: "" });
+
+            const [houseForm, setHouseForm] = useState({ nama: "", slogan: "", guruPenasihat: "", bonusPoints: 0, warnaLabel: "Ungu" });
+            const [isEditingHouse, setIsEditingHouse] = useState(false);
+            const [originalHouseKey, setOriginalHouseKey] = useState("");
+            const [newAdvisorText, setNewAdvisorText] = useState({});
+
+            const [announceFormText, setAnnounceFormText] = useState("");
+            const [showAnnounceForm, setShowAnnounceForm] = useState(false);
+
+            // 6. Penapis & Carian
+            const [filterHouse, setFilterHouse] = useState("Semua");
+            const [filterEvent, setFilterEvent] = useState("Semua");
+            const [filterLogQuery, setFilterLogQuery] = useState("");
+            const [studentSearchQuery, setStudentSearchQuery] = useState("");
+            const [noAtletInput, setNoAtletInput] = useState("");
+            const [selectedEventIds, setSelectedEventIds] = useState([]);
+            const [selectedStudentId, setSelectedStudentId] = useState("");
+            const [showSearchDropdown, setShowSearchDropdown] = useState(false);
+            const [certSearchQuery, setCertSearchQuery] = useState("");
+
+            // 7. Borang Penyediaan Sekolah (SaaS / Setup)
+            const [setupSchoolName, setSetupSchoolName] = useState(activeSchoolName);
+            const [setupSchoolSubtitle, setSetupSchoolSubtitle] = useState(activeSchoolSubtitle);
+            const [setupFirebaseConfigRaw, setSetupFirebaseConfigRaw] = useState(cachedConfigRaw ? JSON.stringify(activeFirebaseConfig, null, 2) : "");
+            const [setupGasUrl, setSetupGasUrl] = useState(activeCustomGasUrl);
+            const [schoolSetupTab, setSchoolSetupTab] = useState("config");
+            const [newAdminEmail, setNewAdminEmail] = useState("");
+
+            // 8. Cetakan & Dokumen Penandatangan
+            const [previewContent, setPreviewContent] = useState("");
+            const [certSignatory1Name, setCertSignatory1Name] = useState("Cikgu Adnan Bin Haji Abdul Rahman");
+            const [certSignatory1Title, setCertSignatory1Title] = useState("Guru Besar SK Bikang");
+            const [certSignatory2Name, setCertSignatory2Name] = useState("Cikgu Azman Bin Mohd");
+            const [certSignatory2Title, setCertSignatory2Title] = useState("GPK Kokurikulum SK Bikang");
+            const [additionalInfo, setAdditionalInfo] = useState("");
+
+            // 9. Status & Dialog
+            const [toast, setToast] = useState({ show: false, message: "", type: "info" });
+            const [confirmModal, setConfirmModal] = useState({ show: false, title: "", message: "", onConfirm: null });
+            const [isSyncingGas, setIsSyncingGas] = useState(false);
+            const [isArchiving, setIsArchiving] = useState(false);
+            const [showSetupBtn, setShowSetupBtn] = useState(false); 
+
+            const adminMenuRef = useRef(null);
+            const printMenuRef = useRef(null);
+            const fileInputRef = useRef(null);
+
+            const t = useMemo(() => {
+                return translations[lang] || translations.BM;
+            }, [lang]);
 
             const sortedCategories = useMemo(() => {
                 return [...categories].sort((a, b) => 
@@ -300,14 +376,7 @@
 
             const logoUrl = "https://lh3.googleusercontent.com/d/1E8tjAd7j9DJaZgngDn38agUFCvwyUffa";
 
-            // Nilai lalai dilaraskan supaya dinamik berdasarkan kategori tersedia
-            const [athleteForm, setAthleteForm] = useState({ id: "", nama: "", kelas: "", rumah: "Merah", jantina: "Lelaki", kategori: "" });
-            const [isEditingAthlete, setIsEditingAthlete] = useState(false);
-            const [isAddAthleteSidebarOpen, setIsAddAthleteSidebarOpen] = useState(false);
-            const [regMode, setRegMode] = useState("tunggal");
-            const [tsvInput, setTsvInput] = useState("");
-
-            // Pengesanan pintar untuk menukar kategori murid secara automatik
+            // Pengesanan pintar automatik kategori bagi borang atlet
             const handleKelasChange = (val) => {
                 let updatedCat = athleteForm.kategori;
                 const normalized = val.toLowerCase();
@@ -334,26 +403,6 @@
                 }
                 setAthleteForm(prev => ({ ...prev, jantina: val, kategori: updatedCat }));
             };
-
-            const showSetupBtn = false;
-
-            const [eventForm, setEventForm] = useState({ id: "", nama: "", kategori: "", jenis: "Balapan", format: "Individu", tarikh: "", masa: "" });
-            const [isEditingEvent, setIsEditingEvent] = useState(false);
-            const [isEventSidebarOpen, setIsEventSidebarOpen] = useState(false);
-
-            const [heatForm, setHeatForm] = useState({ eventId: "", athleteId: "", saringanNo: "1", catatan: "" });
-            const [activeStageTab, setActiveStageTab] = useState("saringan");
-
-            const [resultForm, setResultForm] = useState({ eventId: "", athleteId: "", kedudukan: "1", catatan: "" });
-
-            const [houseForm, setHouseForm] = useState({ nama: "", slogan: "", guruPenasihat: "", bonusPoints: 0, warnaLabel: "Ungu" });
-            const [isEditingHouse, setIsEditingHouse] = useState(false);
-            const [isHouseSidebarOpen, setIsHouseSidebarOpen] = useState(false);
-            const [originalHouseKey, setOriginalHouseKey] = useState("");
-            const [newAdvisorText, setNewAdvisorText] = useState({});
-
-            const [announceFormText, setAnnounceFormText] = useState("");
-            const [showAnnounceForm, setShowAnnounceForm] = useState(false);
 
             const createLog = async (action, details) => {
                 const logId = "log_" + Date.now();
@@ -477,140 +526,6 @@
                     showToastMessage("Ralat ketika log keluar: " + error.message, "error");
                 }
             };
-
-            const rawGasCodeString = `/**
- * =====================================================================================
- * 🏆 SISTEM PENGURUSAN SUKAN SEKOLAH - GOOGLE APPS SCRIPT DATABASE ENGINE
- * =====================================================================================
- */
-const TABLE_HEADERS = {
-  "houses": ["id", "name", "color", "icon", "bonusPoints", "guruPenasihat"],
-  "students": ["id", "name", "noPeserta", "class", "tahap", "house", "gender"],
-  "events": ["id", "name", "category", "level", "date", "time", "eventType"],
-  "results": ["id", "eventId", "gold", "goldRecord", "silver", "silverRecord", "bronze", "bronzeRecord", "fourth", "fourthRecord"]
-};
-
-function doGet(e) {
-  try {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    const result = {
-      houses: readSheetData(ss, "houses"),
-      students: readSheetData(ss, "students"),
-      events: readSheetData(ss, "events"),
-      results: readSheetData(ss, "results")
-    };
-    return ContentService.createTextOutput(JSON.stringify({ success: true, data: result }))
-                         .setMimeType(ContentService.MimeType.JSON);
-  } catch (error) {
-    return ContentService.createTextOutput(JSON.stringify({ success: false, error: error.toString() }))
-                         .setMimeType(ContentService.MimeType.JSON);
-  }
-}
-
-function doPost(e) {
-  try {
-    const postData = JSON.parse(e.postData.contents);
-    const action = postData.action; 
-    const targetTable = postData.table; 
-    const payload = postData.data;
-    
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    let sheet = ss.getSheetByName(targetTable);
-    if (!sheet) {
-      sheet = ss.insertSheet(targetTable);
-      setupSheetHeaders(sheet, targetTable, payload);
-    }
-    if (action === "save") {
-      upsertRow(sheet, payload);
-    } else if (action === "delete") {
-      deleteRow(sheet, payload.id);
-    }
-    return ContentService.createTextOutput(JSON.stringify({ success: true }))
-                         .setMimeType(ContentService.MimeType.JSON);
-  } catch (error) {
-    return ContentService.createTextOutput(JSON.stringify({ success: false, error: error.toString() }))
-                         .setMimeType(ContentService.MimeType.JSON);
-  }
-}
-
-function readSheetData(ss, sheetName) {
-  let sheet = ss.getSheetByName(sheetName);
-  if (!sheet) {
-    sheet = ss.insertSheet(sheetName);
-    setupSheetHeaders(sheet, sheetName, null);
-    return [];
-  }
-  const rows = sheet.getDataRange().getValues();
-  if (rows.length <= 1) return [];
-  const headers = rows[0];
-  const data = [];
-  for (let i = 1; i < rows.length; i++) {
-    const row = rows[i];
-    const obj = {};
-    for (let j = 0; j < headers.length; j++) {
-      obj[headers[j]] = row[j];
-    }
-    data.push(obj);
-  }
-  return data;
-}
-
-function setupSheetHeaders(sheet, tableName, sampleData) {
-  let headers = TABLE_HEADERS[tableName] || [];
-  if (headers.length === 0 && sampleData) {
-    headers = Object.keys(sampleData);
-  }
-  if (headers.length > 0) {
-    sheet.appendRow(headers);
-    sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold").setBackground("#e2e8f0");
-    sheet.setFrozenRows(1);
-  }
-}
-
-function upsertRow(sheet, dataObj) {
-  const rows = sheet.getDataRange().getValues();
-  const headers = rows[0];
-  const idColIndex = headers.indexOf("id");
-  if (idColIndex === -1) return;
-  const rowData = headers.map(header => dataObj[header] || "");
-  let rowIndexToUpdate = -1;
-  for (let i = 1; i < rows.length; i++) {
-    if (rows[i][idColIndex] == dataObj.id) {
-      rowIndexToUpdate = i + 1;
-      break;
-    }
-  }
-  if (rowIndexToUpdate !== -1) {
-    sheet.getRange(rowIndexToUpdate, 1, 1, rowData.length).setValues([rowData]);
-  } else {
-    sheet.appendRow(rowData);
-  }
-}
-
-function deleteRow(sheet, id) {
-  const rows = sheet.getDataRange().getValues();
-  const headers = rows[0];
-  const idColIndex = headers.indexOf("id");
-  if (idColIndex === -1) return;
-  for (let i = 1; i < rows.length; i++) {
-    if (rows[i][idColIndex] == id) {
-      sheet.deleteRow(i + 1);
-      break;
-    }
-  }
-}`;
-
-            const rawFirebaseRulesString = `rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /artifacts/{appId}/public/data/{collectionName}/{documentId} {
-      allow read, write: if request.auth != null;
-    }
-    match /{document=**} {
-      allow read, write: if request.auth != null;
-    }
-  }
-}`;
 
             const handleCopyToClipboard = (text, typeName) => {
                 const tempTextArea = document.createElement("textarea");
@@ -2843,7 +2758,7 @@ service cloud.firestore {
                         </div>
                     </header>
 
-                    {}
+                    {/* Bar Navigasi Tab */}
                     <div className="bg-white border-b border-slate-200 sticky top-0 z-40">
                         <div className="max-w-7xl mx-auto px-4 flex overflow-x-auto space-x-1 py-2">
                             {[
@@ -2866,7 +2781,7 @@ service cloud.firestore {
                         </div>
                     </div>
 
-                    {/* Kandungan Halaman Utama */}
+                    {}
                     <main className="max-w-7xl mx-auto px-4 py-6 flex-grow w-full">
                         
                         {activeTab === "dashboard" && (
@@ -2963,7 +2878,6 @@ service cloud.firestore {
                                         </div>
                                     </div>
 
-                                    {}
                                     <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
                                         <h3 className="text-sm font-bold text-slate-900 mb-4 uppercase tracking-wider">{t.currentEvents}</h3>
                                         <div className="space-y-3">
@@ -2994,6 +2908,7 @@ service cloud.firestore {
                             </div>
                         )}
 
+                        {}
                         {activeTab === "rumah_sukan" && (
                             <div className="space-y-6">
                                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
@@ -3046,7 +2961,6 @@ service cloud.firestore {
                                                 </button>
                                             </div>
 
-                                            {}
                                             <div className="flex-1 overflow-y-auto p-4 space-y-6">
                                                 <form onSubmit={isEditingHouse ? handleEditHouseSubmit : handleAddHouseSubmitDirect} className="space-y-4 text-xs font-semibold">
                                                     <div>
@@ -3156,7 +3070,6 @@ service cloud.firestore {
                                                 </div>
                                                 <p className="text-xs font-semibold text-slate-400 italic font-bold">"{meta.slogan || 'Saga Membara Selamanya Juara'}"</p>
 
-                                                {}
                                                 <div className="border-t pt-3">
                                                     <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">👥 GURU PENASIHAT</h4>
                                                     <div className="flex flex-wrap gap-1.5 mb-2">
@@ -3233,6 +3146,7 @@ service cloud.firestore {
                             </div>
                         )}
 
+                        {}
                         {activeTab === "atlit" && (
                             <div className="space-y-6">
                                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm mb-6">
@@ -3247,7 +3161,6 @@ service cloud.firestore {
                                             <p className="text-xs text-slate-400 font-medium">Urus maklumat pendaftaran profil ahli sukan, menetapkan nombor bib (no. atlet) dan pendaftaran acara.</p>
                                         </div>
                                     </div>
-                                    {}
                                     <div className="flex flex-wrap gap-2 w-full sm:w-auto self-stretch sm:self-auto justify-center">
                                         {userRole !== "pelawat" && (
                                             <>
@@ -3255,7 +3168,7 @@ service cloud.firestore {
                                                     type="button"
                                                     onClick={() => {
                                                         setIsEditingAthlete(false);
-                                                        setAthleteForm({ id: "", nama: "", kelas: "", rumah: "Merah", jantina: "Lelaki", kategori: "L12" });
+                                                        setAthleteForm({ id: "", nama: "", kelas: "", rumah: "Merah", jantina: "Lelaki", kategori: "" });
                                                         setIsAddAthleteSidebarOpen(true);
                                                     }}
                                                     className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-lg hover:shadow-indigo-600/20 transition-all flex items-center gap-1.5 justify-center flex-1 sm:flex-initial"
@@ -3303,7 +3216,6 @@ service cloud.firestore {
                                                 </button>
                                             </div>
 
-                                            {}
                                             <div className="flex-1 overflow-y-auto p-4 space-y-6">
                                                 <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 flex justify-between items-center">
                                                     <span className="text-xs font-bold text-slate-600">Mod Pendaftaran:</span>
@@ -3402,8 +3314,6 @@ service cloud.firestore {
                                     </div>
                                 )}
 
-                                {}
-                                {/* Sidebar Daftar Acara & No. Atlet */}
                                 {isAssignEventSidebarOpen && (
                                     <div className="fixed inset-0 z-[100] flex justify-end">
                                         <div 
@@ -3528,8 +3438,6 @@ service cloud.firestore {
                                     </div>
                                 )}
 
-                                {}
-                                {/* Senarai Rasmi Atlet */}
                                 <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm relative">
                                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b pb-3 mb-4">
                                         <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2 font-bold">
@@ -3647,6 +3555,7 @@ service cloud.firestore {
                             </div>
                         )}
 
+                        {}
                         {activeTab === "acara" && (
                             <div className="space-y-6">
                                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
@@ -3672,7 +3581,6 @@ service cloud.firestore {
                                     )}
                                 </div>
 
-                                {}
                                 {isEventSidebarOpen && (
                                     <div className="fixed inset-0 z-[100] flex justify-end">
                                         <div 
@@ -3821,8 +3729,7 @@ service cloud.firestore {
                                     </div>
                                 )}
 
-                                {}
-                                {/* Senarai Penjadualan Acara */}
+                                {/* Senarai Penjadualan Rasmi (Diletakkan butang edit di kiri x) */}
                                 <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm font-bold">
                                     <div className="flex justify-between items-center border-b pb-3 mb-4">
                                         <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Senarai Penjadualan Rasmi</h3>
@@ -3885,6 +3792,7 @@ service cloud.firestore {
                             </div>
                         )}
 
+                        {}
                         {activeTab === "keputusan" && (
                             <div className="space-y-6">
                                 <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
@@ -3927,7 +3835,6 @@ service cloud.firestore {
                                     </div>
                                 </div>
 
-                                {}
                                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                                     <div className="lg:col-span-1">
                                         {selectedEventObject && selectedEventObject.jenis === "Balapan" && activeStageTab === "saringan" ? (
@@ -4041,9 +3948,9 @@ service cloud.firestore {
                             </div>
                         )}
 
+                        {}
                         {activeTab === "pasca_sukan" && (
-                            <div className="space-y-6">
-                                <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+                            <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
                                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                                         <div>
                                             <h3 className="text-lg font-black text-slate-900">🏆 Modul Dokumentasi Pasca Kejohanan</h3>

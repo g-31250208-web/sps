@@ -198,7 +198,13 @@
         const getFriendlyCategory = (cat) => {
             if (!cat) return "";
             const mapping = {
-                "Prasekolah": "Prasekolah",
+                "L12": "L12 (12 Tahun)",
+                "P12": "P12 (12 Tahun)",
+                "L9": "L9 (9 Tahun)",
+                "P9": "P9 (9 Tahun)",
+                "L7": "L7 (7 Tahun)",
+                "P7": "P7 (7 Tahun)",
+                "Prasekolah": "Prasekolah (6 Tahun)",
                 "Terbuka": "Terbuka"
             };
             return mapping[cat] || cat;
@@ -1503,7 +1509,7 @@
                             <div style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 20px;">
                                 <img src="${logoUrl}" style="height: 60px;" />
                                 <h2 style="margin: 5px 0 0 0;">LAPORAN KEPUTUSAN SARINGAN LARIAN</h2>
-                                <h3 style="margin: 2px 0 0 0; color: #475569; font-size:12px;">ACARA: [${targetData.kodAcara}] ${(targetData.nama || "").toUpperCase()} (${getFriendlyCategory(targetData.kategori)})</h3>
+                                <h3 style="margin: 2px 0 0 0; color: #475569; font-size:12px;">ACARA: [${targetData.kodAcara}] ${(targetData.nama || "").toUpperCase()} ${targetData.kategori ? `(${getFriendlyCategory(targetData.kategori)})` : ''}</h3>
                             </div>
 
                             <h3 style="font-size:13px; text-transform:uppercase; font-weight:bold; margin-bottom:5px;">A. Kedudukan Masa bagi Setiap Saringan</h3>
@@ -1839,7 +1845,7 @@
                         return `
                             <div style="margin-bottom: 30px; page-break-inside: avoid; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden;">
                                 <div style="background: #1e3a8a; color: white; padding: 10px 15px; font-weight: bold; font-size: 13px; display: flex; justify-content: space-between; align-items: center;">
-                                    <span>Acara ${idx+1}: [${event.kodAcara}] ${event.nama.toUpperCase()} (${getFriendlyCategory(event.kategori)})</span>
+                                    <span>Acara ${idx+1}: [${event.kodAcara}] ${event.nama.toUpperCase()} ${event.kategori ? `(${getFriendlyCategory(event.kategori)})` : ''}</span>
                                     <span style="font-size: 11px; background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 4px;">Peringkat: Akhir / Terus</span>
                                 </div>
                                 <table style="width: 100%; border-collapse: collapse; font-size: 11px; text-align: left;">
@@ -2883,516 +2889,7 @@
                                                     return (
                                                         <div key={alert.id} className="flex justify-between items-center p-3 rounded-xl bg-slate-50 text-xs">
                                                             <div>
-                                                                <span className="font-bold text-slate-800 block">
-                                                                    <span className="font-mono bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded mr-1.5 text-[10px]">{alert.kodAcara}</span>
-                                                                    {alert.nama}
-                                                                </span>
-                                                                <span className="text-[10px] text-slate-400">Kategori: {getFriendlyCategory(alert.kategori)} | ⏱️ {alert.masa || "--:--"}</span>
-                                                            </div>
-                                                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${isDone ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}`}>
-                                                                {isDone ? "Selesai" : "Mula"}
-                                                            </span>
-                                                        </div>
-                                                    );
-                                                })
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {}
-                        {activeTab === "rumah_sukan" && (
-                            <div className="space-y-6">
-                                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
-                                    <div className="flex items-center gap-3">
-                                        <div className="bg-indigo-100 text-indigo-700 p-2.5 rounded-xl">
-                                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-                                            </svg>
-                                        </div>
-                                        <div>
-                                            <h3 className="font-extrabold text-slate-800 text-sm">Urus Pasukan & Pendaftaran Ahli</h3>
-                                            <p className="text-xs text-slate-400 font-medium">Urus maklumat pendaftaran rumah sukan, guru penasihat dan bonus markah.</p>
-                                        </div>
-                                    </div>
-                                    {userRole !== "pelawat" && (
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                setIsEditingHouse(false);
-                                                setHouseForm({ nama: "", slogan: "", guruPenasihat: "", bonusPoints: 0, warnaLabel: "Ungu" });
-                                                setIsHouseSidebarOpen(true);
-                                            }}
-                                            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-5 py-3 rounded-xl shadow-lg hover:shadow-indigo-600/20 transition-all flex items-center gap-2 shrink-0 self-stretch sm:self-auto justify-center"
-                                        >
-                                            <span>⚙️ Tambah / Sunting Rumah Sukan</span>
-                                        </button>
-                                    )}
-                                </div>
-
-                                {isHouseSidebarOpen && (
-                                    <div className="fixed inset-0 z-[100] flex justify-end">
-                                        <div 
-                                            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
-                                            onClick={() => setIsHouseSidebarOpen(false)}
-                                        />
-                                        
-                                        <div className="relative w-full max-w-md bg-white shadow-2xl flex flex-col z-[101] animate-in slide-in-from-right duration-200">
-                                            <div className="flex justify-between items-center p-4 border-b border-slate-200">
-                                                <div>
-                                                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">
-                                                        {isEditingHouse ? "✏️ Sunting Rumah Sukan" : "🏠 Tambah Rumah Sukan"}
-                                                    </h3>
-                                                    <p className="text-[10px] text-slate-400 font-semibold mt-0.5">SPS Control Panel</p>
-                                                </div>
-                                                <button 
-                                                    onClick={() => setIsHouseSidebarOpen(false)}
-                                                    className="text-slate-400 hover:text-slate-600 text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors"
-                                                >
-                                                    ✕ Sembunyikan
-                                                </button>
-                                            </div>
-
-                                            <div className="flex-1 overflow-y-auto p-4 space-y-6">
-                                                <form onSubmit={isEditingHouse ? handleEditHouseSubmit : handleAddHouseSubmitDirect} className="space-y-4 text-xs font-semibold">
-                                                    <div>
-                                                        <label className="block text-slate-500 mb-1">Nama Rumah Sukan</label>
-                                                        <input 
-                                                            type="text" 
-                                                            required 
-                                                            disabled={isEditingHouse}
-                                                            value={houseForm.nama} 
-                                                            onChange={(e) => setHouseForm({ ...houseForm, nama: e.target.value })} 
-                                                            className="w-full p-2.5 border rounded-xl disabled:bg-slate-100" 
-                                                            placeholder="Cth: Merah" 
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <label className="block text-slate-500 mb-1">Slogan Rumah</label>
-                                                        <input 
-                                                            type="text" 
-                                                            value={houseForm.slogan} 
-                                                            onChange={(e) => setHouseForm({ ...houseForm, slogan: e.target.value })} 
-                                                            className="w-full p-2.5 border rounded-xl" 
-                                                            placeholder="Cth: Merah Membara!" 
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <label className="block text-slate-500 mb-1">Mata Bonus Rumah</label>
-                                                        <input 
-                                                            type="number" 
-                                                            value={houseForm.bonusPoints} 
-                                                            onChange={(e) => setHouseForm({ ...houseForm, bonusPoints: parseInt(e.target.value) || 0 })} 
-                                                            className="w-full p-2.5 border rounded-xl" 
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <label className="block text-slate-500 mb-1">Label Warna</label>
-                                                        <select 
-                                                            value={houseForm.warnaLabel} 
-                                                            onChange={(e) => setHouseForm({ ...houseForm, warnaLabel: e.target.value })} 
-                                                            className="w-full p-2.5 border rounded-xl bg-white"
-                                                        >
-                                                            <option value="Merah">Merah</option>
-                                                            <option value="Biru">Biru</option>
-                                                            <option value="Hijau">Hijau</option>
-                                                            <option value="Kuning">Kuning</option>
-                                                            <option value="Ungu">Ungu</option>
-                                                            <option value="Oren">Oren</option>
-                                                        </select>
-                                                    </div>
-                                                    <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl shadow">
-                                                        {isEditingHouse ? "Simpan Perubahan" : "Daftar Rumah Baru"}
-                                                    </button>
-                                                </form>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Grid Rumah Sukan */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    {Object.keys(housesMetadata || INITIAL_HOUSES_METADATA).map(houseName => {
-                                        const meta = housesMetadata[houseName] || {};
-                                        const cls = COLOR_PRESETS[meta.warnaLabel] || { bg: "bg-slate-100", text: "text-slate-700", warna: "bg-slate-500", teks: "text-slate-600", emoji: "🏆" };
-                                        const houseMembers = (groupedByClass[houseName]) || {};
-                                        const advisors = meta.guruPenasihat ? meta.guruPenasihat.split(',').map(s => s.trim()).filter(Boolean) : [];
-                                        const houseAthletesList = (athletes || []).filter(a => a.rumah === houseName);
-                                        const totalHouseMembersCount = houseAthletesList.length;
-                                        const totalLelakiCount = houseAthletesList.filter(a => a.jantina === "Lelaki").length;
-                                        const totalPerempuanCount = houseAthletesList.filter(a => a.jantina === "Perempuan").length;
-
-                                        return (
-                                            <div key={houseName} className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm space-y-4 hover:shadow-md transition-shadow">
-                                                <div className="flex justify-between items-center border-b pb-3">
-                                                    <div className="flex items-center gap-2">
-                                                        {renderEmblem(cls.emoji, "w-6 h-6")}
-                                                        <h3 className="text-sm font-black text-slate-900 uppercase font-bold">
-                                                            Rumah {houseName}
-                                                        </h3>
-                                                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ml-2 ${cls.bg} ${cls.text}`}>
-                                                            {meta.warnaLabel || 'Merah'}
-                                                        </span>
-                                                        {userRole !== "pelawat" && (
-                                                            <button 
-                                                                onClick={() => {
-                                                                    setOriginalHouseKey(houseName);
-                                                                    setHouseForm({
-                                                                        nama: houseName,
-                                                                        slogan: meta.slogan || "",
-                                                                        guruPenasihat: meta.guruPenasihat || "",
-                                                                        bonusPoints: meta.bonusPoints || 0,
-                                                                        warnaLabel: meta.warnaLabel || "Ungu"
-                                                                    });
-                                                                    setIsEditingHouse(true);
-                                                                    setIsHouseSidebarOpen(true);
-                                                                }}
-                                                                className="text-xs hover:text-indigo-600 p-1"
-                                                                title="Sunting Rumah"
-                                                            >
-                                                                ✏️
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                    <div className="flex gap-1.5">
-                                                        <button onClick={() => executeBypassPrint('kehadiran_rumah', { houseName })} className="text-[10px] font-bold bg-slate-100 hover:bg-slate-200 px-2.5 py-1.5 rounded-lg flex items-center gap-1" title="Cetak Kehadiran">📝 Kehadiran</button>
-                                                        <button onClick={() => executeBypassPrint('sukantara_rumah', { houseName })} className="text-[10px] font-bold bg-slate-100 hover:bg-slate-200 px-2.5 py-1.5 rounded-lg flex items-center gap-1" title="Cetak Borang Sukantara">🏅 Sukantara</button>
-                                                        <button onClick={() => handleExportHouseMembersJSON(houseName)} className="text-[10px] font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-2.5 py-1.5 rounded-lg flex items-center gap-1" title="Eksport Ahli Rumah Ini sahaja">📤 Eksport JSON</button>
-                                                    </div>
-                                                </div>
-                                                <p className="text-xs font-semibold text-slate-400 italic font-bold">"{meta.slogan || 'Saga Membara Selamanya Juara'}"</p>
-
-                                                <div className="border-t pt-3">
-                                                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">👥 GURU PENASIHAT</h4>
-                                                    <div className="flex flex-wrap gap-1.5 mb-2">
-                                                        {advisors.length === 0 ? (
-                                                            <p className="text-[11px] text-slate-400 italic">Belum ada guru penasihat didaftarkan.</p>
-                                                        ) : (
-                                                            advisors.map(name => (
-                                                                <span key={name} className="inline-flex items-center gap-1 bg-slate-100 px-2 py-1 rounded-lg text-xs font-semibold text-slate-600">
-                                                                    <span>{name}</span>
-                                                                    {userRole !== "pelawat" && (
-                                                                        <button onClick={() => handleRemoveAdvisor(houseName, name)} className="text-red-500 hover:text-red-700 ml-1">✕</button>
-                                                                    )}
-                                                                </span>
-                                                            ))
-                                                        )}
-                                                    </div>
-
-                                                    {userRole !== "pelawat" && (
-                                                        <div className="flex gap-2 text-xs">
-                                                            <input 
-                                                                type="text" 
-                                                                placeholder="Nama Guru"
-                                                                value={newAdvisorText[houseName] || ""}
-                                                                onChange={(e) => setNewAdvisorText({ ...newAdvisorText, [houseName]: e.target.value })}
-                                                                className="flex-1 p-1.5 rounded-lg border border-slate-200 focus:outline-none"
-                                                            />
-                                                            <button onClick={() => handleAddAdvisor(houseName)} className="bg-indigo-600 text-white font-bold px-3 py-1.5 rounded-lg">+ Tambah</button>
-                                                        </div>
-                                                    )}
-                                                </div>
-
-                                                <div className="border-t pt-3 space-y-2">
-                                                    <div className="flex justify-between items-center mb-1">
-                                                        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">🏃‍♂️ SENARAI AHLI RUMAH</h4>
-                                                        <div className="flex items-center gap-1.5">
-                                                            <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2.5 py-0.5 rounded-lg" title="Lelaki">
-                                                                L: {totalLelakiCount}
-                                                            </span>
-                                                            <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-2.5 py-0.5 rounded-lg" title="Perempuan">
-                                                                P: {totalPerempuanCount}
-                                                            </span>
-                                                            <span className="text-[11px] font-extrabold text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-lg">
-                                                                (Jumlah {totalHouseMembersCount} ahli)
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                    <div className="max-h-48 overflow-y-auto pr-1 space-y-3">
-                                                        {Object.keys(houseMembers).length === 0 ? (
-                                                            <p className="text-xs text-slate-400 italic text-center py-4">Tiada ahli berdaftar di bawah rumah ini.</p>
-                                                        ) : (
-                                                            Object.keys(houseMembers).sort().map(className => (
-                                                                <div key={className} className="bg-slate-50 rounded-xl p-2.5 border">
-                                                                    <h5 className="text-[11px] font-extrabold text-indigo-700 mb-1.5 border-b pb-1">Kelas: {className} ({houseMembers[className].length} orang)</h5>
-                                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 text-[11px] font-semibold">
-                                                                        {houseMembers[className]
-                                                                            .sort((a,b) => (a.nama || "").localeCompare(b.nama || ""))
-                                                                            .map(ath => (
-                                                                                <div key={ath.id} className="flex justify-between items-center bg-white p-1.5 rounded border border-slate-100">
-                                                                                    <span className="truncate max-w-[130px]" title={ath.nama}>{(ath.nama || "").toUpperCase()}</span>
-                                                                                    <span className="text-[9px] bg-slate-100 px-1 py-0.5 rounded text-slate-500 font-mono font-bold">{getFriendlyCategory(ath.kategori)}</span>
-                                                                                </div>
-                                                                            ))
-                                                                        }
-                                                                    </div>
-                                                                </div>
-                                                            ))
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        )}
-
-                        {}
-                        {activeTab === "atlit" && (
-                            <div className="space-y-6">
-                                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm mb-6">
-                                    <div className="flex items-center gap-3">
-                                        <div className="bg-indigo-100 text-indigo-700 p-2.5 rounded-xl">
-                                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                                            </svg>
-                                        </div>
-                                        <div>
-                                            <h3 className="font-extrabold text-slate-800 text-sm">Pengurusan & Pendaftaran Atlet</h3>
-                                            <p className="text-xs text-slate-400 font-medium">Urus maklumat pendaftaran profil ahli sukan, menetapkan nombor bib (no. atlet) dan pendaftaran acara.</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex flex-wrap gap-2 w-full sm:w-auto self-stretch sm:self-auto justify-center">
-                                        {userRole !== "pelawat" && (
-                                            <>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        setIsEditingAthlete(false);
-                                                        setAthleteForm({ id: "", nama: "", kelas: "", rumah: "Merah", jantina: "Lelaki", kategori: "" });
-                                                        setIsAddAthleteSidebarOpen(true);
-                                                    }}
-                                                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-lg hover:shadow-indigo-600/20 transition-all flex items-center gap-1.5 justify-center flex-1 sm:flex-initial"
-                                                >
-                                                    <span>🏃‍♂️ Tambah Atlet Baharu</span>
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        setSelectedStudentId("");
-                                                        setStudentSearchQuery("");
-                                                        setNoAtletInput("");
-                                                        setSelectedEventIds([]);
-                                                        setIsAssignEventSidebarOpen(true);
-                                                    }}
-                                                    className="bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-lg transition-all flex items-center gap-1.5 justify-center flex-1 sm:flex-initial"
-                                                >
-                                                    <span>📋 Daftar Acara & Bib</span>
-                                                </button>
-                                            </>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {isAddAthleteSidebarOpen && (
-                                    <div className="fixed inset-0 z-[100] flex justify-end">
-                                        <div 
-                                            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
-                                            onClick={() => setIsAddAthleteSidebarOpen(false)}
-                                        />
-                                        
-                                        <div className="relative w-full max-w-md bg-white shadow-2xl flex flex-col z-[101] animate-in slide-in-from-right duration-200">
-                                            <div className="flex justify-between items-center p-4 border-b border-slate-200 bg-white">
-                                                <div>
-                                                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider font-bold">
-                                                        {isEditingAthlete ? "✏️ Sunting Profil Atlet" : "🏃‍♂️ Daftar Atlet Baharu"}
-                                                    </h3>
-                                                    <p className="text-[10px] text-slate-400 font-semibold mt-0.5">SPS Control Panel</p>
-                                                </div>
-                                                <button 
-                                                    onClick={() => setIsAddAthleteSidebarOpen(false)}
-                                                    className="text-slate-400 hover:text-slate-600 text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors"
-                                                >
-                                                    ✕ Sembunyikan
-                                                </button>
-                                            </div>
-
-                                            <div className="flex-1 overflow-y-auto p-4 space-y-6">
-                                                <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 flex justify-between items-center">
-                                                    <span className="text-xs font-bold text-slate-600">Mod Pendaftaran:</span>
-                                                    <div className="flex bg-slate-200 p-1 rounded-lg text-[10px] font-bold">
-                                                        <button onClick={() => setRegMode("tunggal")} className={`px-2 py-1 rounded ${regMode === "tunggal" ? "bg-white text-indigo-600 shadow" : "text-slate-500"}`}>Tunggal</button>
-                                                        <button onClick={() => setRegMode("bundle")} className={`px-2 py-1 rounded ${regMode === "bundle" ? "bg-white text-indigo-600 shadow" : "text-slate-500"}`}>Bundle</button>
-                                                    </div>
-                                                </div>
-
-                                                {regMode === "tunggal" ? (
-                                                    <form onSubmit={handleAthleteSubmit} className="space-y-4 text-xs font-semibold">
-                                                        <div>
-                                                            <label className="block text-slate-500 mb-1">Nama Penuh Murid</label>
-                                                            <input 
-                                                                type="text" 
-                                                                required 
-                                                                value={athleteForm.nama} 
-                                                                onChange={(e) => setAthleteForm({ ...athleteForm, nama: e.target.value })} 
-                                                                className="w-full p-2.5 border rounded-xl focus:outline-none font-bold text-slate-800 bg-white" 
-                                                                placeholder="Cth: Muhammad Danish" 
-                                                            />
-                                                        </div>
-
-                                                        <div className="grid grid-cols-2 gap-3">
-                                                            <div>
-                                                                <label className="block text-slate-500 mb-1">Kelas</label>
-                                                                <input 
-                                                                    type="text" 
-                                                                    required 
-                                                                    value={athleteForm.kelas} 
-                                                                    onChange={(e) => handleKelasChange(e.target.value)} 
-                                                                    className="w-full p-2.5 border rounded-xl focus:outline-none bg-white font-bold" 
-                                                                    placeholder="Cth: 1 Cemerlang atau 7 Tahun" 
-                                                                />
-                                                            </div>
-                                                            <div>
-                                                                <label className="block text-slate-500 mb-1">Jantina</label>
-                                                                <select value={athleteForm.jantina} onChange={(e) => handleJantinaChange(e.target.value)} className="w-full p-2.5 border rounded-xl bg-white font-bold">
-                                                                    <option value="Lelaki">Lelaki</option>
-                                                                    <option value="Perempuan">Perempuan</option>
-                                                                </select>
-                                                            </div>
-                                                        </div>
-
-                                                        <div className="grid grid-cols-2 gap-3">
-                                                            <div>
-                                                                <label className="block text-slate-500 mb-1">Rumah Sukan</label>
-                                                                <select value={athleteForm.rumah} onChange={(e) => setAthleteForm({ ...athleteForm, rumah: e.target.value })} className="w-full p-2.5 border rounded-xl bg-white font-bold">
-                                                                    {Object.keys(housesMetadata || INITIAL_HOUSES_METADATA).map(name => (
-                                                                        <option key={name} value={name}>Rumah {name}</option>
-                                                                    ))}
-                                                                </select>
-                                                            </div>
-                                                            <div>
-                                                                <label className="block text-slate-500 mb-1">Kategori Umur</label>
-                                                                <select value={athleteForm.kategori} onChange={(e) => setAthleteForm({ ...athleteForm, kategori: e.target.value })} className="w-full p-2.5 border rounded-xl bg-white font-bold">
-                                                                    {sortedCategories.length === 0 ? (
-                                                                        <option value="">-- Sila Tambah Kategori Dahulu --</option>
-                                                                    ) : (
-                                                                        sortedCategories.map(cat => (
-                                                                            <option key={cat} value={cat}>{getFriendlyCategory(cat)}</option>
-                                                                        ))
-                                                                    )}
-                                                                </select>
-                                                            </div>
-                                                        </div>
-
-                                                        <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl shadow transition-all">
-                                                            {isEditingAthlete ? "Kemas Kini Profil Ahli" : "Daftar Ahli Baru"}
-                                                        </button>
-                                                    </form>
-                                                ) : (
-                                                    <form onSubmit={handleTsvSubmit} className="space-y-4 text-xs font-semibold">
-                                                        <p className="text-[11px] text-slate-400">
-                                                            Salin data dari Google Sheets / Excel dan tampal di bawah. Pastikan baris pertama mengandungi format pengepala lajur yang tepat: <br />
-                                                            <span className="font-mono bg-slate-100 p-1 block rounded mt-1">Nama [tab] Jantina [tab] Kategori [tab] Kelas [tab] Rumah</span>
-                                                        </p>
-                                                        <textarea 
-                                                            rows="5"
-                                                            required
-                                                            value={tsvInput}
-                                                            onChange={(e) => setTsvInput(e.target.value)}
-                                                            placeholder="Tampal rekod jadual murid..."
-                                                            className="w-full p-3 border rounded-xl focus:outline-none font-mono text-[10px] bg-white"
-                                                        />
-                                                        {parsedAthletesPreview.length > 0 && (
-                                                            <div className="bg-emerald-50 text-emerald-800 p-2.5 rounded-lg border border-emerald-100 text-[10.5px]">
-                                                                🟢 Sistem mengesan <strong>{parsedAthletesPreview.length} baris rekod murid</strong> yang sedia untuk dimport secara kelompok.
-                                                            </div>
-                                                        )}
-                                                        <button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl shadow">Proses Import TSV</button>
-                                                    </form>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {isAssignEventSidebarOpen && (
-                                    <div className="fixed inset-0 z-[100] flex justify-end">
-                                        <div 
-                                            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
-                                            onClick={() => setIsAssignEventSidebarOpen(false)}
-                                        />
-                                        
-                                        <div className="relative w-full max-w-md bg-white shadow-2xl flex flex-col z-[101] animate-in slide-in-from-right duration-200">
-                                            <div className="flex justify-between items-center p-4 border-b border-slate-200 bg-white">
-                                                <div>
-                                                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">
-                                                        📋 Daftar Acara & No. Atlet
-                                                    </h3>
-                                                    <p className="text-[10px] text-slate-400 font-semibold mt-0.5">SPS Control Panel</p>
-                                                </div>
-                                                <button 
-                                                    onClick={() => setIsAssignEventSidebarOpen(false)}
-                                                    className="text-slate-400 hover:text-slate-600 text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors"
-                                                >
-                                                    ✕ Sembunyikan
-                                                </button>
-                                            </div>
-
-                                            <div className="flex-1 overflow-y-auto p-4 space-y-6">
-                                                <form onSubmit={handleAssignAthleteEvents} className="space-y-4 text-xs font-semibold">
-                                                    <div className="relative">
-                                                        <label className="block text-slate-500 mb-1">Cari & Pilih Ahli Berdaftar</label>
-                                                        <input 
-                                                            type="text" 
-                                                            value={studentSearchQuery} 
-                                                            onChange={(e) => {
-                                                                setStudentSearchQuery(e.target.value);
-                                                                setShowSearchDropdown(true);
-                                                            }} 
-                                                            onFocus={() => setShowSearchDropdown(true)}
-                                                            placeholder="Cari nama atlet berdaftar..."
-                                                            className="w-full p-2.5 border rounded-xl font-bold bg-white"
-                                                        />
-                                                        {showSearchDropdown && (
-                                                            <div className="absolute left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-white border rounded-xl shadow-xl z-[150] py-1.5">
-                                                                {(athletes || [])
-                                                                    .filter(a => {
-                                                                        if (!studentSearchQuery.trim()) return true;
-                                                                        return a.nama.toLowerCase().includes(studentSearchQuery.toLowerCase());
-                                                                    })
-                                                                    .slice(0, 10)
-                                                                    .map(a => (
-                                                                        <button 
-                                                                            key={a.id}
-                                                                            type="button"
-                                                                            onClick={() => {
-                                                                                setSelectedStudentId(a.id);
-                                                                                setStudentSearchQuery(a.nama);
-                                                                                setNoAtletInput(a.noAtlet || "");
-                                                                                setSelectedEventIds(a.acaraIds || []);
-                                                                                setShowSearchDropdown(false);
-                                                                            }}
-                                                                            className="w-full text-left px-3 py-2 text-xs hover:bg-indigo-50 font-bold border-b last:border-0 block"
-                                                                        >
-                                                                            {(a.nama || "").toUpperCase()} ({a.kelas} - Rumah {a.rumah})
-                                                                        </button>
-                                                                    ))
-                                                                }
-                                                            </div>
-                                                        )}
-                                                    </div>
-
-                                                    {selectedStudentId && (
-                                                        <div className="bg-slate-50 p-3 rounded-xl border space-y-3">
-                                                            <p className="text-[11px] text-indigo-700 font-bold">
-                                                                PILIHAN AKTIF: {((athletes || []).find(a => a.id === selectedStudentId)?.nama || "").toUpperCase()}
-                                                            </p>
-                                                            <div>
-                                                                <label className="block text-slate-500 mb-1">Kunci No. Atlet / Bib (Cth: M001)</label>
-                                                                <input 
-                                                                    type="text" 
-                                                                    value={noAtletInput} 
-                                                                    onChange={(e) => setNoAtletInput(e.target.value)} 
-                                                                    placeholder="Masukkan nombor peserta..."
-                                                                    className="w-full p-2.5 border rounded-lg outline-none bg-white"
-                                                                />
-                                                            </div>
-
-                                                            <div>
-                                                                <label className="block text-slate-500 mb-1.5">Pilih Acara Sukan ({getFriendlyCategory(athletes.find(a => a.id === selectedStudentId)?.kategori)})</label>
+                                                                <label className="block text-slate-500 mb-1.5">Pilih Acara Sukan {athletes.find(a => a.id === selectedStudentId)?.kategori ? `(${getFriendlyCategory(athletes.find(a => a.id === selectedStudentId)?.kategori)})` : ''}</label>
                                                                 <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
                                                                     {eventsWithCode
                                                                         .filter(ev => ev.kategori === athletes.find(a => a.id === selectedStudentId)?.kategori)
@@ -3446,6 +2943,12 @@
                                                 <option value="Semua">Semua Rumah</option>
                                                 {Object.keys(housesMetadata || INITIAL_HOUSES_METADATA).map(name => (
                                                     <option key={name} value={name}>{name}</option>
+                                                ))}
+                                            </select>
+                                            <select value={filterEvent} onChange={(e) => setFilterEvent(e.target.value)} className="p-1.5 border rounded-lg bg-slate-50">
+                                                <option value="Semua">Semua Acara</option>
+                                                {eventsWithCode.map(ev => (
+                                                    <option key={ev.id} value={ev.id}>[{ev.kodAcara}] {ev.nama.toUpperCase()} {ev.kategori ? `(${getFriendlyCategory(ev.kategori)})` : ''}</option>
                                                 ))}
                                             </select>
                                             <select value={filterEvent} onChange={(e) => setFilterEvent(e.target.value)} className="p-1.5 border rounded-lg bg-slate-50">
@@ -3745,7 +3248,7 @@
                                                     <div className="flex items-center gap-3">
                                                         <span className="font-mono bg-indigo-600 text-white font-bold px-3 py-1.5 rounded-xl tracking-wider text-xs">{ev.kodAcara}</span>
                                                         <div>
-                                                            <h4 className="font-extrabold text-slate-800 text-sm">{(ev.nama || "").toUpperCase()} ({getFriendlyCategory(ev.kategori)})</h4>
+                                                            <h4 className="font-extrabold text-slate-800 text-sm">{(ev.nama || "").toUpperCase()} {ev.kategori ? `(${getFriendlyCategory(ev.kategori)})` : ''}</h4>
                                                             <p className="text-slate-400 text-[10.5px]">Jenis: {ev.jenis}</p>
                                                         </div>
                                                     </div>
@@ -3812,7 +3315,7 @@
                                             >
                                                 <option value="">-- Sila Pilih Acara --</option>
                                                 {eventsWithCode.map(ev => (
-                                                    <option key={ev.id} value={ev.id}>[{ev.kodAcara}] {ev.nama.toUpperCase()} ({getFriendlyCategory(ev.kategori)})</option>
+                                                    <option key={ev.id} value={ev.id}>[{ev.kodAcara}] {ev.nama.toUpperCase()} {ev.kategori ? `(${getFriendlyCategory(ev.kategori)})` : ''}</option>
                                                 ))}
                                             </select>
                                         </div>
@@ -3911,7 +3414,7 @@
                                     <div className="lg:col-span-2 space-y-6 font-bold">
                                         {selectedEventObject ? (
                                             <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
-                                                <h3 className="text-lg font-black text-slate-800 mb-4">{selectedEventObject.nama} ({getFriendlyCategory(selectedEventObject.kategori)})</h3>
+                                                <h3 className="text-lg font-black text-slate-800 mb-4">{selectedEventObject.nama} {selectedEventObject.kategori ? `(${getFriendlyCategory(selectedEventObject.kategori)})` : ''}</h3>
                                                 <div className="space-y-3">
                                                     {(results || [])
                                                         .filter(r => r.eventId === selectedEventObject.id)

@@ -294,75 +294,8 @@
             const [announcements, setAnnouncements] = useState(DEFAULT_ANNOUNCEMENTS);
             const [logs, setLogs] = useState(INITIAL_LOGS);
 
-            // Setup Sekolah Baru Modal States
-            const [showSchoolSetupModal, setShowSchoolSetupModal] = useState(false);
-            const [schoolSetupTab, setSchoolSetupTab] = useState("config"); 
-            const [setupSchoolName, setSetupSchoolName] = useState(activeSchoolName);
-            const [setupSchoolSubtitle, setSetupSchoolSubtitle] = useState(activeSchoolSubtitle);
-            const [setupFirebaseConfigRaw, setSetupFirebaseConfigRaw] = useState(
-                isCustomConfigUsed ? JSON.stringify(activeFirebaseConfig, null, 2) : ""
-            );
-            const [setupGasUrl, setSetupGasUrl] = useState(activeCustomGasUrl);
-
-            // Print Preview Modal states
-            const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
-            const [previewContent, setPreviewContent] = useState("");
-
-            const [adminList, setAdminList] = useState([]);
-            const [showAdminsModal, setShowAdminsModal] = useState(false);
-            const [newAdminEmail, setNewAdminEmail] = useState("");
-
-            const [maxIndividu, setMaxIndividu] = useState(2);
-            const [maxKumpulan, setMaxKumpulan] = useState(2);
-
-            const [additionalInfo, setAdditionalInfo] = useState("");
-
-            const [filterHouse, setFilterHouse] = useState("Semua");
-            const [filterEvent, setFilterEvent] = useState("Semua");
-            const [filterLogQuery, setFilterLogQuery] = useState("");
-
-            const [selectedStudentId, setSelectedStudentId] = useState("");
-            const [studentSearchQuery, setStudentSearchQuery] = useState("");
-            const [noAtletInput, setNoAtletInput] = useState("");
-            const [selectedEventIds, setSelectedEventIds] = useState([]);
-            const [isAssignEventSidebarOpen, setIsAssignEventSidebarOpen] = useState(false);
-            const [showSearchDropdown, setShowSearchDropdown] = useState(false);
-
-            const [toast, setToast] = useState({ show: false, message: "", type: "info" });
-            const [confirmModal, setConfirmModal] = useState({ show: false, title: "", message: "", onConfirm: null });
-            const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
-            const [isPrintMenuOpen, setIsPrintMenuOpen] = useState(false);
-
-            const adminMenuRef = useRef(null);
-            const printMenuRef = useRef(null);
-            const fileInputRef = useRef(null);
-
-            const [showPointsModal, setShowPointsModal] = useState(false);
-            const [showGasModal, setShowGasModal] = useState(false);
-            const [showDiagModal, setShowDiagModal] = useState(false);
-
-            const [pointsConfig, setPointsConfig] = useState({
-                emas: 5,
-                perak: 3,
-                gangsa: 2,
-                keempat: 1,
-                penyertaan: 0
-            });
-
-            const [gasUrl, setGasUrl] = useState(activeCustomGasUrl || "");
-            const [activeYear, setActiveYear] = useState("2026");
-            const [isSyncingGas, setIsSyncingGas] = useState(false);
-
-            const [certSignatory1Name, setCertSignatory1Name] = useState("Cikgu Jabdi Bin Bikang");
-            const [certSignatory1Title, setCertSignatory1Title] = useState("Guru Besar SK Bikang");
-            const [certSignatory2Name, setCertSignatory2Name] = useState("Cikgu GPK Kokurikulum");
-            const [certSignatory2Title, setCertSignatory2Title] = useState("GPK Kokurikulum SK Bikang");
-
-            const [certSearchQuery, setCertSearchQuery] = useState("");
-            const [showSignatorySettings, setShowSignatorySettings] = useState(false);
-            const [isArchiving, setIsArchiving] = useState(false);
-
-            const [categories, setCategories] = useState(["L12", "P12", "L9", "P9", "L7", "P7", "Prasekolah", "Terbuka"]);
+            // Pengisytiharan Kategori Umur - Dimulakan secara bersih tanpa kategori lalai hardcoded
+            const [categories, setCategories] = useState([]);
 
             const sortedCategories = useMemo(() => {
                 return [...categories].sort((a, b) => 
@@ -372,7 +305,8 @@
 
             const logoUrl = "https://lh3.googleusercontent.com/d/1E8tjAd7j9DJaZgngDn38agUFCvwyUffa";
 
-            const [athleteForm, setAthleteForm] = useState({ id: "", nama: "", kelas: "", rumah: "Merah", jantina: "Lelaki", kategori: "L12" });
+            // Nilai lalai dilaraskan supaya dinamik berdasarkan kategori tersedia
+            const [athleteForm, setAthleteForm] = useState({ id: "", nama: "", kelas: "", rumah: "Merah", jantina: "Lelaki", kategori: "" });
             const [isEditingAthlete, setIsEditingAthlete] = useState(false);
             const [isAddAthleteSidebarOpen, setIsAddAthleteSidebarOpen] = useState(false);
             const [regMode, setRegMode] = useState("tunggal");
@@ -406,9 +340,9 @@
                 setAthleteForm(prev => ({ ...prev, jantina: val, kategori: updatedCat }));
             };
 
-            const [showSetupBtn, setShowSetupBtn] = useState(false);
+            const showSetupBtn = false;
 
-            const [eventForm, setEventForm] = useState({ id: "", nama: "", kategori: "L12", jenis: "Balapan", format: "Individu", tarikh: "", masa: "" });
+            const [eventForm, setEventForm] = useState({ id: "", nama: "", kategori: "", jenis: "Balapan", format: "Individu", tarikh: "", masa: "" });
             const [isEditingEvent, setIsEditingEvent] = useState(false);
             const [isEventSidebarOpen, setIsEventSidebarOpen] = useState(false);
 
@@ -3431,9 +3365,13 @@ service cloud.firestore {
                                                             <div>
                                                                 <label className="block text-slate-500 mb-1">Kategori Umur</label>
                                                                 <select value={athleteForm.kategori} onChange={(e) => setAthleteForm({ ...athleteForm, kategori: e.target.value })} className="w-full p-2.5 border rounded-xl bg-white font-bold">
-                                                                    {sortedCategories.map(cat => (
-                                                                        <option key={cat} value={cat}>{getFriendlyCategory(cat)}</option>
-                                                                    ))}
+                                                                    {sortedCategories.length === 0 ? (
+                                                                        <option value="">-- Sila Tambah Kategori Dahulu --</option>
+                                                                    ) : (
+                                                                        sortedCategories.map(cat => (
+                                                                            <option key={cat} value={cat}>{getFriendlyCategory(cat)}</option>
+                                                                        ))
+                                                                    )}
                                                                 </select>
                                                             </div>
                                                         </div>
@@ -3776,9 +3714,13 @@ service cloud.firestore {
                                                             <label className="block text-slate-500 mb-1">Kategori Umur</label>
                                                             <div className="flex gap-1.5 mb-1">
                                                                 <select value={eventForm.kategori} onChange={(e) => setEventForm({ ...eventForm, kategori: e.target.value })} className="flex-1 p-2.5 border rounded-xl bg-white font-bold">
-                                                                    {sortedCategories.map(cat => (
-                                                                        <option key={cat} value={cat}>{getFriendlyCategory(cat)}</option>
-                                                                    ))}
+                                                                    {sortedCategories.length === 0 ? (
+                                                                        <option value="">-- Sila Tambah Kategori Dahulu --</option>
+                                                                    ) : (
+                                                                        sortedCategories.map(cat => (
+                                                                            <option key={cat} value={cat}>{getFriendlyCategory(cat)}</option>
+                                                                        ))
+                                                                    )}
                                                                 </select>
                                                                 {userRole === "admin" && (
                                                                     <button 

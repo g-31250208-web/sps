@@ -58,7 +58,7 @@
 
     <div id="root"></div>
 
-    <script type="text/babel" data-presets="react-classic">
+    <script type="text/babel" data-presets="env,react">
         const { useState, useEffect, useMemo, useRef } = React;
 
         // Fungsi pemetaan mesra (Friendly Label Mapper) tanpa mengubah struktur data asal
@@ -119,7 +119,6 @@
             const [isCloudActive, setIsCloudActive] = useState(false);
             const [activeTab, setActiveTab] = useState("dashboard");
 
-            // Load initial state with local storage fallback
             const [athletes, setAthletes] = useState(() => {
                 const local = localStorage.getItem("sps_athletes");
                 return local ? JSON.parse(local) : INITIAL_ATHLETES;
@@ -141,27 +140,22 @@
                 return local ? JSON.parse(local) : DEFAULT_ANNOUNCEMENTS;
             });
 
-            // Filter states
             const [searchQuery, setSearchQuery] = useState("");
             const [selectedHouseFilter, setSelectedHouseFilter] = useState("Semua");
             const [selectedCategoryFilter, setSelectedCategoryFilter] = useState("Semua");
 
             const [certSearchQuery, setCertSearchQuery] = useState("");
             const [showSignatorySettings, setShowSignatorySettings] = useState(false);
-            const [isArchiving, setIsArchiving] = useState(false);
 
-            // Signatory state variables to prevent whitescreen reference crash
             const [certSignatory1Name, setCertSignatory1Name] = useState("Cikgu Jabdi Bin Bikang");
             const [certSignatory1Title, setCertSignatory1Title] = useState("Guru Besar SK Bikang");
             const [certSignatory2Name, setCertSignatory2Name] = useState("Cikgu GPK Kokurikulum");
             const [certSignatory2Title, setCertSignatory2Title] = useState("GPK Kokurikulum SK Bikang");
 
-            // Custom Confirm Modal states
             const [showConfirmModal, setShowConfirmModal] = useState(false);
             const [confirmMessage, setConfirmMessage] = useState("");
             const [confirmAction, setConfirmAction] = useState(null);
 
-            // Kategori tersusun
             const [categories, setCategories] = useState(["L12", "P12", "L9", "P9", "L7", "P7", "Prasekolah", "Terbuka"]);
 
             const sortedCategories = useMemo(() => {
@@ -172,7 +166,6 @@
 
             const logoUrl = "https://lh3.googleusercontent.com/d/1E8tjAd7j9DJaZgngDn38agUFCvwyUffa";
 
-            // Form states
             const [athleteForm, setAthleteForm] = useState({ id: "", noAtlet: "", nama: "", kelas: "", rumah: "Merah", jantina: "Lelaki", kategori: "L12", acaraIds: [] });
             const [isEditingAthlete, setIsEditingAthlete] = useState(false);
 
@@ -182,7 +175,6 @@
             const [resultForm, setResultForm] = useState({ eventId: "", athleteId: "", kedudukan: "1", catatan: "" });
             const [selectedEventResultId, setSelectedEventResultId] = useState("");
 
-            // Toast state
             const [toast, setToast] = useState({ show: false, message: "", type: "info" });
             const showToast = (message, type = "success") => {
                 setToast({ show: true, message, type });
@@ -192,7 +184,6 @@
             const [announceFormText, setAnnounceFormText] = useState("");
             const [showAnnounceForm, setShowAnnounceForm] = useState(false);
 
-            // Auto save to LocalStorage to support offline fallback
             useEffect(() => {
                 localStorage.setItem("sps_athletes", JSON.stringify(athletes));
             }, [athletes]);
@@ -209,7 +200,7 @@
                 localStorage.setItem("sps_announcements", JSON.stringify(announcements));
             }, [announcements]);
 
-            // Kitaran hayat pintar untuk mengesan kemasukan kelas "7 tahun/Tahun 1" secara automatik ke L7/P7
+            // Auto deteksi kategori berdasarkan umur
             useEffect(() => {
                 if (!isEditingAthlete && athleteForm.kelas && athleteForm.jantina) {
                     const kl = athleteForm.kelas.toLowerCase();
@@ -247,35 +238,30 @@
                         const dbRef = firebase.firestore();
                         setIsCloudActive(true);
 
-                        // Sync Athletes
                         unsubAthletes = dbRef.collection("athletes").onSnapshot(snapshot => {
                             const list = [];
                             snapshot.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
                             if (list.length > 0) setAthletes(list);
                         }, err => console.log("Ralat sync athletes", err));
 
-                        // Sync Events
                         unsubEvents = dbRef.collection("events").onSnapshot(snapshot => {
                             const list = [];
                             snapshot.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
                             if (list.length > 0) setEvents(list);
                         }, err => console.log("Ralat sync events", err));
 
-                        // Sync Results
                         unsubResults = dbRef.collection("results").onSnapshot(snapshot => {
                             const list = [];
                             snapshot.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
                             if (list.length > 0) setResults(list);
                         }, err => console.log("Ralat sync results", err));
 
-                        // Sync Announcements
                         unsubAnnouncements = dbRef.collection("announcements").orderBy("date", "desc").onSnapshot(snapshot => {
                             const list = [];
                             snapshot.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
                             if (list.length > 0) setAnnouncements(list);
                         }, err => console.log("Ralat sync announcements", err));
 
-                        // Sync Houses Metadata
                         unsubHouses = dbRef.collection("housesMetadata").onSnapshot(snapshot => {
                             const obj = {};
                             snapshot.forEach(doc => {
@@ -284,7 +270,6 @@
                             if (Object.keys(obj).length > 0) setHousesMetadata(obj);
                         }, err => console.log("Ralat sync housesMetadata", err));
 
-                        // Auth state listener
                         unsubAuth = firebase.auth().onAuthStateChanged(user => {
                             if (user && !user.isAnonymous) {
                                 setCurrentUser(user);
@@ -313,7 +298,6 @@
                     setIsCloudActive(false);
                 }
 
-                // Cleanup listeners on unmount
                 return () => {
                     if (unsubAthletes) unsubAthletes();
                     if (unsubEvents) unsubEvents();
@@ -324,7 +308,6 @@
                 };
             }, []);
 
-            // Login & Logout actions
             const handleGoogleLogin = () => {
                 if (typeof firebase !== 'undefined') {
                     const provider = new firebase.auth.GoogleAuthProvider();
@@ -353,7 +336,6 @@
                 return false;
             };
 
-            // Menjana kod acara tersusun secara automatik
             const eventsWithCode = useMemo(() => {
                 return events.map((ev, index) => {
                     const prefix = ev.jenis === "Balapan" ? "BAL" : "PAD";
@@ -362,7 +344,6 @@
                 });
             }, [events]);
 
-            // Filtered Athletes
             const filteredAthletes = useMemo(() => {
                 return athletes.filter(ath => {
                     const matchQuery = (ath.nama || "").toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -374,7 +355,6 @@
                 });
             }, [athletes, searchQuery, selectedHouseFilter, selectedCategoryFilter]);
 
-            // Menghitung mata rumah sukan secara dinamik
             const houseStandings = useMemo(() => {
                 const standings = {
                     Merah: { emas: 0, perak: 0, gangsa: 0, keempat: 0, mata: 0, bg: "bg-red-500", border: "border-red-500 text-red-600", text: "text-red-600" },
@@ -383,7 +363,6 @@
                     Kuning: { emas: 0, perak: 0, gangsa: 0, keempat: 0, mata: 0, bg: "bg-amber-400", border: "border-amber-400 text-amber-500", text: "text-amber-600" }
                 };
 
-                // Ambil mata dari metadata
                 Object.keys(standings).forEach(name => {
                     if (housesMetadata[name]) {
                         standings[name].mata += Number(housesMetadata[name].bonusPoints || 0);
@@ -457,7 +436,6 @@
                         await firebase.firestore().collection("athletes").doc(id).delete();
                     }
                     setAthletes(prev => prev.filter(a => a.id !== id));
-                    // Bersihkan keputusan berkait
                     setResults(prev => prev.filter(r => r.athleteId !== id));
                     showToast("Rekod atlet berjaya dipadam.", "info");
                 } catch (err) {
@@ -522,7 +500,6 @@
                     return;
                 }
 
-                // Periksa jika kedudukan tersebut sudah diisi dalam acara yang sama
                 const duplicate = results.find(r => r.eventId === resultForm.eventId && r.kedudukan === resultForm.kedudukan);
                 if (duplicate) {
                     showToast(`Kedudukan ${resultForm.kedudukan} sudah didaftarkan untuk acara ini! Sila padam rekod sedia ada dahulu.`, "error");
@@ -559,7 +536,6 @@
                 }
             };
 
-            // Menghitung pencapaian atlet secara langsung
             const getAthleteAchievementForEvent = (athleteId, eventId) => {
                 const res = results.find(r => r.athleteId === athleteId && r.eventId === eventId);
                 if (!res) return null;
@@ -567,7 +543,6 @@
                 return badges[res.kedudukan] || "";
             };
 
-            // Export & Import JSON
             const exportData = () => {
                 const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ athletes, events, results, housesMetadata }));
                 const downloadAnchor = document.createElement('a');
@@ -623,7 +598,6 @@
                 setShowConfirmModal(true);
             };
 
-            // Tambah Hebahan Baru
             const handleAnnounceSubmit = async (e) => {
                 e.preventDefault();
                 if (!checkAuthority("guru")) return;
@@ -689,7 +663,6 @@
                 }
             };
 
-            // Pengiraan statistik
             const totalAthletes = athletes.length;
             const totalEventsCount = events.length;
             const completedEventsCount = useMemo(() => {
@@ -706,6 +679,71 @@
                     return matchesQuery && hasMedals;
                 });
             }, [athletes, certSearchQuery, results]);
+
+            const handlePrintCertificate = (ath, ev, medLabel, recordText) => {
+                const win = window.open("", "_blank");
+                const friendlyCat = getFriendlyCategory(ev.kategori);
+
+                win.document.write("<html><head><title>Sijil Penghargaan SK Bikang</title>");
+                win.document.write('<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Great+Vibes&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">');
+                win.document.write('<style>');
+                win.document.write('@media print { @page { size: landscape; margin: 0; } body { margin: 0; padding: 0; -webkit-print-color-adjust: exact; } }');
+                win.document.write("body { font-family: 'Montserrat', sans-serif; background: #fff; padding: 40px; display: flex; justify-content: center; align-items: center; min-height: calc(100vh - 80px); }");
+                win.document.write('.border-container { border: 20px solid #1e1b4b; padding: 30px; border-double: 10px; width: 900px; height: 560px; box-sizing: border-box; position: relative; background-color: #fafaf9; }');
+                win.document.write('.logo-sec { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }');
+                win.document.write('.logo-sec img { height: 65px; object-fit: contain; }');
+                win.document.write(".logo-sec h2 { font-family: 'Cinzel', serif; font-size: 14px; text-align: center; color: #1e1b4b; margin: 0; letter-spacing: 2px; }");
+                win.document.write('.header-title { text-align: center; margin-top: 15px; }');
+                win.document.write(".header-title h1 { font-family: 'Cinzel', serif; font-size: 32px; color: #1e1b4b; margin: 0; font-weight: 800; letter-spacing: 3px; }");
+                win.document.write('.header-title p { font-size: 11px; text-transform: uppercase; font-weight: 700; color: #b45309; margin: 5px 0; letter-spacing: 4px; }');
+                win.document.write(".cert-to { text-align: center; margin: 20px 0; font-family: 'Great Vibes', cursive; font-size: 28px; color: #b45309; }");
+                win.document.write('.winner-name { text-align: center; font-size: 22px; font-weight: 800; color: #1e1b4b; border-bottom: 2px solid #b45309; width: 80%; margin: 0 auto 15px auto; padding-bottom: 5px; text-transform: uppercase; letter-spacing: 2px; }');
+                win.document.write('.cert-body { text-align: center; font-size: 12px; line-height: 1.8; color: #374151; font-weight: 500; padding: 0 40px; }');
+                win.document.write('.cert-body strong { color: #1e1b4b; font-weight: 700; }');
+                win.document.write('.sig-container { display: flex; justify-content: space-between; margin-top: 60px; padding: 0 40px; }');
+                win.document.write('.sig-box { text-align: center; font-size: 10px; color: #1e1b4b; font-weight: 700; width: 220px; border-top: 1px solid #1e1b4b; padding-top: 5px; text-transform: uppercase; }');
+                win.document.write('</style></head><body>');
+
+                win.document.write('<div class="border-container">');
+                win.document.write('<div class="logo-sec">');
+                win.document.write('<img src="' + logoUrl + '" alt="Logo SK Bikang" onerror="this.src=\'https://placehold.co/100x100/4f46e5/ffffff?text=SKB\'"/>');
+                win.document.write('<h2>SK BIKANG LAHAD DATU<br><span style="font-size:10px; color:#57534e;">SABAH MALAYSIA</span></h2>');
+                win.document.write('<img src="https://placehold.co/100x100/1e1b4b/ffffff?text=SPS" alt="Logo Sukan" />');
+                win.document.write('</div>');
+
+                win.document.write('<div class="header-title">');
+                win.document.write('<h1>SIJIL PENGHARGAAN</h1>');
+                win.document.write('<p>KEJOHANAN SUKAN TAHUNAN SEKOLAH 2026</p>');
+                win.document.write('</div>');
+
+                win.document.write('<div class="cert-to">Dengan bangganya dianugerahkan kepada</div>');
+                win.document.write('<div class="winner-name">' + ath.nama + '</div>');
+
+                win.document.write('<div class="cert-body">');
+                win.document.write('Kerana telah berjaya mendapat kedudukan <strong>' + medLabel + '</strong> bagi acara ');
+                win.document.write('<strong>' + ev.nama + ' (' + friendlyCat + ')</strong> mewakili <strong>RUMAH ' + ath.rumah.toUpperCase() + '</strong> ');
+                win.document.write('dengan catatan rekod <strong>' + recordText + '</strong>.');
+                win.document.write('</div>');
+
+                win.document.write('<div class="sig-container">');
+                win.document.write('<div class="sig-box">');
+                win.document.write('<span>.......................................................</span><br>');
+                win.document.write('<strong>' + certSignatory2Name + '</strong><br>');
+                win.document.write('<span>' + certSignatory2Title + '</span>');
+                win.document.write('</div>');
+
+                win.document.write('<div class="sig-box">');
+                win.document.write('<span>.......................................................</span><br>');
+                win.document.write('<strong>' + certSignatory1Name + '</strong><br>');
+                win.document.write('<span>' + certSignatory1Title + '</span>');
+                win.document.write('</div>');
+                win.document.write('</div>'); // end sig-container
+
+                win.document.write('</div>'); // end border-container
+                win.document.write('<s' + 'cript>window.onload = function() { window.print(); };</s' + 'cript>');
+                win.document.write('</body></html>');
+                win.document.close();
+            };
 
             return (
                 <div className="flex flex-col min-h-screen">
@@ -806,9 +844,9 @@
 
                     {/* Main Container */}
                     <main className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 transition-all">
+                        {/* Tab Papan Pemuka */}
                         {activeTab === "dashboard" && (
                             <div className="space-y-6">
-                                {/* Papan Skor / Jumlah Stats */}
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                     <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
                                         <div className="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 text-xl"><i className="fa-solid fa-users"></i></div>
@@ -840,7 +878,6 @@
                                     </div>
                                 </div>
 
-                                {/* Carta Kedudukan Rumah Sukan */}
                                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                                     <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-100 space-y-4">
                                         <div className="flex justify-between items-center border-b pb-3">
@@ -920,6 +957,7 @@
                             </div>
                         )}
 
+                        {/* Tab Rumah Sukan */}
                         {activeTab === "houses" && (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {Object.keys(housesMetadata || INITIAL_HOUSES_METADATA).map(name => {
@@ -928,7 +966,6 @@
                                     const isRed = name === "Merah";
                                     const isBlue = name === "Biru";
                                     const isGreen = name === "Hijau";
-                                    const isYellow = name === "Kuning";
 
                                     const themeClass = isRed ? "border-red-200 bg-red-50 text-red-700" :
                                                        isBlue ? "border-blue-200 bg-blue-50 text-blue-700" :
@@ -944,7 +981,7 @@
                                                         <p className="text-xs italic text-slate-400 font-bold mt-1">"{meta.slogan || "Saga Perkasa, Selamanya Juara!"}"</p>
                                                     </div>
                                                     
-                                                    {/* Custom Dropdown Urus Data untuk Rumah Sukan */}
+                                                    {/* Dropdown Urus Data */}
                                                     <div className="relative group">
                                                         <button className={`px-4 py-2 text-xs font-bold rounded-xl border shadow-sm flex items-center gap-2 ${themeClass}`}>
                                                             <i className="fa-solid fa-gear"></i>
@@ -1010,9 +1047,9 @@
                             </div>
                         )}
 
+                        {/* Tab Pendaftaran Atlet */}
                         {activeTab === "athletes" && (
                             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                                {/* Borang Pendaftaran Atlet */}
                                 <div className="lg:col-span-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-100 space-y-4 h-fit">
                                     <h3 className="text-sm font-extrabold text-indigo-950 uppercase tracking-wider flex items-center gap-2 border-b pb-3">
                                         <i className="fa-solid fa-address-card text-indigo-600"></i>
@@ -1023,7 +1060,7 @@
                                         <div className="grid grid-cols-3 gap-3">
                                             <div className="col-span-2">
                                                 <label className="block text-slate-500 mb-1">Nombor Peserta (Bib)</label>
-                                                <input type="text" required value={athleteForm.noAtlet} onChange={(e) => setAthleteForm({ ...athleteForm, noAtlet: e.target.value.toUpperCase() })} className="w-full p-2.5 border rounded-xl font-bold uppercase animate-pulse-once" placeholder="Cth: M101" />
+                                                <input type="text" required value={athleteForm.noAtlet} onChange={(e) => setAthleteForm({ ...athleteForm, noAtlet: e.target.value.toUpperCase() })} className="w-full p-2.5 border rounded-xl font-bold uppercase" placeholder="Cth: M101" />
                                             </div>
                                             <div>
                                                 <label className="block text-slate-500 mb-1">Jantina</label>
@@ -1063,7 +1100,6 @@
                                             </div>
                                         </div>
 
-                                        {/* Pilihan Acara (Hanya tunjuk acara yang sepadan dengan kategori atlet) */}
                                         <div className="space-y-1">
                                             <label className="block text-slate-500 mb-1">Daftar Acara Sukan (Mengikut Kategori)</label>
                                             <div className="max-h-28 overflow-y-auto border rounded-xl p-2.5 bg-slate-50 space-y-1.5">
@@ -1107,7 +1143,6 @@
                                     </form>
                                 </div>
 
-                                {/* Senarai Atlet Berdaftar */}
                                 <div className="lg:col-span-8 bg-white p-6 rounded-2xl shadow-sm border border-slate-100 space-y-4">
                                     <div className="flex flex-col md:flex-row justify-between items-center gap-3 border-b pb-3">
                                         <h3 className="text-sm font-extrabold text-indigo-950 uppercase tracking-wider flex items-center gap-2">
@@ -1197,9 +1232,9 @@
                             </div>
                         )}
 
+                        {/* Tab Urus Acara */}
                         {activeTab === "events" && (
                             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                                {/* Borang Pendaftaran Acara Sukan */}
                                 <div className="lg:col-span-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-100 space-y-4 h-fit">
                                     <h3 className="text-sm font-extrabold text-indigo-950 uppercase tracking-wider flex items-center gap-2 border-b pb-3">
                                         <i className="fa-solid fa-stopwatch text-indigo-600"></i>
@@ -1265,7 +1300,6 @@
                                     </form>
                                 </div>
 
-                                {/* Jadual Penjadualan Rasmi Acara */}
                                 <div className="lg:col-span-8 bg-white p-6 rounded-2xl shadow-sm border border-slate-100 space-y-4">
                                     <h3 className="text-sm font-extrabold text-indigo-950 uppercase tracking-wider flex items-center gap-2 border-b pb-3">
                                         <i className="fa-solid fa-calendar-days text-indigo-600"></i>
@@ -1315,9 +1349,9 @@
                             </div>
                         )}
 
+                        {/* Tab Keputusan & Pingat */}
                         {activeTab === "results" && (
                             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                                {/* Borang Pendaftaran Rekod Keputusan */}
                                 <div className="lg:col-span-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-100 space-y-4 h-fit">
                                     <h3 className="text-sm font-extrabold text-indigo-950 uppercase tracking-wider flex items-center gap-2 border-b pb-3">
                                         <i className="fa-solid fa-circle-check text-indigo-600"></i>
@@ -1345,9 +1379,8 @@
                                                 {athletes
                                                     .filter(ath => {
                                                         const targetEvent = events.find(e => e.id === resultForm.eventId);
-                                                        if (!targetEvent) return true; // Papar semua jika tiada acara
+                                                        if (!targetEvent) return true;
                                                         
-                                                        // Mengutamakan atlet yang didaftarkan khusus untuk acara ini, atau fallback ke kategori yang sama
                                                         const isRegistered = ath.acaraIds && ath.acaraIds.includes(resultForm.eventId);
                                                         const isSameCategory = ath.kategori === targetEvent.kategori;
                                                         return isRegistered || isSameCategory;
@@ -1381,7 +1414,6 @@
                                     </form>
                                 </div>
 
-                                {/* Penunjuk Keputusan Semasa */}
                                 <div className="lg:col-span-8 bg-white p-6 rounded-2xl shadow-sm border border-slate-100 space-y-4">
                                     <div className="flex justify-between items-center border-b pb-3">
                                         <h3 className="text-sm font-extrabold text-indigo-950 uppercase tracking-wider flex items-center gap-2">
@@ -1445,6 +1477,7 @@
                             </div>
                         )}
 
+                        {/* Tab Cetak Sijil */}
                         {activeTab === "certs" && (
                             <div className="space-y-6">
                                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 space-y-4">
@@ -1467,7 +1500,6 @@
                                         </div>
                                     </div>
 
-                                    {/* Signatory Settings Form */}
                                     {showSignatorySettings && (
                                         <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-semibold">
                                             <div className="space-y-2">
@@ -1483,7 +1515,6 @@
                                         </div>
                                     )}
 
-                                    {/* Senarai Sijil Sedia Untuk Dicetak */}
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         {filteredCertAthletes.length === 0 ? (
                                             <p className="text-xs text-slate-400 italic text-center col-span-full py-8">Sila buat carian nama murid pemenang pingat di atas.</p>
@@ -1510,78 +1541,7 @@
                                                                         <div className="flex items-center gap-3">
                                                                             <span className="font-extrabold text-indigo-700">{medLabels[med.kedudukan]}</span>
                                                                             <button 
-                                                                                onClick={() => {
-                                                                                    const win = window.open("", "_blank");
-                                                                                    const certTitle = "Sijil Penghargaan SK Bikang";
-                                                                                    const friendlyCat = getFriendlyCategory(ev.kategori);
-                                                                                    const medText = medLabels[med.kedudukan];
-                                                                                    const recordText = med.catatan || "-";
-
-                                                                                    win.document.write(`
-                                                                                        <html>
-                                                                                        <head>
-                                                                                            <title>${certTitle}</title>
-                                                                                            <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Great+Vibes&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
-                                                                                            <style>
-                                                                                                @media print {
-                                                                                                    @page { size: landscape; margin: 0; }
-                                                                                                    body { margin: 0; padding: 0; -webkit-print-color-adjust: exact; }
-                                                                                                }
-                                                                                                body { font-family: 'Montserrat', sans-serif; background: #fff; padding: 40px; display: flex; justify-content: center; align-items: center; min-height: calc(100vh - 80px); }
-                                                                                                .border-container { border: 20px solid #1e1b4b; padding: 30px; border-double: 10px; width: 900px; height: 560px; box-sizing: border-box; position: relative; background-color: #fafaf9; }
-                                                                                                .logo-sec { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-                                                                                                .logo-sec img { height: 65px; object-fit: contain; }
-                                                                                                .logo-sec h2 { font-family: 'Cinzel', serif; font-size: 14px; text-align: center; color: #1e1b4b; margin: 0; letter-spacing: 2px; }
-                                                                                                .header-title { text-align: center; margin-top: 15px; }
-                                                                                                .header-title h1 { font-family: 'Cinzel', serif; font-size: 32px; color: #1e1b4b; margin: 0; font-weight: 800; letter-spacing: 3px; }
-                                                                                                .header-title p { font-size: 11px; text-transform: uppercase; font-weight: 700; color: #b45309; margin: 5px 0; letter-spacing: 4px; }
-                                                                                                .cert-to { text-align: center; margin: 20px 0; font-family: 'Great Vibes', cursive; font-size: 28px; color: #b45309; }
-                                                                                                .winner-name { text-align: center; font-size: 22px; font-weight: 800; color: #1e1b4b; border-bottom: 2px solid #b45309; width: 80%; margin: 0 auto 15px auto; padding-bottom: 5px; text-transform: uppercase; letter-spacing: 2px; }
-                                                                                                .cert-body { text-align: center; font-size: 12px; line-height: 1.8; color: #374151; font-weight: 500; padding: 0 40px; }
-                                                                                                .cert-body strong { color: #1e1b4b; font-weight: 700; }
-                                                                                                .sig-container { display: flex; justify-content: space-between; margin-top: 60px; padding: 0 40px; }
-                                                                                                .sig-box { text-align: center; font-size: 10px; color: #1e1b4b; font-weight: 700; width: 220px; border-top: 1px solid #1e1b4b; padding-top: 5px; text-transform: uppercase; }
-                                                                                            </style>
-                                                                                        </head>
-                                                                                        <body>
-                                                                                            <div class="border-container">
-                                                                                                <div class="logo-sec">
-                                                                                                    <img src="${logoUrl}" alt="Logo SK Bikang" onerror="this.src='https://placehold.co/100x100/4f46e5/ffffff?text=SKB'"/>
-                                                                                                    <h2>SK BIKANG LAHAD DATU<br><span style="font-size:10px; color:#57534e;">SABAH MALAYSIA</span></h2>
-                                                                                                    <img src="https://placehold.co/100x100/1e1b4b/ffffff?text=SPS" alt="Logo Sukan" />
-                                                                                                </div>
-                                                                                                <div class="header-title">
-                                                                                                    <h1>SIJIL PENGHARGAAN</h1>
-                                                                                                    <p>KEJOHANAN SUKAN TAHUNAN SEKOLAH 2026</p>
-                                                                                                </div>
-                                                                                                <div class="cert-to">Dengan bangganya dianugerahkan kepada</div>
-                                                                                                <div class="winner-name">${ath.nama}</div>
-                                                                                                <div class="cert-body">
-                                                                                                    Kerana telah berjaya mendapat kedudukan <strong>${medText}</strong> bagi acara 
-                                                                                                    <strong>${ev.nama} (${friendlyCat})</strong> mewakili <strong>RUMAH ${ath.rumah.toUpperCase()}</strong> 
-                                                                                                    dengan catatan rekod <strong>${recordText}</strong>.
-                                                                                                </div>
-                                                                                                <div class="sig-container">
-                                                                                                    <div class="sig-box">
-                                                                                                        <span>.......................................................</span><br>
-                                                                                                        <strong>${certSignatory2Name}</strong><br>
-                                                                                                        <span>${certSignatory2Title}</span>
-                                                                                                    </div>
-                                                                                                    <div class="sig-box">
-                                                                                                        <span>.......................................................</span><br>
-                                                                                                        <strong>${certSignatory1Name}</strong><br>
-                                                                                                        <span>${certSignatory1Title}</span>
-                                                                                                    </div>
-                                                                                                </div>
-                                                                                            </div>
-                                                                                            <script>
-                                                                                                window.onload = function() { window.print(); }
-                                                                                            <\/script>
-                                                                                        </body>
-                                                                                        </html>
-                                                                                    `);
-                                                                                    win.document.close();
-                                                                                }}
+                                                                                onClick={() => handlePrintCertificate(ath, ev, medLabels[med.kedudukan], med.catatan || "-")}
                                                                                 className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded font-bold"
                                                                             >
                                                                                 Cetak Sijil
@@ -1600,6 +1560,7 @@
                             </div>
                         )}
 
+                        {/* Tab Panel Pentadbir (Admin Only) */}
                         {activeTab === "admin" && userRole === "admin" && (
                             <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 space-y-6">
                                 <div className="border-b pb-3 flex justify-between items-center">
@@ -1611,7 +1572,6 @@
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                    {/* Kad Eksport Data */}
                                     <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col justify-between space-y-4">
                                         <div>
                                             <h4 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider mb-1">Eksport Sandaran Kejohanan</h4>
@@ -1623,7 +1583,6 @@
                                         </button>
                                     </div>
 
-                                    {/* Kad Import Data */}
                                     <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col justify-between space-y-4">
                                         <div>
                                             <h4 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider mb-1">Import Fail JSON</h4>
@@ -1636,7 +1595,6 @@
                                         </label>
                                     </div>
 
-                                    {/* Kad Set Semula Database */}
                                     <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col justify-between space-y-4">
                                         <div>
                                             <h4 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider mb-1">Set Semula Pangkalan Data</h4>
@@ -1663,7 +1621,6 @@
             );
         }
 
-        // Render main App to browser
         const container = document.getElementById('root');
         const root = ReactDOM.createRoot(container);
         root.render(<App />);

@@ -134,6 +134,17 @@
             const [showSignatorySettings, setShowSignatorySettings] = useState(false);
             const [isArchiving, setIsArchiving] = useState(false);
 
+            // Signatory state variables to prevent whitescreen reference crash
+            const [certSignatory1Name, setCertSignatory1Name] = useState("Cikgu Jabdi Bin Bikang");
+            const [certSignatory1Title, setCertSignatory1Title] = useState("Guru Besar SK Bikang");
+            const [certSignatory2Name, setCertSignatory2Name] = useState("Cikgu GPK Kokurikulum");
+            const [certSignatory2Title, setCertSignatory2Title] = useState("GPK Kokurikulum SK Bikang");
+
+            // Custom Confirm Modal states
+            const [showConfirmModal, setShowConfirmModal] = useState(false);
+            const [confirmMessage, setConfirmMessage] = useState("");
+            const [confirmAction, setConfirmAction] = useState(null);
+
             // Menambah L7 dan P7 secara lalai ke dalam tatasusunan kategori sistem
             const [categories, setCategories] = useState(["L12", "P12", "L9", "P9", "L7", "P7", "Prasekolah", "Terbuka"]);
 
@@ -527,28 +538,30 @@
                 fileReader.readAsText(e.target.files[0]);
             };
 
-            // Reset Pangkalan Data
             const handleResetSystem = async () => {
                 if (!checkAuthority("admin")) return;
-                if (!window.confirm("Adakah anda benar-benar pasti mahu menetapkan semula pangkalan data? Semua rekod atlet, acara, dan keputusan akan dipadamkan sepenuhnya.")) return;
-
-                try {
-                    if (isCloudActive) {
-                        const dbRef = firebase.firestore();
-                        const athSnap = await dbRef.collection("athletes").get();
-                        athSnap.forEach(doc => doc.ref.delete());
-                        const evSnap = await dbRef.collection("events").get();
-                        evSnap.forEach(doc => doc.ref.delete());
-                        const resSnap = await dbRef.collection("results").get();
-                        resSnap.forEach(doc => doc.ref.delete());
+                
+                setConfirmMessage("Adakah anda benar-benar pasti mahu menetapkan semula pangkalan data? Semua rekod atlet, acara, dan keputusan akan dipadamkan sepenuhnya.");
+                setConfirmAction(() => async () => {
+                    try {
+                        if (isCloudActive) {
+                            const dbRef = firebase.firestore();
+                            const athSnap = await dbRef.collection("athletes").get();
+                            athSnap.forEach(doc => doc.ref.delete());
+                            const evSnap = await dbRef.collection("events").get();
+                            evSnap.forEach(doc => doc.ref.delete());
+                            const resSnap = await dbRef.collection("results").get();
+                            resSnap.forEach(doc => doc.ref.delete());
+                        }
+                        setAthletes([]);
+                        setEvents([]);
+                        setResults([]);
+                        showToast("Sistem berjaya dikembalikan ke keadaan asal.");
+                    } catch (err) {
+                        showToast("Ralat menetapkan semula pangkalan data.", "error");
                     }
-                    setAthletes([]);
-                    setEvents([]);
-                    setResults([]);
-                    showToast("Sistem berjaya dikembalikan ke keadaan asal.");
-                } catch (err) {
-                    showToast("Ralat menetapkan semula pangkalan data.", "error");
-                }
+                });
+                setShowConfirmModal(true);
             };
 
             // Tambah Hebahan Baru
@@ -715,6 +728,23 @@
                         </div>
                     )}
 
+                    {/* Custom Confirmation Modal */}
+                    {showConfirmModal && (
+                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4 border border-slate-100">
+                                <div className="flex items-center gap-3 text-red-600">
+                                    <i className="fa-solid fa-triangle-exclamation text-2xl"></i>
+                                    <h3 className="text-base font-extrabold uppercase tracking-wider text-slate-800">Minta Pengesahan</h3>
+                                </div>
+                                <p className="text-xs font-semibold text-slate-600 leading-relaxed">{confirmMessage}</p>
+                                <div className="flex justify-end gap-2 text-xs">
+                                    <button type="button" onClick={() => setShowConfirmModal(false)} className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl font-bold transition-all">Batal</button>
+                                    <button type="button" onClick={() => { if(confirmAction) confirmAction(); setShowConfirmModal(false); }} className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl font-bold shadow-lg shadow-red-500/20 transition-all">Ya, Teruskan</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {}
                     <main className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 transition-all">
                         {activeTab === "dashboard" && (
@@ -846,11 +876,6 @@
                                                        isBlue ? "border-blue-200 bg-blue-50 text-blue-700" :
                                                        isGreen ? "border-emerald-200 bg-emerald-50 text-emerald-700" :
                                                        "border-amber-200 bg-amber-50 text-amber-700";
-
-                                    const btnThemeClass = isRed ? "bg-red-600 hover:bg-red-700" :
-                                                          isBlue ? "bg-blue-600 hover:bg-blue-700" :
-                                                          isGreen ? "bg-emerald-600 hover:bg-emerald-700" :
-                                                          "bg-amber-500 hover:bg-amber-600";
 
                                     return (
                                         <div key={name} className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex flex-col justify-between">
@@ -1176,6 +1201,7 @@
                                                     {userRole !== "pelawat" && (
                                                         <div className="flex items-center gap-1.5 self-end sm:self-auto">
                                                             <button 
+                                                                type="button"
                                                                 onClick={() => handleEditEvent(ev)} 
                                                                 className="px-2.5 py-1.5 bg-indigo-50 border border-indigo-200 text-indigo-600 hover:bg-indigo-100 rounded-lg font-bold flex items-center gap-1"
                                                                 title="Sunting Acara"
@@ -1184,6 +1210,7 @@
                                                                 <span>Edit</span>
                                                             </button>
                                                             <button 
+                                                                type="button"
                                                                 onClick={() => handleDeleteEvent(ev.id)} 
                                                                 className="px-2.5 py-1.5 bg-red-50 border border-red-200 text-red-600 hover:bg-red-100 rounded-lg font-bold flex items-center gap-1"
                                                             >
@@ -1408,7 +1435,7 @@
                                                                                                 body { font-family: 'Montserrat', sans-serif; background: #fff; padding: 40px; display: flex; justify-content: center; align-items: center; min-height: calc(100vh - 80px); }
                                                                                                 .border-container { border: 20px solid #1e1b4b; padding: 30px; border-double: 10px; width: 900px; height: 560px; box-sizing: border-box; position: relative; background-color: #fafaf9; }
                                                                                                 .logo-sec { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-                                                                                                .logo-sec img { height: 65px; object-contain; }
+                                                                                                .logo-sec img { height: 65px; object-fit: contain; }
                                                                                                 .logo-sec h2 { font-family: 'Cinzel', serif; font-size: 14px; text-align: center; color: #1e1b4b; margin: 0; letter-spacing: 2px; }
                                                                                                 .header-title { text-align: center; margin-top: 15px; }
                                                                                                 .header-title h1 { font-family: 'Cinzel', serif; font-size: 32px; color: #1e1b4b; margin: 0; font-weight: 800; letter-spacing: 3px; }

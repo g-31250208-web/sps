@@ -982,7 +982,7 @@
                 const event = eventsWithCode.find(e => e.id === best.eventId);
                 return {
                     kedudukan: mapping[best.kedudukan] || "Kedudukan " + best.kedudukan,
-                    acara: event ? `[${event.kodAcara}] ${event.nama} (${getFriendlyCategory(event.kategori)})` : "Acara Sukan",
+                    acara: event ? `[${event.kodAcara}] ${event.nama} ${getFriendlyCategory(event.kategori)}` : "Acara Sukan",
                     catatan: best.catatan ? "dengan catatan " + best.catatan : ""
                 };
             };
@@ -1503,7 +1503,7 @@
                             <div style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 20px;">
                                 <img src="${logoUrl}" style="height: 60px;" />
                                 <h2 style="margin: 5px 0 0 0;">LAPORAN KEPUTUSAN SARINGAN LARIAN</h2>
-                                <h3 style="margin: 2px 0 0 0; color: #475569; font-size:12px;">ACARA: [${targetData.kodAcara}] ${(targetData.nama || "").toUpperCase()} ${targetData.kategori ? `(${getFriendlyCategory(targetData.kategori)})` : ''}</h3>
+                                <h3 style="margin: 2px 0 0 0; color: #475569; font-size:12px;">ACARA: [${targetData.kodAcara}] ${(targetData.nama || "").toUpperCase()} ${targetData.kategori ? ` ${getFriendlyCategory(targetData.kategori)}` : ''}</h3>
                             </div>
 
                             <h3 style="font-size:13px; text-transform:uppercase; font-weight:bold; margin-bottom:5px;">A. Kedudukan Masa bagi Setiap Saringan</h3>
@@ -1605,7 +1605,7 @@
 
                             <div style="background: #f1f5f9; padding: 12px; border-radius: 8px; margin-bottom: 15px; font-size: 11px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                                 <div><strong>Acara Sukan:</strong> [${targetData.kodAcara}] ${targetData.nama}</div>
-                                <div><strong>Kategori:</strong> ${getFriendlyCategory(targetData.kategori)} (${targetData.jenis})</div>
+                                <div><strong>Kategori:</strong> ${getFriendlyCategory(targetData.kategori)} - ${targetData.jenis}</div>
                                 <div><strong>Tarikh Kejohanan:</strong> ${targetData.tarikh || "Belum Ditetapkan"}</div>
                                 <div><strong>Masa Laporan:</strong> ${targetData.masa || "--:--"}</div>
                             </div>
@@ -1839,7 +1839,7 @@
                         return `
                             <div style="margin-bottom: 30px; page-break-inside: avoid; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden;">
                                 <div style="background: #1e3a8a; color: white; padding: 10px 15px; font-weight: bold; font-size: 13px; display: flex; justify-content: space-between; align-items: center;">
-                                    <span>Acara ${idx+1}: [${event.kodAcara}] ${event.nama.toUpperCase()} ${event.kategori ? `(${getFriendlyCategory(event.kategori)})` : ''}</span>
+                                    <span>Acara ${idx+1}: [${event.kodAcara}] ${event.nama.toUpperCase()} ${event.kategori ? ` ${getFriendlyCategory(event.kategori)}` : ''}</span>
                                     <span style="font-size: 11px; background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 4px;">Peringkat: Akhir / Terus</span>
                                 </div>
                                 <table style="width: 100%; border-collapse: collapse; font-size: 11px; text-align: left;">
@@ -2886,7 +2886,7 @@
                                                                 <span className="text-base">📅</span>
                                                                 <div>
                                                                     <p className="font-bold text-slate-800 flex items-center gap-1.5">
-                                                                        <span>{alert.nama}{alert.kategori ? ` (${getFriendlyCategory(alert.kategori)})` : ''}</span>
+                                                                        <span>{alert.nama}{alert.kategori ? ` ${getFriendlyCategory(alert.kategori)}` : ''}</span>
                                                                         {isDone ? (
                                                                             <span className="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded-md font-extrabold">SELESAI</span>
                                                                         ) : (
@@ -3213,7 +3213,7 @@
                                             <select value={filterEvent} onChange={(e) => setFilterEvent(e.target.value)} className="p-1.5 border rounded-lg bg-slate-50">
                                                 <option value="Semua">Semua Acara</option>
                                                 {eventsWithCode.map(ev => (
-                                                    <option key={ev.id} value={ev.id}>[{ev.kodAcara}] {ev.nama.toUpperCase()}{ev.kategori ? ` (${getFriendlyCategory(ev.kategori)})` : ''}</option>
+                                                    <option key={ev.id} value={ev.id}>[{ev.kodAcara}] {ev.nama.toUpperCase()}{ev.kategori ? ` ${getFriendlyCategory(ev.kategori)}` : ''}</option>
                                                 ))}
                                             </select>
                                             
@@ -3507,7 +3507,7 @@
                                                     <div className="flex items-center gap-3">
                                                         <span className="font-mono bg-indigo-600 text-white font-bold px-3 py-1.5 rounded-xl tracking-wider text-xs">{ev.kodAcara}</span>
                                                         <div>
-                                                            <h4 className="font-extrabold text-slate-800 text-sm">{(ev.nama || "").toUpperCase()}{ev.kategori ? ` (${getFriendlyCategory(ev.kategori)})` : ''}</h4>
+                                                            <h4 className="font-extrabold text-slate-800 text-sm">{(ev.nama || "").toUpperCase()}{ev.kategori ? ` ${getFriendlyCategory(ev.kategori)}` : ''}</h4>
                                                             <p className="text-slate-400 text-[10.5px]">Jenis: {ev.jenis}</p>
                                                         </div>
                                                     </div>
@@ -3548,7 +3548,6 @@
                             </div>
                         )}
 
-                        {}
                         {activeTab === "keputusan" && (
                             <div className="space-y-6">
                                 <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
@@ -3574,7 +3573,7 @@
                                             >
                                                 <option value="">-- Sila Pilih Acara --</option>
                                                 {eventsWithCode.map(ev => (
-                                                    <option key={ev.id} value={ev.id}>[{ev.kodAcara}] {ev.nama.toUpperCase()} {ev.kategori ? `(${getFriendlyCategory(ev.kategori)})` : ''}</option>
+                                                    <option key={ev.id} value={ev.id}>[{ev.kodAcara}] {ev.nama.toUpperCase()}{ev.kategori ? ` ${getFriendlyCategory(ev.kategori)}` : ''}</option>
                                                 ))}
                                             </select>
                                         </div>
@@ -3673,7 +3672,7 @@
                                     <div className="lg:col-span-2 space-y-6 font-bold">
                                         {selectedEventObject ? (
                                             <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
-                                                <h3 className="text-lg font-black text-slate-800 mb-4">{selectedEventObject.nama} {selectedEventObject.kategori ? `(${getFriendlyCategory(selectedEventObject.kategori)})` : ''}</h3>
+                                                <h3 className="text-lg font-black text-slate-800 mb-4">{selectedEventObject.nama}{selectedEventObject.kategori ? ` ${getFriendlyCategory(selectedEventObject.kategori)}` : ''}</h3>
                                                 <div className="space-y-3">
                                                     {(results || [])
                                                         .filter(r => r.eventId === selectedEventObject.id)

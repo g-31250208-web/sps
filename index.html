@@ -199,13 +199,13 @@
         const getFriendlyCategory = (cat) => {
             if (!cat) return "";
             const mapping = {
-                "L12": "L12 (12 Tahun)",
-                "P12": "P12 (12 Tahun)",
-                "L9": "L9 (9 Tahun)",
-                "P9": "P9 (9 Tahun)",
-                "L7": "L7 (7 Tahun)",
-                "P7": "P7 (7 Tahun)",
-                "Prasekolah": "Prasekolah (6 Tahun)",
+                "L12": "L12",
+                "P12": "P12",
+                "L9": "L9",
+                "P9": "P9",
+                "L7": "L7",
+                "P7": "P7",
+                "Prasekolah": "Prasekolah",
                 "Terbuka": "Terbuka"
             };
             return mapping[cat] || cat;
@@ -263,12 +263,7 @@
         };
 
         const HISTORICAL_CHAMPIONSHIP_RECORDS = [
-            { eventName: "Lari 100m", category: "L12", recordText: "12.20s", athlete: "Adzrul Bin Amin", year: 2022, isTrack: true },
-            { eventName: "Lari 100m", category: "P12", recordText: "13.80s", athlete: "Sharifah Aminah", year: 2023, isTrack: true },
-            { eventName: "Lari 200m", category: "L12", recordText: "25.10s", athlete: "Mohd Daniel", year: 2021, isTrack: true },
-            { eventName: "Lari 200m", category: "P12", recordText: "28.80s", athlete: "Siti Sarah", year: 2024, isTrack: true },
-            { eventName: "Lompat Jauh", category: "L9", recordText: "3.85m", athlete: "Ryan Danial", year: 2023, isTrack: false },
-            { eventName: "Lontar Peluru", category: "P12", recordText: "8.12m", athlete: "Nurul Hidayah", year: 2020, isTrack: false }
+
         ];
 
         function App() {

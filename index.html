@@ -197,26 +197,11 @@
 
         const getFriendlyCategory = (cat) => {
             if (!cat) return "";
-            const mapping = {
-                "L12": "L12 (12 Tahun)",
-                "P12": "P12 (12 Tahun)",
-                "L9": "L9 (9 Tahun)",
-                "P9": "P9 (9 Tahun)",
-                "L7": "L7 (7 Tahun)",
-                "P7": "P7 (7 Tahun)",
-                "Prasekolah": "Prasekolah (6 Tahun)",
-                "Terbuka": "Terbuka"
-            };
-            if (mapping[cat]) return mapping[cat];
-            
-            // Mengekstrak umur secara dinamik daripada teks input (Cth: L10 -> L10 (10 Tahun))
-            const match = String(cat).match(/\d+/);
-            if (match) {
-                const age = match[0];
-                const prefix = String(cat).replace(age, "").trim().toUpperCase();
-                return `${prefix}${age} (${age} Tahun)`;
-            }
-            return cat;
+            const trimmed = String(cat).trim();
+            const upper = trimmed.toUpperCase();
+            if (upper === "PRASEKOLAH" || upper === "PRA") return "Prasekolah";
+            if (upper === "TERBUKA" || upper === "OPEN") return "Terbuka";
+            return upper;
         };
 
         const parseTimeToSeconds = (str) => {
@@ -2901,7 +2886,7 @@
                                                                 <span className="text-base">📅</span>
                                                                 <div>
                                                                     <p className="font-bold text-slate-800 flex items-center gap-1.5">
-                                                                        <span>{alert.nama}</span>
+                                                                        <span>{alert.nama}{alert.kategori ? ` (${getFriendlyCategory(alert.kategori)})` : ''}</span>
                                                                         {isDone ? (
                                                                             <span className="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded-md font-extrabold">SELESAI</span>
                                                                         ) : (
@@ -2909,7 +2894,7 @@
                                                                         )}
                                                                     </p>
                                                                     <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">
-                                                                        Kategori: {alert.kategori ? getFriendlyCategory(alert.kategori) : "Tiada Kategori"} | Masa: {alert.masa || "--:--"}
+                                                                        Jenis: {alert.jenis} | Masa: {alert.masa || "--:--"}
                                                                     </p>
                                                                 </div>
                                                             </div>
@@ -3228,13 +3213,7 @@
                                             <select value={filterEvent} onChange={(e) => setFilterEvent(e.target.value)} className="p-1.5 border rounded-lg bg-slate-50">
                                                 <option value="Semua">Semua Acara</option>
                                                 {eventsWithCode.map(ev => (
-                                                    <option key={ev.id} value={ev.id}>[{ev.kodAcara}] {ev.nama.toUpperCase()} {ev.kategori ? `(${getFriendlyCategory(ev.kategori)})` : ''}</option>
-                                                ))}
-                                            </select>
-                                            <select value={filterEvent} onChange={(e) => setFilterEvent(e.target.value)} className="p-1.5 border rounded-lg bg-slate-50">
-                                                <option value="Semua">Semua Acara</option>
-                                                {eventsWithCode.map(ev => (
-                                                    <option key={ev.id} value={ev.id}>[{ev.kodAcara}] {ev.nama.toUpperCase()} ({getFriendlyCategory(ev.kategori)})</option>
+                                                    <option key={ev.id} value={ev.id}>[{ev.kodAcara}] {ev.nama.toUpperCase()}{ev.kategori ? ` (${getFriendlyCategory(ev.kategori)})` : ''}</option>
                                                 ))}
                                             </select>
                                             
@@ -3528,7 +3507,7 @@
                                                     <div className="flex items-center gap-3">
                                                         <span className="font-mono bg-indigo-600 text-white font-bold px-3 py-1.5 rounded-xl tracking-wider text-xs">{ev.kodAcara}</span>
                                                         <div>
-                                                            <h4 className="font-extrabold text-slate-800 text-sm">{(ev.nama || "").toUpperCase()} {ev.kategori ? `(${getFriendlyCategory(ev.kategori)})` : ''}</h4>
+                                                            <h4 className="font-extrabold text-slate-800 text-sm">{(ev.nama || "").toUpperCase()}{ev.kategori ? ` (${getFriendlyCategory(ev.kategori)})` : ''}</h4>
                                                             <p className="text-slate-400 text-[10.5px]">Jenis: {ev.jenis}</p>
                                                         </div>
                                                     </div>

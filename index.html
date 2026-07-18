@@ -1788,13 +1788,24 @@
                             <div className="space-y-6">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                                     {houseStandings.map((h, idx) => (
-                                        <div key={h.nama} className={`rounded-2xl p-5 border bg-white relative overflow-hidden transition-all duration-300 hover:-translate-y-2 cursor-pointer ${h.glow || 'hover:shadow-xl'}`}>
-                                            <div className={`absolute top-0 left-0 w-full h-1.5 ${h.warna}`}></div>
-                                            <div className="flex justify-between items-start">
-                                                <div>
-                                                    <span className="text-[10px] font-black uppercase text-slate-400">Kedudukan #{idx+1}</span>
-                                                    <h3 className="text-lg font-black text-slate-800 flex items-center gap-2">Rumah {h.nama}</h3>
-                                                </div>
+                            <div key={h.nama} className={`rounded-2xl p-5 border bg-white relative overflow-hidden transition-all duration-300 hover:-translate-y-2 cursor-pointer ${h.glow || 'hover:shadow-xl'}`}>
+                                <div className={`absolute top-0 left-0 w-full h-1.5 ${h.warna}`}></div>
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <span className="text-[10px] font-black uppercase text-slate-400">Kedudukan #{idx+1}</span>
+                                        <h3 className="text-lg font-black text-slate-800 flex items-center gap-2">Rumah {h.nama}</h3>
+                                    </div>
+                                    <span className={`text-2xl font-black ${h.teks}`}>{h.mata} <span className="text-xs font-bold text-slate-400">mata</span></span>
+                                </div>
+                                <div className="grid grid-cols-4 gap-2 mt-6 text-center text-xs font-bold bg-slate-50 p-4 rounded-xl">
+                                    <div><span className="text-2xl block mb-1">🥇</span><p>{h.emas}</p></div>
+                                    <div><span className="text-2xl block mb-1">🥈</span><p>{h.perak}</p></div>
+                                    <div><span className="text-2xl block mb-1">🥉</span><p>{h.gangsa}</p></div>
+                                    <div><span className="text-2xl block mb-1">🏅</span><p>{h.keempat}</p></div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                                                 <span className={`text-2xl font-black ${h.teks}`}>{h.mata} <span className="text-xs font-bold text-slate-400">mata</span></span>
                                             </div>
                                             <div className="grid grid-cols-4 gap-2 mt-6 text-center text-xs font-bold bg-slate-50 p-4 rounded-xl">
@@ -1830,138 +1841,37 @@
                                                 (announcements || []).map(announce => (
                                                     <div key={announce.id} className="bg-amber-50/50 border border-amber-100 rounded-xl p-4 flex justify-between">
                                                         <div>
-                                                            <p className="text-xs font-medium text-slate-800">{announce.text}</p>
-                                                            <span className="text-[10px] text-slate-400">👤 {announce.author} • 📅 {announce.date}</span>
-                                                        </div>
-                                                        {userRole !== "pelawat" && <button onClick={() => handleDeleteAnnouncement(announce.id)} className="text-slate-400 hover:text-red-500 text-xs">✕</button>}
+                                                <p className="font-bold text-slate-400 uppercase tracking-wider text-[10px] mb-1">Guru Penasihat ({advisors.length})</p>
+                                                <div className="flex flex-wrap gap-1">
+                                                    {advisors.map(adv => (
+                                                        <span key={adv} className="bg-slate-100 text-slate-700 px-2 py-1 rounded-lg font-bold border flex items-center gap-1">
+                                                            <span>👤 {adv}</span>
+                                                            {userRole !== "pelawat" && <button onClick={() => handleRemoveAdvisor(houseName, adv)} className="text-red-500">✕</button>}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                                {userRole !== "pelawat" && (
+                                                    <div className="flex gap-1 mt-2">
+                                                        <input type="text" placeholder="Nama guru..." value={newAdvisorText[houseName] || ""} onChange={(e) => setNewAdvisorText({ ...newAdvisorText, [houseName]: e.target.value })} className="flex-1 p-1.5 border rounded-xl" />
+                                                        <button onClick={() => handleAddAdvisor(houseName)} className="bg-indigo-600 text-white px-3 rounded-xl">Tambah</button>
                                                     </div>
-                                                ))
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    <div className="bg-white rounded-2xl p-5 border shadow-sm">
-                                        <h3 className="text-sm font-bold text-slate-900 mb-4 uppercase">{t.currentEvents}</h3>
-                                        <div className="space-y-3">
-                                            {eventsWithCode.length === 0 ? (
-                                                <p className="text-xs text-slate-400 italic py-4">{t.noEvents}</p>
-                                            ) : (
-                                                eventsWithCode.slice(0, 6).map(alert => {
-                                                    const isDone = (results || []).some(r => r.eventId === alert.id);
-                                                    return (
-                                                        <div key={alert.id} className="p-3 rounded-xl bg-slate-50 text-xs">
-                                                            <p className="font-bold text-slate-800">{alert.nama} {alert.kategori || ''}</p>
-                                                            <span className="text-[10px] text-slate-400">Masa: {alert.masa || "--:--"} | {isDone ? "SELESAI 🟢" : "AKTIF 🟡"}</span>
-                                                        </div>
-                                                    );
-                                                })
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {activeTab === "rumah_sukan" && (
-                            <div className="space-y-6">
-                                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-2xl border shadow-sm">
-                                    <div>
-                                        <h3 className="font-extrabold text-slate-800 text-sm">Kelola Pasukan & Rumah Sukan</h3>
-                                        <p className="text-xs text-slate-400">Uruskan guru penasihat, mata bonus, serta muat turun senarai cetakan sukantara.</p>
-                                    </div>
-                                    {userRole !== "pelawat" && (
-                                        <button onClick={() => {
-                                            setHouseForm({ nama: "", slogan: "", guruPenasihat: "", bonusPoints: 0, warnaLabel: "Ungu" });
-                                            setIsEditingHouse(false);
-                                            setIsHouseSidebarOpen(true);
-                                        }} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow">+ Tambah Rumah</button>
-                                    )}
-                                </div>
-
-                                {isHouseSidebarOpen && (
-                                    <div className="fixed inset-0 z-[100] flex justify-end">
-                                        <div className="fixed inset-0 bg-slate-900/60" onClick={() => setIsHouseSidebarOpen(false)} />
-                                        <div className="relative w-full max-w-md bg-white shadow-2xl flex flex-col z-[101] p-6 text-xs font-semibold space-y-4">
-                                            <h3 className="font-bold text-slate-900 text-sm uppercase">{isEditingHouse ? "Sunting Rumah Sukan" : "Daftar Rumah Sukan"}</h3>
-                                            <form onSubmit={isEditingHouse ? handleEditHouseSubmit : handleAddHouseSubmitDirect} className="space-y-3">
-                                                <div>
-                                                    <label className="block mb-1">Nama Rumah Sukan</label>
-                                                    <input type="text" required disabled={isEditingHouse} value={houseForm.nama} onChange={(e) => setHouseForm({ ...houseForm, nama: e.target.value })} className="w-full p-2 border rounded-xl font-bold uppercase" />
-                                                </div>
-                                                <div>
-                                                    <label className="block mb-1">Slogan</label>
-                                                    <input type="text" value={houseForm.slogan} onChange={(e) => setHouseForm({ ...houseForm, slogan: e.target.value })} className="w-full p-2 border rounded-xl" />
-                                                </div>
-                                                <div>
-                                                    <label className="block mb-1">Mata Bonus</label>
-                                                    <input type="number" value={houseForm.bonusPoints} onChange={(e) => setHouseForm({ ...houseForm, bonusPoints: e.target.value })} className="w-full p-2 border rounded-xl" />
-                                                </div>
-                                                <div>
-                                                    <label className="block mb-1">Label Warna</label>
-                                                    <select value={houseForm.warnaLabel} onChange={(e) => setHouseForm({ ...houseForm, warnaLabel: e.target.value })} className="w-full p-2 border bg-white rounded-xl">
-                                                        <option value="Merah">Merah</option>
-                                                        <option value="Biru">Biru</option>
-                                                        <option value="Hijau">Hijau</option>
-                                                        <option value="Kuning">Kuning</option>
-                                                    </select>
-                                                </div>
-                                                <button type="submit" className="w-full bg-indigo-600 text-white py-2.5 rounded-xl font-bold">Simpan</button>
-                                            </form>
-                                        </div>
-                                    </div>
-                                )}
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    {Object.entries(housesMetadata || {}).map(([houseName, meta]) => {
-                                        const preset = COLOR_PRESETS[meta.warnaLabel] || COLOR_PRESETS.Merah;
-                                        const count = (athletes || []).filter(a => a.rumah === houseName).length;
-                                        const advisors = meta.guruPenasihat ? meta.guruPenasihat.split(',').map(s => s.trim()).filter(Boolean) : [];
-
-                                        return (
-                                            <div key={houseName} className="bg-white rounded-2xl border p-6 relative overflow-hidden flex flex-col justify-between">
-                                                <div className={`absolute top-0 left-0 w-full h-1.5 ${preset.warna}`}></div>
-                                                <div className="space-y-4 text-xs">
-                                                    <div className="flex justify-between">
-                                                        <div>
-                                                            <h4 className="text-lg font-black">Rumah {houseName}</h4>
-                                                            <p className="text-slate-400 italic">"{meta.slogan || 'Tiada slogan'}"</p>
-                                                        </div>
-                                                        <span className="text-xl font-bold text-slate-700">{meta.bonusPoints || 0} Mata Bonus</span>
-                                                    </div>
-                                                    <p className="font-semibold text-slate-500">Ahli Berdaftar: <strong className="text-slate-800">{count} orang</strong></p>
-                                                    
-                                                    <div>
-                                                        <p className="font-bold text-slate-400 uppercase tracking-wider text-[10px] mb-1">Guru Penasihat ({advisors.length})</p>
-                                                        <div className="flex flex-wrap gap-1">
-                                                            {advisors.map(adv => (
-                                                                <span key={adv} className="bg-slate-100 text-slate-700 px-2 py-1 rounded-lg font-bold border flex items-center gap-1">
-                                                                    <span>👤 {adv}</span>
-                                                                    {userRole !== "pelawat" && <button onClick={() => handleRemoveAdvisor(houseName, adv)} className="text-red-500">✕</button>}
-                                                                </span>
-                                                            ))}
-                                                        </div>
-                                                        {userRole !== "pelawat" && (
-                                                            <div className="flex gap-1 mt-2">
-                                                                <input type="text" placeholder="Nama guru..." value={newAdvisorText[houseName] || ""} onChange={(e) => setNewAdvisorText({ ...newAdvisorText, [houseName]: e.target.value })} className="flex-1 p-1.5 border rounded-xl" />
-                                                                <button onClick={() => handleAddAdvisor(houseName)} className="bg-indigo-600 text-white px-3 rounded-xl">Tambah</button>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-
-                                                <div className="border-t pt-4 mt-4 flex gap-2">
-                                                    <button onClick={() => executeBypassPrint('kehadiran_rumah', { houseName })} className="flex-1 bg-slate-100 text-slate-700 p-2 rounded-xl flex items-center justify-center gap-1 font-bold">📄 Kehadiran</button>
-                                                    <button onClick={() => executeBypassPrint('sukantara_rumah', { houseName })} className="flex-1 bg-slate-100 text-slate-700 p-2 rounded-xl flex items-center justify-center gap-1 font-bold">📄 Sukantara</button>
-                                                    <button onClick={() => handleExportHouseMembersJSON(houseName)} className="bg-emerald-50 text-emerald-700 p-2 rounded-xl border border-emerald-100 font-bold">📥 JSON</button>
-                                                </div>
+                                                )}
                                             </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        )}
+                                        </div>
 
-                        {activeTab === "atlit" && (
+                                        <div className="border-t pt-4 mt-4 flex gap-2">
+                                            <button onClick={() => executeBypassPrint('kehadiran_rumah', { houseName })} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-1.5 px-2 rounded-lg flex items-center justify-center gap-1 font-semibold text-[11px]">📄 Kehadiran</button>
+                                            <button onClick={() => executeBypassPrint('sukantara_rumah', { houseName })} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-1.5 px-2 rounded-lg flex items-center justify-center gap-1 font-semibold text-[11px]">📄 Sukantara</button>
+                                            <button onClick={() => handleExportHouseMembersJSON(houseName)} className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 py-1.5 px-3 rounded-lg border border-emerald-100 font-semibold text-[11px]">📥 JSON</button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === "atlit" && (
                             <div className="space-y-6">
                                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-2xl border shadow-sm">
                                     <div>

@@ -764,122 +764,44 @@ service cloud.firestore {
             useEffect(() => {
                 const unsubscribe = auth.onAuthStateChanged((user) => {
                     if (user) {
-                        setCurrentUser(user);
-                        setIsCloudActive(true);
-                    } else {
-                        // Semak sekiranya ada sesi log masuk manual kunci laluan aktif pada localstorage
                         const cachedRole = localStorage.getItem('sps_local_role');
                         const cachedName = localStorage.getItem('sps_local_name');
                         const cachedEmail = localStorage.getItem('sps_local_email');
+
                         if (cachedRole && cachedName) {
+                            // Menggunakan kelayakan bypass kunci laluan yang disimpan di pelayar tempatan
                             setCurrentUser({
                                 displayName: cachedName,
                                 email: cachedEmail || "guru@moe-dl.edu.my",
-                                isAnonymous: false
+                                isAnonymous: user.isAnonymous
                             });
                             setUserRole(cachedRole);
-                            setIsCloudActive(true);
                         } else {
-                            setCurrentUser(null);
-                            setUserRole("pelawat");
+                            setCurrentUser(user);
+                            const email = user.email || "";
+                            if (email === "sekolah-7608@moe-dl.edu.my") {
+                                setUserRole("admin");
+                            } else if (adminList.some(admin => (admin.email || "").toLowerCase() === email.toLowerCase())) {
+                                setUserRole("admin");
+                            } else if (email.endsWith("@moe-dl.edu.my") || email.endsWith("@moe.edu.my")) {
+                                setUserRole("guru");
+                            } else if (!user.isAnonymous) {
+                                setUserRole("pelawat");
+                            }
                         }
+                        setIsCloudActive(true);
+                    } else {
+                        // PENTING: Sentiasa mulakan log masuk tanpa nama di latar belakang untuk mendapatkan hak penulisan Firestore Rules
+                        firebase.auth().signInAnonymously().catch((err) => {
+                            console.warn("Sistem offline / sekatan Anonymous Auth:", err);
+                            setIsCloudActive(false);
+                        });
                     }
+                }, (err) => {
+                    console.error("Ralat status Auth:", err);
                 });
                 return () => unsubscribe();
-            }, []);
-
-            useEffect(() => {
-                if (!isCloudActive) return;
-
-                const pathAthletes = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('athletes');
-                const pathEvents = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('events');
-                const pathResults = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('results');
-                const pathHeats = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('heats');
-                const pathMeta = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('metadata');
-                const pathAnnouncements = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('announcements');
-                const pathLogs = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('logs');
-                const pathAdmins = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('admins');
-
-                const unsubAthletes = pathAthletes.onSnapshot((snapshot) => {
-                    const data = [];
-                    snapshot.forEach(doc => data.push({ id: doc.id, ...doc.data() }));
-                    setAthletes(data);
-                }, (e) => console.error(e));
-
-                const unsubEvents = pathEvents.onSnapshot((snapshot) => {
-                    const data = [];
-                    snapshot.forEach(doc => data.push({ id: doc.id, ...doc.data() }));
-                    setEvents(data);
-                }, (e) => console.error(e));
-
-                const unsubResults = pathResults.onSnapshot((snapshot) => {
-                    const data = [];
-                    snapshot.forEach(doc => data.push({ id: doc.id, ...doc.data() }));
-                    setResults(data);
-                }, (e) => console.error(e));
-
-                const unsubHeats = pathHeats.onSnapshot((snapshot) => {
-                    const data = [];
-                    snapshot.forEach(doc => data.push({ id: doc.id, ...doc.data() }));
-                    setHeats(data);
-                }, (e) => console.error(e));
-
-                const unsubMeta = pathMeta.doc('houses').onSnapshot((doc) => {
-                    if (doc.exists) setHousesMetadata(doc.data() || INITIAL_HOUSES_METADATA);
-                }, (e) => console.error(e));
-
-                const unsubPoints = pathMeta.doc('points').onSnapshot((doc) => {
-                    if (doc.exists) setPointsConfig(doc.data() || pointsConfig);
-                }, (e) => console.error(e));
-
-                const unsubGas = pathMeta.doc('gas').onSnapshot((doc) => {
-                    if (doc.exists) setGasUrl(doc.data().url || "");
-                }, (e) => console.error(e));
-
-                const unsubConfig = pathMeta.doc('config').onSnapshot((doc) => {
-                    if (doc.exists) {
-                        const data = doc.data();
-                        if (data.activeYear) setActiveYear(data.activeYear);
-                        if (data.maxIndividu !== undefined) setMaxIndividu(data.maxIndividu);
-                        if (data.maxKumpulan !== undefined) setMaxKumpulan(data.maxKumpulan);
-                        if (data.categories !== undefined) setCategories(data.categories);
-                    }
-                }, (e) => console.error(e));
-
-                const unsubAnnouncements = pathAnnouncements.onSnapshot((snapshot) => {
-                    const data = [];
-                    snapshot.forEach(doc => data.push({ id: doc.id, ...doc.data() }));
-                    data.sort((a, b) => b.id.localeCompare(a.id));
-                    setAnnouncements(data);
-                }, (e) => console.error(e));
-
-                const unsubLogs = pathLogs.onSnapshot((snapshot) => {
-                    const data = [];
-                    snapshot.forEach(doc => data.push({ id: doc.id, ...doc.data() }));
-                    data.sort((a, b) => b.id.localeCompare(a.id));
-                    setLogs(data);
-                }, (e) => console.error(e));
-
-                const unsubAdmins = pathAdmins.onSnapshot((snapshot) => {
-                    const data = [];
-                    snapshot.forEach(doc => data.push({ id: doc.id, ...doc.data() }));
-                    setAdminList(data);
-                }, (e) => console.error(e));
-
-                return () => {
-                    unsubAthletes();
-                    unsubEvents();
-                    unsubResults();
-                    unsubHeats();
-                    unsubMeta();
-                    unsubPoints();
-                    unsubGas();
-                    unsubConfig();
-                    unsubAnnouncements();
-                    unsubLogs();
-                    unsubAdmins();
-                };
-            }, [isCloudActive]);
+            }, [adminList]);
 
             const bestAthletesByCategory = useMemo(() => {
                 const athletePoints = {};
@@ -2249,7 +2171,8 @@ service cloud.firestore {
                     setIsEditingEvent(false);
                     setIsEventSidebarOpen(false);
                 } catch (err) {
-                    showToastMessage("Ralat menyimpan acara sukan.", "error");
+                    console.error("Ralat Menyimpan Acara:", err);
+                    showToastMessage(`Ralat menyimpan acara sukan: ${err.message || "Masalah sambungan awan/keizinan"}`, "error");
                 }
             };
 

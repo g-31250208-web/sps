@@ -2873,37 +2873,279 @@
                                     </div>
 
                                     <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
-                                        <h3 className="text-sm font-bold text-slate-900 mb-4 uppercase tracking-wider">{t.currentEvents}</h3>
-                                        <div className="space-y-3">
-                                            {eventsWithCode.length === 0 ? (
-                                                <p className="text-xs text-slate-400 italic py-4">{t.noEvents}</p>
-                                            ) : (
-                                                eventsWithCode.slice(0, 6).map(alert => {
-                                                    const isDone = (results || []).some(r => r.eventId === alert.id);
-                                                    return (
-                                                        <div key={alert.id} className="flex justify-between items-center p-3 rounded-xl bg-slate-50 text-xs">
-                                                            <div className="flex items-center gap-2.5">
-                                                                <span className="text-base">📅</span>
-                                                                <div>
-                                                                    <p className="font-bold text-slate-800 flex items-center gap-1.5">
-                                                                        <span>{alert.nama}{alert.kategori ? ` ${getFriendlyCategory(alert.kategori)}` : ''}</span>
-                                                                        {isDone ? (
-                                                                            <span className="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded-md font-extrabold">SELESAI</span>
-                                                                        ) : (
-                                                                            <span className="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded-md font-extrabold animate-pulse">BERLANGSUNG</span>
-                                                                        )}
-                                                                    </p>
-                                                                    <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">
-                                                                        Jenis: {alert.jenis} | Masa: {alert.masa || "--:--"}
-                                                                    </p>
-                                                                </div>
+                                    <h3 className="text-sm font-bold text-slate-900 mb-4 uppercase tracking-wider">{t.currentEvents}</h3>
+                                    <div className="space-y-3">
+                                        {eventsWithCode.length === 0 ? (
+                                            <p className="text-xs text-slate-400 italic py-4">{t.noEvents}</p>
+                                        ) : (
+                                            eventsWithCode.slice(0, 6).map(alert => {
+                                                const isDone = (results || []).some(r => r.eventId === alert.id);
+                                                return (
+                                                    <div key={alert.id} className="flex justify-between items-center p-3 rounded-xl bg-slate-50 text-xs">
+                                                        <div className="flex items-center gap-2.5">
+                                                            <span className="text-base">📅</span>
+                                                            <div>
+                                                                <p className="font-bold text-slate-800 flex items-center gap-1.5">
+                                                                    <span>{alert.nama} {alert.kategori || ''}</span>
+                                                                    {isDone ? (
+                                                                        <span className="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded-md font-extrabold">SELESAI</span>
+                                                                    ) : (
+                                                                        <span className="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded-md font-extrabold animate-pulse">BERLANGSUNG</span>
+                                                                    )}
+                                                                </p>
+                                                                <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">
+                                                                    Jenis: {alert.jenis} | Masa: {alert.masa || "--:--"}
+                                                                </p>
                                                             </div>
                                                         </div>
-                                                    );
-                                                })
-                                            )}
+                                                    </div>
+                                                );
+                                            })
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === "rumah_sukan" && (
+                            <div className="space-y-6 animate-in fade-in duration-200">
+                                {/* Header Card */}
+                                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+                                    <div className="flex items-center gap-3">
+                                        <div className="bg-indigo-100 text-indigo-700 p-2.5 rounded-xl">
+                                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11V11a2 2 0 00-2-2H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2v-7" />
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <h3 className="font-extrabold text-slate-800 text-sm">Pengurusan Rumah Sukan</h3>
+                                            <p className="text-xs text-slate-400 font-medium">Kelola slogan, mata bonus, guru penasihat dan cetakan dokumen rumah sukan.</p>
                                         </div>
                                     </div>
+                                    {userRole !== "pelawat" && (
+                                        <button
+                                            onClick={() => {
+                                                setHouseForm({ nama: "", slogan: "", guruPenasihat: "", bonusPoints: 0, warnaLabel: "Ungu" });
+                                                setIsEditingHouse(false);
+                                                setOriginalHouseKey("");
+                                                setIsHouseSidebarOpen(true);
+                                            }}
+                                            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-5 py-3 rounded-xl shadow-lg transition-all flex items-center gap-2 shrink-0 justify-center"
+                                        >
+                                            <span>➕ Tambah Rumah Baru</span>
+                                        </button>
+                                    )}
+                                </div>
+
+                                {/* Sidebar Edit/Tambah Rumah Sukan */}
+                                {isHouseSidebarOpen && (
+                                    <div className="fixed inset-0 z-[100] flex justify-end">
+                                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={() => setIsHouseSidebarOpen(false)} />
+                                        <div className="relative w-full max-w-md bg-white shadow-2xl flex flex-col z-[101] animate-in slide-in-from-right duration-200">
+                                            <div className="flex justify-between items-center p-4 border-b border-slate-200 bg-white">
+                                                <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider font-bold">
+                                                    🏠 {isEditingHouse ? "SUNTING RUMAH SUKAN" : "DAFTAR RUMAH SUKAN BARU"}
+                                                </h3>
+                                                <button onClick={() => setIsHouseSidebarOpen(false)} className="text-slate-400 text-xs font-bold">✕ Sembunyikan</button>
+                                            </div>
+                                            <div className="flex-1 overflow-y-auto p-4 space-y-6">
+                                                <form onSubmit={isEditingHouse ? handleEditHouseSubmit : handleAddHouseSubmitDirect} className="space-y-4 text-xs font-semibold">
+                                                    <div>
+                                                        <label className="block text-slate-500 mb-1">Nama Rumah Sukan</label>
+                                                        <input
+                                                            type="text"
+                                                            required
+                                                            disabled={isEditingHouse}
+                                                            value={houseForm.nama}
+                                                            onChange={(e) => setHouseForm({ ...houseForm, nama: e.target.value })}
+                                                            className="w-full p-2.5 border rounded-xl font-bold uppercase disabled:bg-slate-100"
+                                                            placeholder="Contoh: Saga, Wira, Satria"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-slate-500 mb-1">Slogan Rumah</label>
+                                                        <input
+                                                            type="text"
+                                                            value={houseForm.slogan}
+                                                            onChange={(e) => setHouseForm({ ...houseForm, slogan: e.target.value })}
+                                                            className="w-full p-2.5 border rounded-xl font-bold"
+                                                            placeholder="Contoh: Biru Gagah Juara Sepanjang Zaman"
+                                                        />
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        <div>
+                                                            <label className="block text-slate-500 mb-1">Mata Bonus</label>
+                                                            <input
+                                                                type="number"
+                                                                value={houseForm.bonusPoints}
+                                                                onChange={(e) => setHouseForm({ ...houseForm, bonusPoints: e.target.value })}
+                                                                className="w-full p-2.5 border rounded-xl font-bold"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-slate-500 mb-1">Pilihan Warna Tema</label>
+                                                            <select
+                                                                value={houseForm.warnaLabel}
+                                                                onChange={(e) => setHouseForm({ ...houseForm, warnaLabel: e.target.value })}
+                                                                className="w-full p-2.5 border rounded-xl bg-white font-bold"
+                                                            >
+                                                                <option value="Merah">Merah</option>
+                                                                <option value="Biru">Biru</option>
+                                                                <option value="Hijau">Hijau</option>
+                                                                <option value="Kuning">Kuning</option>
+                                                                <option value="Ungu">Ungu</option>
+                                                                <option value="Oren">Oren</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                    <button type="submit" className="w-full bg-indigo-600 text-white font-bold py-2.5 rounded-xl shadow-md">
+                                                        {isEditingHouse ? "Simpan Perubahan" : "Daftar Rumah Sukan"}
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Grid Senarai Rumah Sukan */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {Object.entries(housesMetadata || {}).map(([houseName, meta]) => {
+                                        const preset = COLOR_PRESETS[meta.warnaLabel] || COLOR_PRESETS.Merah;
+                                        const houseAthletesCount = (athletes || []).filter(a => a.rumah === houseName).length;
+                                        const advisorsList = meta.guruPenasihat ? meta.guruPenasihat.split(',').map(s => s.trim()).filter(Boolean) : [];
+
+                                        return (
+                                            <div key={houseName} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 relative overflow-hidden flex flex-col justify-between">
+                                                <div className={`absolute top-0 left-0 w-full h-1.5 ${preset.warna}`}></div>
+                                                
+                                                <div className="space-y-4">
+                                                    <div className="flex justify-between items-start">
+                                                        <div>
+                                                            <span className="text-[10px] font-black uppercase text-slate-400">RUMAH SUKAN</span>
+                                                            <h4 className="text-xl font-black text-slate-800 flex items-center gap-2 mt-0.5">
+                                                                <span>Rumah {houseName}</span>
+                                                                <span className={`inline-block w-3.5 h-3.5 rounded-full ${preset.warna}`}></span>
+                                                            </h4>
+                                                            <p className="text-xs text-slate-400 italic font-semibold mt-1">"{meta.slogan || 'Tiada Slogan'}"</p>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <span className="text-2xl font-black text-slate-800">{meta.bonusPoints || 0}</span>
+                                                            <p className="text-[9px] font-bold text-slate-400 uppercase">Mata Bonus</p>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-2 gap-4 bg-slate-50 p-3 rounded-xl border border-slate-100 text-xs">
+                                                        <div>
+                                                            <p className="text-[9px] font-bold text-slate-400 uppercase">Jumlah Ahli</p>
+                                                            <p className="font-extrabold text-slate-700 text-sm mt-0.5">{houseAthletesCount} Orang</p>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-[9px] font-bold text-slate-400 uppercase">Sesi Latihan</p>
+                                                            <p className="font-extrabold text-slate-700 text-sm mt-0.5">Aktif 🟢</p>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Senarai Guru Penasihat */}
+                                                    <div className="space-y-2">
+                                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Guru Penasihat ({advisorsList.length})</p>
+                                                        <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1">
+                                                            {advisorsList.length === 0 ? (
+                                                                <span className="text-xs text-slate-400 italic">Belum ada guru penasihat didaftarkan.</span>
+                                                            ) : (
+                                                                advisorsList.map((adv, idx) => (
+                                                                    <span key={idx} className="inline-flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] px-2.5 py-1 rounded-lg font-bold border border-slate-200 transition-colors">
+                                                                        <span>👤 {adv}</span>
+                                                                        {userRole !== "pelawat" && (
+                                                                            <button 
+                                                                                onClick={() => handleRemoveAdvisor(houseName, adv)}
+                                                                                className="text-red-500 hover:text-red-700 font-extrabold ml-0.5 focus:outline-none"
+                                                                                title={`Keluarkan ${adv}`}
+                                                                            >
+                                                                                ✕
+                                                                            </button>
+                                                                        )}
+                                                                    </span>
+                                                                ))
+                                                            )}
+                                                        </div>
+
+                                                        {/* Input Tambah Guru */}
+                                                        {userRole !== "pelawat" && (
+                                                            <div className="flex gap-1.5 mt-2">
+                                                                <input 
+                                                                    type="text"
+                                                                    placeholder="Nama Guru..."
+                                                                    value={newAdvisorText[houseName] || ""}
+                                                                    onChange={(e) => setNewAdvisorText({ ...newAdvisorText, [houseName]: e.target.value })}
+                                                                    className="flex-1 p-2 border rounded-xl text-xs font-bold focus:outline-none bg-slate-50 focus:bg-white"
+                                                                    onKeyDown={(e) => {
+                                                                        if (e.key === "Enter") {
+                                                                            e.preventDefault();
+                                                                            handleAddAdvisor(houseName);
+                                                                        }
+                                                                    }}
+                                                                />
+                                                                <button 
+                                                                    onClick={() => handleAddAdvisor(houseName)}
+                                                                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 rounded-xl text-xs font-bold"
+                                                                >
+                                                                    Tambah
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                {/* Butang Tindakan & Cetakan */}
+                                                <div className="border-t border-slate-100 pt-4 mt-5 flex flex-wrap gap-2 text-xs font-bold">
+                                                    <button 
+                                                        onClick={() => executeBypassPrint('kehadiran_rumah', { houseName })}
+                                                        className="flex-1 min-w-[120px] bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-xl flex items-center justify-center gap-1.5 transition-colors"
+                                                    >
+                                                        <PrinterIcon className="h-3.5 w-3.5" />
+                                                        <span>Borang Kehadiran</span>
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => executeBypassPrint('sukantara_rumah', { houseName })}
+                                                        className="flex-1 min-w-[120px] bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-xl flex items-center justify-center gap-1.5 transition-colors"
+                                                    >
+                                                        <PrinterIcon className="h-3.5 w-3.5" />
+                                                        <span>Borang Sukantara</span>
+                                                    </button>
+                                                    
+                                                    <div className="w-full flex gap-1.5 mt-1.5">
+                                                        <button 
+                                                            onClick={() => handleExportHouseMembersJSON(houseName)}
+                                                            className="flex-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-3 py-2 rounded-xl border border-emerald-100 flex items-center justify-center gap-1.5 transition-colors"
+                                                            title="Simpan data ahli rumah ini ke fail JSON"
+                                                        >
+                                                            📥 JSON Ahli
+                                                        </button>
+                                                        {userRole !== "pelawat" && (
+                                                            <button 
+                                                                onClick={() => {
+                                                                    setHouseForm({
+                                                                        nama: houseName,
+                                                                        slogan: meta.slogan || "",
+                                                                        guruPenasihat: meta.guruPenasihat || "",
+                                                                        bonusPoints: meta.bonusPoints || 0,
+                                                                        warnaLabel: meta.warnaLabel || "Ungu"
+                                                                    });
+                                                                    setIsEditingHouse(true);
+                                                                    setOriginalHouseKey(houseName);
+                                                                    setIsHouseSidebarOpen(true);
+                                                                }}
+                                                                className="bg-blue-50 hover:bg-blue-100 text-blue-700 px-3.5 py-2 rounded-xl border border-blue-100 flex items-center justify-center transition-colors"
+                                                                title="Sunting Rumah"
+                                                            >
+                                                                ✏️ Sunting
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             </div>
                         )}

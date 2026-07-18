@@ -198,16 +198,25 @@
         const getFriendlyCategory = (cat) => {
             if (!cat) return "";
             const mapping = {
-                "L12": "L12",
-                "P12": "P12",
-                "L9": "L9",
-                "P9": "P9",
-                "L7": "L7",
-                "P7": "P7",
-                "Prasekolah": "Prasekolah",
+                "L12": "L12 (12 Tahun)",
+                "P12": "P12 (12 Tahun)",
+                "L9": "L9 (9 Tahun)",
+                "P9": "P9 (9 Tahun)",
+                "L7": "L7 (7 Tahun)",
+                "P7": "P7 (7 Tahun)",
+                "Prasekolah": "Prasekolah (6 Tahun)",
                 "Terbuka": "Terbuka"
             };
-            return mapping[cat] || cat;
+            if (mapping[cat]) return mapping[cat];
+            
+            // Mengekstrak umur secara dinamik daripada teks input (Cth: L10 -> L10 (10 Tahun))
+            const match = String(cat).match(/\d+/);
+            if (match) {
+                const age = match[0];
+                const prefix = String(cat).replace(age, "").trim().toUpperCase();
+                return `${prefix}${age} (${age} Tahun)`;
+            }
+            return cat;
         };
 
         const parseTimeToSeconds = (str) => {

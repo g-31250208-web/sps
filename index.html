@@ -86,12 +86,24 @@
         const activeSchoolSubtitle = localStorage.getItem('sps_school_subtitle') || DEFAULT_SCHOOL_SUBTITLE;
         const activeCustomGasUrl = localStorage.getItem('sps_custom_gas_url') || "";
 
-        // Inisialisasi Firebase secara selamat menggunakan konfigurasi aktif
-        if (!firebase.apps.length) {
-            firebase.initializeApp(activeFirebaseConfig);
+        // Inisialisasi Firebase secara selamat
+        let db = null;
+        let auth = null;
+        let isCloudAvailable = false;
+
+        if (typeof firebase !== 'undefined') {
+            try {
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(activeFirebaseConfig);
+                }
+                auth = firebase.auth();
+                db = firebase.firestore();
+                isCloudAvailable = true;
+            } catch (err) {
+                console.warn("Gagal inisialisasi Firebase. Mod lokal diaktifkan.", err);
+            }
         }
-        const auth = firebase.auth();
-        const db = firebase.firestore();
+
         const appId = activeFirebaseConfig.projectId || "sps-skb-d8256";
 
         // Pembersihan Data Demo / Sifar Asal
@@ -183,6 +195,22 @@
             }
         };
 
+        // Pemetaan kategori secara dinamik (Friendly Label Mapper)
+        const getFriendlyCategory = (cat) => {
+            if (!cat) return "";
+            const mapping = {
+                "L12": "L12 (12 Tahun)",
+                "P12": "P12 (12 Tahun)",
+                "L9": "L9 (9 Tahun)",
+                "P9": "P9 (9 Tahun)",
+                "L7": "L7 (7 Tahun)",
+                "P7": "P7 (7 Tahun)",
+                "Prasekolah": "Prasekolah (6 Tahun)",
+                "Terbuka": "Terbuka"
+            };
+            return mapping[cat] || cat;
+        };
+
         const parseTimeToSeconds = (str) => {
             if (!str) return Infinity;
             const cleaned = str.trim().toLowerCase();
@@ -243,16 +271,6 @@
             { eventName: "Lontar Peluru", category: "P12", recordText: "8.12m", athlete: "Nurul Hidayah", year: 2020, isTrack: false }
         ];
 
-        const getFriendlyCategory = (cat) => {
-            if (cat === "L12") return "L12 (12 Tahun)";
-            if (cat === "P12") return "P12 (12 Tahun)";
-            if (cat === "L9") return "L9 (9 Tahun)";
-            if (cat === "P9") return "P9 (9 Tahun)";
-            if (cat === "L7") return "L7 (7 Tahun)";
-            if (cat === "P7") return "P7 (7 Tahun)";
-            return cat;
-        };
-
         function App() {
             const [lang, setLang] = useState('BM');
             
@@ -278,7 +296,7 @@
 
             // Setup Sekolah Baru Modal States
             const [showSchoolSetupModal, setShowSchoolSetupModal] = useState(false);
-            const [schoolSetupTab, setSchoolSetupTab] = useState("config"); // "config", "gas_script", "firebase_rules"
+            const [schoolSetupTab, setSchoolSetupTab] = useState("config"); 
             const [setupSchoolName, setSetupSchoolName] = useState(activeSchoolName);
             const [setupSchoolSubtitle, setSetupSchoolSubtitle] = useState(activeSchoolSubtitle);
             const [setupFirebaseConfigRaw, setSetupFirebaseConfigRaw] = useState(
@@ -344,10 +362,8 @@
             const [showSignatorySettings, setShowSignatorySettings] = useState(false);
             const [isArchiving, setIsArchiving] = useState(false);
 
-            // Termasuk L7 dan P7 ke dalam tatasusunan kategori lalai sistem
             const [categories, setCategories] = useState(["L12", "P12", "L9", "P9", "L7", "P7", "Prasekolah", "Terbuka"]);
 
-            // Isih Kategori mengikut urutan huruf A-Z, kemudian nombor 1-99
             const sortedCategories = useMemo(() => {
                 return [...categories].sort((a, b) => 
                     a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })
@@ -356,14 +372,40 @@
 
             const logoUrl = "https://lh3.googleusercontent.com/d/1E8tjAd7j9DJaZgngDn38agUFCvwyUffa";
 
-            // Form States
             const [athleteForm, setAthleteForm] = useState({ id: "", nama: "", kelas: "", rumah: "Merah", jantina: "Lelaki", kategori: "L12" });
             const [isEditingAthlete, setIsEditingAthlete] = useState(false);
             const [isAddAthleteSidebarOpen, setIsAddAthleteSidebarOpen] = useState(false);
             const [regMode, setRegMode] = useState("tunggal");
             const [tsvInput, setTsvInput] = useState("");
 
-            // Toggle paparan Butang Setup Sekolah Baharu (Tutup secara lalai)
+            // Pengesanan pintar untuk menukar kategori murid secara automatik
+            const handleKelasChange = (val) => {
+                let updatedCat = athleteForm.kategori;
+                const normalized = val.toLowerCase();
+                const is7Year = normalized.includes("7 tahun") || normalized.includes("tahun 1") || normalized.includes("t1") || normalized.includes("y1");
+                if (is7Year) {
+                    updatedCat = athleteForm.jantina === "Lelaki" ? "L7" : "P7";
+                } else {
+                    const is9Year = normalized.includes("9 tahun") || normalized.includes("tahun 3") || normalized.includes("t3");
+                    if (is9Year) {
+                        updatedCat = athleteForm.jantina === "Lelaki" ? "L9" : "P9";
+                    } else if (normalized.includes("pra") || normalized.includes("prasekolah") || normalized.includes("tadika")) {
+                        updatedCat = "Prasekolah";
+                    }
+                }
+                setAthleteForm(prev => ({ ...prev, kelas: val, kategori: updatedCat }));
+            };
+
+            const handleJantinaChange = (val) => {
+                let updatedCat = athleteForm.kategori;
+                const normalizedKelas = athleteForm.kelas.toLowerCase();
+                const is7Year = normalizedKelas.includes("7 tahun") || normalizedKelas.includes("tahun 1") || normalizedKelas.includes("t1");
+                if (is7Year) {
+                    updatedCat = val === "Lelaki" ? "L7" : "P7";
+                }
+                setAthleteForm(prev => ({ ...prev, jantina: val, kategori: updatedCat }));
+            };
+
             const [showSetupBtn, setShowSetupBtn] = useState(false);
 
             const [eventForm, setEventForm] = useState({ id: "", nama: "", kategori: "L12", jenis: "Balapan", format: "Individu", tarikh: "", masa: "" });
@@ -384,28 +426,6 @@
             const [announceFormText, setAnnounceFormText] = useState("");
             const [showAnnounceForm, setShowAnnounceForm] = useState(false);
 
-            const handleKelasChange = (val) => {
-                setAthleteForm(prev => {
-                    let updatedCat = prev.kategori;
-                    const cleaned = val.toLowerCase();
-                    if (cleaned.includes("7 tahun") || cleaned.includes("tahun 1") || cleaned.includes("thn 1")) {
-                        updatedCat = prev.jantina === "Lelaki" ? "L7" : "P7";
-                    }
-                    return { ...prev, kelas: val, kategori: updatedCat };
-                });
-            };
-
-            const handleJantinaChange = (val) => {
-                setAthleteForm(prev => {
-                    let updatedCat = prev.kategori;
-                    const cleaned = (prev.kelas || "").toLowerCase();
-                    if (cleaned.includes("7 tahun") || cleaned.includes("tahun 1") || cleaned.includes("thn 1")) {
-                        updatedCat = val === "Lelaki" ? "L7" : "P7";
-                    }
-                    return { ...prev, jantina: val, kategori: updatedCat };
-                });
-            };
-
             const createLog = async (action, details) => {
                 const logId = "log_" + Date.now();
                 const logData = {
@@ -418,7 +438,7 @@
                 };
 
                 try {
-                    if (isCloudActive) {
+                    if (isCloudActive && db) {
                         await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('logs').doc(logId).set(logData);
                     } else {
                         setLogs(prev => [logData, ...prev]);
@@ -444,10 +464,6 @@
                 return true;
             };
 
-            const checkAuthorityNoAlert = () => {
-                return (userRole === "admin" || userRole === "guru");
-            };
-
             const syncWithGas = async (table, action, dataObj) => {
                 const activeGasUrl = gasUrl || setupGasUrl;
                 if (!activeGasUrl) return;
@@ -464,6 +480,7 @@
             };
 
             const handleGoogleLogin = async () => {
+                if (!auth) return;
                 const provider = new firebase.auth.GoogleAuthProvider();
                 try {
                     await auth.signInWithPopup(provider);
@@ -478,7 +495,6 @@
                 e.preventDefault();
                 const trimmed = passcodeInput.trim();
                 
-                // Kunci laluan lalai untuk sekolah SK Bikang
                 const defaultAdminPass = "ADMIN7608";
                 const defaultGuruPass = "GURU7608";
 
@@ -522,7 +538,9 @@
                     localStorage.removeItem('sps_local_role');
                     localStorage.removeItem('sps_local_name');
                     localStorage.removeItem('sps_local_email');
-                    await auth.signOut();
+                    if (auth) {
+                        await auth.signOut();
+                    }
                     setCurrentUser(null);
                     setUserRole("pelawat");
                     showToastMessage("Log keluar berjaya!", "success");
@@ -656,7 +674,6 @@ function deleteRow(sheet, id) {
             const rawFirebaseRulesString = `rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Peraturan Multi-School untuk Pendaftaran Awan Sukan Sekolah
     match /artifacts/{appId}/public/data/{collectionName}/{documentId} {
       allow read, write: if request.auth != null;
     }
@@ -683,7 +700,6 @@ service cloud.firestore {
             const handleSaveSchoolSetup = (e) => {
                 e.preventDefault();
                 
-                // Sahkan format JSON Firebase Config
                 if (setupFirebaseConfigRaw.trim()) {
                     try {
                         JSON.parse(setupFirebaseConfigRaw.trim());
@@ -718,7 +734,7 @@ service cloud.firestore {
                 setConfirmModal({
                     show: true,
                     title: "Tetapkan semula ke Lalai (Default)?",
-                    message: "Tindakan ini akan memadamkan tetapan sekolah tersuai anda and mengembalikan portal kepada pangkalan data asal SK Bikang. Seterusnya halaman akan dimuat semula.",
+                    message: "Tindakan ini akan memadamkan tetapan sekolah tersuai anda dan mengembalikan portal kepada pangkalan data asal SK Bikang. Seterusnya halaman akan dimuat semula.",
                     onConfirm: () => {
                         localStorage.removeItem('sps_school_name');
                         localStorage.removeItem('sps_school_subtitle');
@@ -788,12 +804,16 @@ service cloud.firestore {
             }, [currentUser, adminList]);
 
             useEffect(() => {
+                if (!isCloudAvailable || !auth) {
+                    setIsCloudActive(false);
+                    setUserRole("pelawat");
+                    return;
+                }
                 const unsubscribe = auth.onAuthStateChanged((user) => {
                     if (user) {
                         setCurrentUser(user);
                         setIsCloudActive(true);
                     } else {
-                        // Semak sekiranya ada sesi log masuk manual kunci laluan aktif pada localstorage
                         const cachedRole = localStorage.getItem('sps_local_role');
                         const cachedName = localStorage.getItem('sps_local_name');
                         const cachedEmail = localStorage.getItem('sps_local_email');
@@ -815,7 +835,7 @@ service cloud.firestore {
             }, []);
 
             useEffect(() => {
-                if (!isCloudActive) return;
+                if (!isCloudActive || !db) return;
 
                 const pathAthletes = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('athletes');
                 const pathEvents = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('events');
@@ -1041,7 +1061,7 @@ service cloud.firestore {
                 };
 
                 try {
-                    if (isCloudActive) {
+                    if (isCloudActive && db) {
                         await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('athletes').doc(selectedStudentId).set(updatedAthlete);
                         await syncWithGas("students", "save", { 
                             id: selectedStudentId, 
@@ -1228,7 +1248,7 @@ service cloud.firestore {
             const handleSavePoints = async () => {
                 if (!checkAdminAuthority()) return;
                 try {
-                    if (isCloudActive) {
+                    if (isCloudActive && db) {
                         await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('metadata').doc('points').set(pointsConfig);
                     }
                     createLog("Ubah Konfigurasi Mata", "Mengemaskini pemberat poin kejohanan (Emas, Perak, Gangsa, dsb)");
@@ -1265,7 +1285,7 @@ service cloud.firestore {
                 
                 const docId = "adm_" + Date.now();
                 try {
-                    if (isCloudActive) {
+                    if (isCloudActive && db) {
                         await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('admins').doc(docId).set({
                             id: docId,
                             email: emailToAdd,
@@ -1294,7 +1314,7 @@ service cloud.firestore {
                     message: `Adakah anda pasti ingin membatalkan kelayakan Admin Utama bagi akaun ${adminDoc.email}?`,
                     onConfirm: async () => {
                         try {
-                            if (isCloudActive) {
+                            if (isCloudActive && db) {
                                 await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('admins').doc(adminDoc.id).delete();
                             } else {
                                 setAdminList(prev => prev.filter(a => a.id !== adminDoc.id));
@@ -1313,7 +1333,7 @@ service cloud.firestore {
                 e.preventDefault();
                 if (!checkAdminAuthority()) return;
                 try {
-                    if (isCloudActive) {
+                    if (isCloudActive && db) {
                         await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('metadata').doc('gas').set({ url: gasUrl });
                     }
                     createLog("Ubah Konfigurasi GAS", "Mengemaskini pautan integrasi Google Sheets (GAS)");
@@ -1327,7 +1347,7 @@ service cloud.firestore {
             const handleSaveConfig = async () => {
                 if (!checkAdminAuthority()) return;
                 try {
-                    if (isCloudActive) {
+                    if (isCloudActive && db) {
                         await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('metadata').doc('config').set({ 
                             activeYear,
                             maxIndividu,
@@ -1417,7 +1437,7 @@ service cloud.firestore {
                         if (data.heats) setHeats(data.heats);
                         if (data.housesMetadata) setHousesMetadata(data.housesMetadata);
 
-                        if (isCloudActive) {
+                        if (isCloudActive && db) {
                             showToastMessage("Sedang menyelaraskan data sandaran ke storan awan...", "info");
                             if (data.athletes) {
                                 for (const ath of data.athletes) {
@@ -1463,7 +1483,7 @@ service cloud.firestore {
                     message: "Tindakan ini akan pemadaman semua rekod murid (atlet), senarai acara, rekod saringan larian, dan keputusan pingat semasa. Adakah anda pasti?",
                     onConfirm: async () => {
                         try {
-                            if (isCloudActive) {
+                            if (isCloudActive && db) {
                                 const athletesRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('athletes');
                                 const eventsRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('events');
                                 const resultsRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('results');
@@ -1715,7 +1735,7 @@ service cloud.firestore {
                             };
                         }).sort((a, b) => a.lane - b.lane);
                     } else {
-                        runnersToPrint = (athletes || []).filter(a => a.acaraIds && a.acaraIds.includes(targetData.id)).map(ath => ({
+                        runnersToPrint = filteredAthletes.map(ath => ({
                             nama: ath.nama || "",
                             kelas: ath.kelas || "",
                             rumah: ath.rumah || "",
@@ -2049,7 +2069,7 @@ service cloud.firestore {
                     const docId = athleteForm.id || "A_" + Date.now();
                     const updatedAthlete = { ...athleteForm, id: docId };
 
-                    if (isCloudActive) {
+                    if (isCloudActive && db) {
                         await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('athletes').doc(docId).set(updatedAthlete);
                         await syncWithGas("students", "save", { 
                             id: docId, 
@@ -2152,9 +2172,9 @@ service cloud.firestore {
                         else if (rawKategori?.includes("TERBUKA") || rawKategori?.includes("OPEN")) kategori = "Terbuka";
                         else if (rawKategori?.includes("L") && rawKategori?.includes("9")) kategori = "L9";
                         else if (rawKategori?.includes("P") && rawKategori?.includes("9")) kategori = "P9";
-                        else if (rawKategori?.includes("P") && rawKategori?.includes("12")) kategori = "P12";
                         else if (rawKategori?.includes("L") && rawKategori?.includes("7")) kategori = "L7";
                         else if (rawKategori?.includes("P") && rawKategori?.includes("7")) kategori = "P7";
+                        else if (rawKategori?.includes("P") && rawKategori?.includes("12")) kategori = "P12";
                     }
 
                     let rumah = "Merah";
@@ -2202,7 +2222,7 @@ service cloud.firestore {
                 try {
                     showToastMessage(`Sedang mendaftarkan ${parsedAthletes.length} ahli ke Awan...`, "info");
                     
-                    if (isCloudActive) {
+                    if (isCloudActive && db) {
                         const promises = parsedAthletes.map((ath, index) => {
                             const docId = "A_" + (Date.now() + index);
                             const updatedAthlete = { ...ath, id: docId };
@@ -2254,7 +2274,7 @@ service cloud.firestore {
                 const updatedEvent = { ...eventForm, id: docId };
 
                 try {
-                    if (isCloudActive) {
+                    if (isCloudActive && db) {
                         await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('events').doc(docId).set(updatedEvent);
                         await syncWithGas("events", "save", { id: docId, name: eventForm.nama, category: eventForm.jenis, level: eventForm.kategori, date: eventForm.tarikh, time: eventForm.masa });
                     } else {
@@ -2289,7 +2309,7 @@ service cloud.firestore {
                     message: "Adakah anda pasti ingin memadam SEMUA acara sukan yang berdaftar? Tindakan ini akan memadam semua rekod keputusan pingat dan saringan berkaitan acara-acara ini secara kekal!",
                     onConfirm: async () => {
                         try {
-                            if (isCloudActive) {
+                            if (isCloudActive && db) {
                                 const eventsRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('events');
                                 const evSnap = await eventsRef.get();
                                 await Promise.all(evSnap.docs.map(doc => doc.ref.delete()));
@@ -2318,7 +2338,7 @@ service cloud.firestore {
                     message: "Tindakan ini akan memadam acara sukan ini beserta segala keputusan pingat di bawahnya.",
                     onConfirm: async () => {
                         try {
-                            if (isCloudActive) {
+                            if (isCloudActive && db) {
                                 await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('events').doc(eventId).delete();
                                 await syncWithGas("events", "delete", { id: eventId });
                             } else {
@@ -2354,7 +2374,7 @@ service cloud.firestore {
                 const newHeat = { id: docId, ...heatForm };
 
                 try {
-                    if (isCloudActive) {
+                    if (isCloudActive && db) {
                         await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('heats').doc(docId).set(newHeat);
                     } else {
                         setHeats([...(heats || []), newHeat]);
@@ -2382,7 +2402,7 @@ service cloud.firestore {
                     message: "Tindakan ini akan memadamkan catatan kelayakan saringan atlet ini.",
                     onConfirm: async () => {
                         try {
-                            if (isCloudActive) {
+                            if (isCloudActive && db) {
                                 await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('heats').doc(heatId).delete();
                             } else {
                                 setHeats((heats || []).filter(h => h.id !== heatId));
@@ -2416,7 +2436,7 @@ service cloud.firestore {
                 const newResult = { id: docId, ...resultForm };
 
                 try {
-                    if (isCloudActive) {
+                    if (isCloudActive && db) {
                         await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('results').doc(docId).set(newResult);
                         await syncWithGas("results", "save", { id: docId, eventId: resultForm.eventId, gold: resultForm.athleteId, goldRecord: resultForm.catatan });
                     } else {
@@ -2445,7 +2465,7 @@ service cloud.firestore {
                     message: "Tindakan ini akan mengemas kini mata rumah sukan berkaitan secara automatik.",
                     onConfirm: async () => {
                         try {
-                            if (isCloudActive) {
+                            if (isCloudActive && db) {
                                 await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('results').doc(resId).delete();
                                 await syncWithGas("results", "delete", { id: resId });
                             } else {
@@ -2482,7 +2502,7 @@ service cloud.firestore {
                 };
 
                 try {
-                    if (isCloudActive) {
+                    if (isCloudActive && db) {
                         await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('metadata').doc('houses').set(updated);
                         await syncWithGas("houses", "save", { id: cleanName, name: `Rumah ${cleanName}`, slogan: houseForm.slogan, guruPenasihat: "", bonusPoints: parseInt(houseForm.bonusPoints) || 0, warnaLabel: houseForm.warnaLabel });
                     } else {
@@ -2531,7 +2551,7 @@ service cloud.firestore {
                 }
 
                 try {
-                    if (isCloudActive) {
+                    if (isCloudActive && db) {
                         await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('metadata').doc('houses').set(updatedMetadata);
                         if (newName !== oldName) {
                             const affectedAthletes = (athletes || []).filter(a => a.rumah === oldName);
@@ -2583,7 +2603,7 @@ service cloud.firestore {
                 };
 
                 try {
-                    if (isCloudActive) {
+                    if (isCloudActive && db) {
                         await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('metadata').doc('houses').set(updatedMeta);
                     } else {
                         setHousesMetadata(updatedMeta);
@@ -2616,7 +2636,7 @@ service cloud.firestore {
                 };
 
                 try {
-                    if (isCloudActive) {
+                    if (isCloudActive && db) {
                         await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('metadata').doc('houses').set(updatedMeta);
                     } else {
                         setHousesMetadata(updatedMeta);
@@ -2641,7 +2661,7 @@ service cloud.firestore {
                 };
 
                 try {
-                    if (isCloudActive) {
+                    if (isCloudActive && db) {
                         await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('announcements').doc(newNotice.id).set(newNotice);
                     } else {
                         setAnnouncements([newNotice, ...(announcements || [])]);
@@ -2659,7 +2679,7 @@ service cloud.firestore {
                 if (!checkAuthority()) return;
                 const targetNotice = (announcements || []).find(a => a.id === id);
                 try {
-                    if (isCloudActive) {
+                    if (isCloudActive && db) {
                         await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('announcements').doc(id).delete();
                     } else {
                         setAnnouncements((announcements || []).filter(a => a.id !== id));
@@ -2680,7 +2700,7 @@ service cloud.firestore {
                     message: "Apakah anda yakin ingin menghapus atlet ini daripada senarai peserta kejohanan sekolah?",
                     onConfirm: async () => {
                         try {
-                            if (isCloudActive) {
+                            if (isCloudActive && db) {
                                 await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('athletes').doc(athleteId).delete();
                                 await syncWithGas("students", "delete", { id: athleteId });
                             } else {
@@ -2782,7 +2802,7 @@ service cloud.firestore {
                                     }}
                                 />
                                 <div>
-                                    <h1 className="text-xl font-extrabold tracking-tight flex flex-wrap items-center gap-2 font-bold">
+                                    <h1 className="text-xl font-extrabold tracking-tight flex flex-wrap items-center gap-2">
                                         {t.title}
                                         <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold ${isCloudActive ? "bg-emerald-500/20 text-emerald-300" : "bg-amber-500/20 text-amber-300"}`}>
                                             ● {isCloudActive ? "Awan Aktif 🟢" : "Mod Lokal 🟡"}
@@ -2805,7 +2825,6 @@ service cloud.firestore {
                                     🌐 {lang === "BM" ? "BM / EN" : "EN / BM"}
                                 </button>
 
-                                {/* Butang Setup Sekolah Baru (Dinamik Multi-School) */}
                                 {showSetupBtn && (
                                     <button 
                                         onClick={() => setShowSchoolSetupModal(true)}
@@ -2816,7 +2835,6 @@ service cloud.firestore {
                                     </button>
                                 )}
 
-                                {/* Panel Pentadbir Eksklusif Admin Utama sahaja */}
                                 {userRole === "admin" && (
                                     <div className="relative inline-block shrink-0" ref={adminMenuRef}>
                                         <button 
@@ -2833,7 +2851,6 @@ service cloud.firestore {
                                                     <p className="text-xs text-indigo-600 font-semibold mt-0.5">{userRole === "admin" ? "Sistem Pentadbir" : "Akaun Guru"}</p>
                                                 </div>
 
-                                                {/* Suis Toggle untuk keluarkan butang setup sekolah baharu */}
                                                 <div className="px-4 py-2.5 hover:bg-slate-50 flex items-center justify-between border-b border-slate-100 text-xs font-semibold">
                                                     <span className="text-slate-700 flex items-center gap-1.5">
                                                         <span>⚙️ Papar Butang Setup</span>
@@ -2897,7 +2914,7 @@ service cloud.firestore {
                         </div>
                     </header>
 
-                    {/* Navigasi Tab */}
+                    {}
                     <div className="bg-white border-b border-slate-200 sticky top-0 z-40">
                         <div className="max-w-7xl mx-auto px-4 flex overflow-x-auto space-x-1 py-2">
                             {[
@@ -2906,7 +2923,7 @@ service cloud.firestore {
                                 { id: "atlit", label: t.atlit, desc: "Saring & Kelola Atlet" },
                                 { id: "acara", label: t.acara, desc: "Jadual & Kategori Sukan" },
                                 { id: "keputusan", label: t.keputusan, desc: "Keputusan & Saringan" },
-                                { id: "pasca_sukan", label: t.pasca_sukan, desc: "Sijil, Laporan & Arkib" }
+                                { id: "pasca_sukan", label: t.pasca_sukan, desc: "Sijil, Kokum & Arkib" }
                             ].map(tab => (
                                 <button
                                     key={tab.id}
@@ -3017,6 +3034,7 @@ service cloud.firestore {
                                         </div>
                                     </div>
 
+                                    {}
                                     <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
                                         <h3 className="text-sm font-bold text-slate-900 mb-4 uppercase tracking-wider">{t.currentEvents}</h3>
                                         <div className="space-y-3">
@@ -3028,7 +3046,7 @@ service cloud.firestore {
                                                     return (
                                                         <div key={alert.id} className="flex justify-between items-center p-3 rounded-xl bg-slate-50 text-xs">
                                                             <div>
-                                                                <span className="font-bold text-slate-800 block font-bold">
+                                                                <span className="font-bold text-slate-800 block">
                                                                     <span className="font-mono bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded mr-1.5 text-[10px]">{alert.kodAcara}</span>
                                                                     {alert.nama}
                                                                 </span>
@@ -3071,7 +3089,7 @@ service cloud.firestore {
                                             }}
                                             className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-5 py-3 rounded-xl shadow-lg hover:shadow-indigo-600/20 transition-all flex items-center gap-2 shrink-0 self-stretch sm:self-auto justify-center"
                                         >
-                                            <span>🏠 Tambah / Sunting Rumah Sukan</span>
+                                            <span>⚙️ Tambah / Sunting Rumah Sukan</span>
                                         </button>
                                     )}
                                 </div>
@@ -3086,7 +3104,7 @@ service cloud.firestore {
                                         <div className="relative w-full max-w-md bg-white shadow-2xl flex flex-col z-[101] animate-in slide-in-from-right duration-200">
                                             <div className="flex justify-between items-center p-4 border-b border-slate-200">
                                                 <div>
-                                                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider font-bold">
+                                                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">
                                                         {isEditingHouse ? "✏️ Sunting Rumah Sukan" : "🏠 Tambah Rumah Sukan"}
                                                     </h3>
                                                     <p className="text-[10px] text-slate-400 font-semibold mt-0.5">SPS Control Panel</p>
@@ -3099,6 +3117,7 @@ service cloud.firestore {
                                                 </button>
                                             </div>
 
+                                            {}
                                             <div className="flex-1 overflow-y-auto p-4 space-y-6">
                                                 <form onSubmit={isEditingHouse ? handleEditHouseSubmit : handleAddHouseSubmitDirect} className="space-y-4 text-xs font-semibold">
                                                     <div>
@@ -3173,7 +3192,7 @@ service cloud.firestore {
                                                 <div className="flex justify-between items-center border-b pb-3">
                                                     <div className="flex items-center gap-2">
                                                         {renderEmblem(cls.emoji, "w-6 h-6")}
-                                                        <h3 className="text-sm font-black text-slate-900 uppercase font-bold font-bold">
+                                                        <h3 className="text-sm font-black text-slate-900 uppercase font-bold">
                                                             Rumah {houseName}
                                                         </h3>
                                                         <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ml-2 ${cls.bg} ${cls.text}`}>
@@ -3206,8 +3225,9 @@ service cloud.firestore {
                                                         <button onClick={() => handleExportHouseMembersJSON(houseName)} className="text-[10px] font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-2.5 py-1.5 rounded-lg flex items-center gap-1" title="Eksport Ahli Rumah Ini sahaja">📤 Eksport JSON</button>
                                                     </div>
                                                 </div>
-                                                <p className="text-xs font-semibold text-slate-400 italic">"{meta.slogan || 'Saga Membara Selamanya Juara'}"</p>
+                                                <p className="text-xs font-semibold text-slate-400 italic font-bold">"{meta.slogan || 'Saga Membara Selamanya Juara'}"</p>
 
+                                                {}
                                                 <div className="border-t pt-3">
                                                     <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">👥 GURU PENASIHAT</h4>
                                                     <div className="flex flex-wrap gap-1.5 mb-2">
@@ -3232,7 +3252,7 @@ service cloud.firestore {
                                                                 placeholder="Nama Guru"
                                                                 value={newAdvisorText[houseName] || ""}
                                                                 onChange={(e) => setNewAdvisorText({ ...newAdvisorText, [houseName]: e.target.value })}
-                                                                className="flex-1 p-1.5 rounded-lg border border-slate-200 focus:outline-none bg-white"
+                                                                className="flex-1 p-1.5 rounded-lg border border-slate-200 focus:outline-none"
                                                             />
                                                             <button onClick={() => handleAddAdvisor(houseName)} className="bg-indigo-600 text-white font-bold px-3 py-1.5 rounded-lg">+ Tambah</button>
                                                         </div>
@@ -3267,7 +3287,7 @@ service cloud.firestore {
                                                                             .map(ath => (
                                                                                 <div key={ath.id} className="flex justify-between items-center bg-white p-1.5 rounded border border-slate-100">
                                                                                     <span className="truncate max-w-[130px]" title={ath.nama}>{(ath.nama || "").toUpperCase()}</span>
-                                                                                    <span className="text-[9px] bg-slate-100 px-1 py-0.5 rounded text-slate-500 font-mono">{getFriendlyCategory(ath.kategori)}</span>
+                                                                                    <span className="text-[9px] bg-slate-100 px-1 py-0.5 rounded text-slate-500 font-mono font-bold">{getFriendlyCategory(ath.kategori)}</span>
                                                                                 </div>
                                                                             ))
                                                                         }
@@ -3298,6 +3318,7 @@ service cloud.firestore {
                                             <p className="text-xs text-slate-400 font-medium">Urus maklumat pendaftaran profil ahli sukan, menetapkan nombor bib (no. atlet) dan pendaftaran acara.</p>
                                         </div>
                                     </div>
+                                    {}
                                     <div className="flex flex-wrap gap-2 w-full sm:w-auto self-stretch sm:self-auto justify-center">
                                         {userRole !== "pelawat" && (
                                             <>
@@ -3353,6 +3374,7 @@ service cloud.firestore {
                                                 </button>
                                             </div>
 
+                                            {}
                                             <div className="flex-1 overflow-y-auto p-4 space-y-6">
                                                 <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 flex justify-between items-center">
                                                     <span className="text-xs font-bold text-slate-600">Mod Pendaftaran:</span>
@@ -3385,7 +3407,7 @@ service cloud.firestore {
                                                                     value={athleteForm.kelas} 
                                                                     onChange={(e) => handleKelasChange(e.target.value)} 
                                                                     className="w-full p-2.5 border rounded-xl focus:outline-none bg-white font-bold" 
-                                                                    placeholder="Cth: 1 Cemerlang" 
+                                                                    placeholder="Cth: 1 Cemerlang atau 7 Tahun" 
                                                                 />
                                                             </div>
                                                             <div>
@@ -3447,6 +3469,7 @@ service cloud.firestore {
                                     </div>
                                 )}
 
+                                {}
                                 {/* Sidebar Daftar Acara & No. Atlet */}
                                 {isAssignEventSidebarOpen && (
                                     <div className="fixed inset-0 z-[100] flex justify-end">
@@ -3563,7 +3586,7 @@ service cloud.firestore {
                                                                 </div>
                                                             </div>
 
-                                                            <button type="submit" className="w-full bg-slate-800 text-white font-bold py-2 rounded-xl shadow-md">Simpan Pendaftaran Acara</button>
+                                                            <button type="submit" className="w-full bg-slate-800 text-white font-bold py-2 rounded-xl shadow-md font-bold">Simpan Pendaftaran Acara</button>
                                                         </div>
                                                     )}
                                                 </form>
@@ -3572,24 +3595,25 @@ service cloud.firestore {
                                     </div>
                                 )}
 
+                                {}
                                 {/* Senarai Rasmi Atlet */}
                                 <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm relative">
                                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b pb-3 mb-4">
                                         <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2 font-bold">
                                             <span>Senarai Rasmi Atlet Berdaftar</span>
-                                            <span className="bg-indigo-100 text-indigo-700 text-[11px] font-black px-2.5 py-0.5 rounded-full font-bold">
+                                            <span className="bg-indigo-100 text-indigo-700 text-[11px] font-black px-2.5 py-0.5 rounded-full">
                                                 {filteredAthletes.length} orang
                                             </span>
                                         </h3>
                                         
-                                        <div className="flex flex-wrap gap-2 text-xs items-center">
-                                            <select value={filterHouse} onChange={(e) => setFilterHouse(e.target.value)} className="p-1.5 border rounded-lg bg-slate-50 font-bold">
+                                        <div className="flex flex-wrap gap-2 text-xs items-center font-bold">
+                                            <select value={filterHouse} onChange={(e) => setFilterHouse(e.target.value)} className="p-1.5 border rounded-lg bg-slate-50">
                                                 <option value="Semua">Semua Rumah</option>
                                                 {Object.keys(housesMetadata || INITIAL_HOUSES_METADATA).map(name => (
                                                     <option key={name} value={name}>{name}</option>
                                                 ))}
                                             </select>
-                                            <select value={filterEvent} onChange={(e) => setFilterEvent(e.target.value)} className="p-1.5 border rounded-lg bg-slate-50 font-bold">
+                                            <select value={filterEvent} onChange={(e) => setFilterEvent(e.target.value)} className="p-1.5 border rounded-lg bg-slate-50">
                                                 <option value="Semua">Semua Acara</option>
                                                 {eventsWithCode.map(ev => (
                                                     <option key={ev.id} value={ev.id}>[{ev.kodAcara}] {ev.nama.toUpperCase()} ({getFriendlyCategory(ev.kategori)})</option>
@@ -3628,8 +3652,8 @@ service cloud.firestore {
                                                     <th className="py-2.5">No. Atlet</th>
                                                     <th className="py-2.5">Nama Atlet</th>
                                                     <th className="py-2.5">Kelas</th>
-                                                    <th className="py-2.5">Rumah Sukan</th>
                                                     <th className="py-2.5">Kategori</th>
+                                                    <th className="py-2.5">Rumah Sukan</th>
                                                     <th className="py-2.5">Acara Sukan Disertai</th>
                                                     {userRole !== "pelawat" && <th className="py-2.5 text-center">Tindakan</th>}
                                                 </tr>
@@ -3641,12 +3665,12 @@ service cloud.firestore {
                                                         <td className="py-2.5 font-mono text-indigo-700 font-bold">{ath.noAtlet || "-"}</td>
                                                         <td className="py-2.5 uppercase font-bold text-slate-800">{ath.nama}</td>
                                                         <td className="py-2.5">{ath.kelas}</td>
+                                                        <td className="py-2.5 font-bold text-indigo-700">{getFriendlyCategory(ath.kategori)}</td>
                                                         <td className="py-2.5">
                                                             <span className="px-2 py-0.5 rounded font-bold text-[10px] bg-slate-100">
                                                                 {ath.rumah}
                                                             </span>
                                                         </td>
-                                                        <td className="py-2.5 font-bold text-indigo-600">{getFriendlyCategory(ath.kategori)}</td>
                                                         <td className="py-2.5">
                                                             <div className="flex flex-wrap gap-1">
                                                                 {ath.acaraIds && ath.acaraIds.length > 0 ? (
@@ -3715,6 +3739,7 @@ service cloud.firestore {
                                     )}
                                 </div>
 
+                                {}
                                 {isEventSidebarOpen && (
                                     <div className="fixed inset-0 z-[100] flex justify-end">
                                         <div 
@@ -3726,7 +3751,7 @@ service cloud.firestore {
                                             <div className="flex justify-between items-center p-4 border-b border-slate-200 bg-white">
                                                 <div>
                                                     <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider font-bold">
-                                                        ⏱️ PANEL DAFTAR ACARA
+                                                        ⏱️ PANEL ACARA SUKAN
                                                     </h3>
                                                 </div>
                                                 <button onClick={() => setIsEventSidebarOpen(false)} className="text-slate-400 text-xs font-bold">✕ Sembunyikan</button>
@@ -3741,16 +3766,16 @@ service cloud.firestore {
                                                             required 
                                                             value={eventForm.nama} 
                                                             onChange={(e) => setEventForm({ ...eventForm, nama: e.target.value })} 
-                                                            className="w-full p-2.5 border rounded-xl font-bold font-bold" 
+                                                            className="w-full p-2.5 border rounded-xl font-bold" 
                                                             placeholder="Cth: Lari 100m" 
                                                         />
                                                     </div>
 
                                                     <div className="grid grid-cols-12 gap-3">
                                                         <div className="col-span-8">
-                                                            <label className="block text-slate-500 mb-1 font-bold">Kategori Umur</label>
+                                                            <label className="block text-slate-500 mb-1">Kategori Umur</label>
                                                             <div className="flex gap-1.5 mb-1">
-                                                                <select value={eventForm.kategori} onChange={(e) => setEventForm({ ...eventForm, kategori: e.target.value })} className="flex-1 p-2.5 border rounded-xl bg-white font-bold font-bold">
+                                                                <select value={eventForm.kategori} onChange={(e) => setEventForm({ ...eventForm, kategori: e.target.value })} className="flex-1 p-2.5 border rounded-xl bg-white font-bold">
                                                                     {sortedCategories.map(cat => (
                                                                         <option key={cat} value={cat}>{getFriendlyCategory(cat)}</option>
                                                                     ))}
@@ -3768,7 +3793,7 @@ service cloud.firestore {
                                                                                 onConfirm: async () => {
                                                                                     const updated = categories.filter(c => c !== toDelete);
                                                                                     setCategories(updated);
-                                                                                    if (isCloudActive) {
+                                                                                    if (isCloudActive && db) {
                                                                                         await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('metadata').doc('config').set({ 
                                                                                             activeYear, maxIndividu, maxKumpulan, categories: updated
                                                                                         }, { merge: true });
@@ -3793,7 +3818,7 @@ service cloud.firestore {
                                                                         type="text" 
                                                                         placeholder="Kategori baru..." 
                                                                         id="new-category-input"
-                                                                        className="flex-1 p-2.5 border rounded-xl text-[11px] font-bold focus:outline-none bg-white font-bold"
+                                                                        className="flex-1 p-2.5 border rounded-xl text-[11px] font-bold focus:outline-none bg-white"
                                                                     />
                                                                     <button 
                                                                         type="button"
@@ -3807,7 +3832,7 @@ service cloud.firestore {
                                                                             }
                                                                             const updated = [...categories, newVal];
                                                                             setCategories(updated);
-                                                                            if (isCloudActive) {
+                                                                            if (isCloudActive && db) {
                                                                                 await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('metadata').doc('config').set({ 
                                                                                     activeYear, maxIndividu, maxKumpulan, categories: updated
                                                                                 }, { merge: true });
@@ -3836,11 +3861,11 @@ service cloud.firestore {
                                                     <div className="grid grid-cols-2 gap-3">
                                                         <div>
                                                             <label className="block text-slate-500 mb-1">Tarikh</label>
-                                                            <input type="date" value={eventForm.tarikh} onChange={(e) => setEventForm({ ...eventForm, tarikh: e.target.value })} className="w-full p-2.5 border rounded-xl" />
+                                                            <input type="date" value={eventForm.tarikh} onChange={(e) => setEventForm({ ...eventForm, tarikh: e.target.value })} className="w-full p-2.5 border rounded-xl font-bold text-slate-700" />
                                                         </div>
                                                         <div>
                                                             <label className="block text-slate-500 mb-1">Masa</label>
-                                                            <input type="time" value={eventForm.masa} onChange={(e) => setEventForm({ ...eventForm, masa: e.target.value })} className="w-full p-2.5 border rounded-xl" />
+                                                            <input type="time" value={eventForm.masa} onChange={(e) => setEventForm({ ...eventForm, masa: e.target.value })} className="w-full p-2.5 border rounded-xl font-bold text-slate-700" />
                                                         </div>
                                                     </div>
 
@@ -3852,17 +3877,16 @@ service cloud.firestore {
                                                         </select>
                                                     </div>
 
-                                                    <button type="submit" className="w-full bg-indigo-600 text-white font-bold py-2.5 rounded-xl shadow-lg font-bold">
-                                                        {isEditingEvent ? "Simpan Perubahan Acara" : "Daftar Acara Sukan"}
-                                                    </button>
+                                                    <button type="submit" className="w-full bg-indigo-600 text-white font-bold py-2.5 rounded-xl">{isEditingEvent ? "Kemas Kini Acara" : "Daftar Acara Sukan"}</button>
                                                 </form>
                                             </div>
                                         </div>
                                     </div>
                                 )}
 
-                                {/* Senarai Penjadualan Acara dengan Butang Sunting di sebelah kiri butang padam */}
-                                <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
+                                {}
+                                {/* Senarai Penjadualan Acara */}
+                                <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm font-bold">
                                     <div className="flex justify-between items-center border-b pb-3 mb-4">
                                         <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Senarai Penjadualan Rasmi</h3>
                                         {userRole === "admin" && (
@@ -3881,36 +3905,38 @@ service cloud.firestore {
                                             eventsWithCode.map((ev) => (
                                                 <div key={ev.id} className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 rounded-xl bg-slate-50 border text-xs font-semibold">
                                                     <div className="flex items-center gap-3">
-                                                        <span className="font-mono bg-indigo-600 text-white font-bold px-3 py-1.5 rounded-xl tracking-wider text-xs font-bold">{ev.kodAcara}</span>
+                                                        <span className="font-mono bg-indigo-600 text-white font-bold px-3 py-1.5 rounded-xl tracking-wider text-xs">{ev.kodAcara}</span>
                                                         <div>
-                                                            <h4 className="font-extrabold text-slate-800 text-sm font-bold">{(ev.nama || "").toUpperCase()} ({getFriendlyCategory(ev.kategori)})</h4>
-                                                            <p className="text-slate-400 text-[10.5px]">Jenis: {ev.jenis} | Format: {ev.format || "Individu"}</p>
+                                                            <h4 className="font-extrabold text-slate-800 text-sm">{(ev.nama || "").toUpperCase()} ({getFriendlyCategory(ev.kategori)})</h4>
+                                                            <p className="text-slate-400 text-[10.5px]">Jenis: {ev.jenis}</p>
                                                         </div>
                                                     </div>
                                                     <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto">
                                                         <div className="text-left sm:text-right">
-                                                            <p className="font-bold text-slate-600">📅 {ev.tarikh || "N/A"} (⏱️ {ev.masa || "--:--"})</p>
+                                                            <p className="font-bold text-slate-600">📅 {ev.tarikh || "N/A"}</p>
                                                         </div>
                                                         {userRole !== "pelawat" && (
-                                                            <div className="flex items-center gap-1.5">
-                                                                <button 
+                                                            <div className="flex gap-2">
+                                                                <button
                                                                     onClick={() => {
-                                                                        setEventForm(ev);
+                                                                        setEventForm({
+                                                                            id: ev.id,
+                                                                            nama: ev.nama,
+                                                                            kategori: ev.kategori,
+                                                                            jenis: ev.jenis,
+                                                                            format: ev.format || "Individu",
+                                                                            tarikh: ev.tarikh || "",
+                                                                            masa: ev.masa || ""
+                                                                        });
                                                                         setIsEditingEvent(true);
                                                                         setIsEventSidebarOpen(true);
                                                                     }}
-                                                                    className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-all text-xs"
+                                                                    className="p-1 text-blue-600 hover:bg-blue-50 rounded"
                                                                     title="Sunting Acara"
                                                                 >
                                                                     ✏️
                                                                 </button>
-                                                                <button 
-                                                                    onClick={() => handleDeleteEvent(ev.id)} 
-                                                                    className="p-1.5 text-red-500 hover:bg-red-50 rounded transition-all text-xs"
-                                                                    title="Hapus Acara"
-                                                                >
-                                                                    ✕
-                                                                </button>
+                                                                <button onClick={() => handleDeleteEvent(ev.id)} className="p-1 text-red-500 hover:bg-red-50 rounded" title="Padam Acara">✕</button>
                                                             </div>
                                                         )}
                                                     </div>
@@ -3926,10 +3952,10 @@ service cloud.firestore {
                             <div className="space-y-6">
                                 <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
                                     <div>
-                                        <h3 className="text-sm font-bold text-slate-900">🖨️ Pusat Dokumentasi</h3>
-                                        <p className="text-xs text-slate-400 mt-1">Sediakan dan cetak rekod keputusan larian.</p>
+                                        <h3 className="text-sm font-bold text-slate-900 font-bold">🖨️ PUSAT DOKUMENTASI RASMI</h3>
+                                        <p className="text-xs text-slate-400 mt-1">Sediakan dan cetak rekod keputusan kejohanan secara rasmi.</p>
                                     </div>
-                                    <button onClick={() => executeBypassPrint('rekod_keseluruhan')} className="bg-indigo-600 text-white font-bold text-xs px-4 py-2.5 rounded-xl flex items-center gap-2">Cetak Keputusan Penuh</button>
+                                    <button onClick={() => executeBypassPrint('rekod_keseluruhan')} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl flex items-center gap-2 font-bold shadow-md transition-all">Cetak Keputusan Penuh</button>
                                 </div>
 
                                 <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
@@ -3943,7 +3969,7 @@ service cloud.firestore {
                                                     setResultForm(prev => ({ ...prev, eventId: val }));
                                                     setHeatForm(prev => ({ ...prev, eventId: val }));
                                                 }} 
-                                                className="w-full p-3 border rounded-xl bg-white text-xs font-semibold font-bold"
+                                                className="w-full p-3 border rounded-xl bg-white text-xs font-bold text-slate-700"
                                             >
                                                 <option value="">-- Sila Pilih Acara --</option>
                                                 {eventsWithCode.map(ev => (
@@ -3964,16 +3990,17 @@ service cloud.firestore {
                                     </div>
                                 </div>
 
+                                {}
                                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                                     <div className="lg:col-span-1">
                                         {selectedEventObject && selectedEventObject.jenis === "Balapan" && activeStageTab === "saringan" ? (
                                             <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm space-y-4">
-                                                <h3 className="text-sm font-bold text-slate-900 border-b pb-2 flex justify-between items-center">
+                                                <h3 className="text-sm font-bold text-slate-900 border-b pb-2 flex justify-between items-center font-bold">
                                                     <span>⏱️ Kunci Catatan Saringan</span>
                                                 </h3>
 
                                                 {userRole === "pelawat" ? (
-                                                    <p className="text-xs text-amber-800 font-bold">Sila log masuk untuk memasukkan keputusan saringan.</p>
+                                                    <p className="text-xs text-amber-800">Sila log masuk untuk memasukkan keputusan saringan.</p>
                                                 ) : (
                                                     <form onSubmit={handleHeatSubmit} className="space-y-4 text-xs font-semibold">
                                                         <div>
@@ -3981,24 +4008,22 @@ service cloud.firestore {
                                                             <select value={heatForm.saringanNo} onChange={(e) => setHeatForm({ ...heatForm, saringanNo: e.target.value })} className="w-full p-2.5 border rounded-xl bg-white font-bold">
                                                                 <option value="1">Saringan 1</option>
                                                                 <option value="2">Saringan 2</option>
-                                                                <option value="3">Saringan 3</option>
-                                                                <option value="4">Saringan 4</option>
                                                             </select>
                                                         </div>
 
                                                         <div>
-                                                            <label className="block text-slate-500 mb-1">Pilih Atlet ({getFriendlyCategory(selectedEventObject.kategori)})</label>
-                                                            <select required value={heatForm.athleteId} onChange={(e) => setHeatForm({ ...heatForm, athleteId: e.target.value })} className="w-full p-2.5 border rounded-xl bg-white font-bold font-bold">
+                                                            <label className="block text-slate-500 mb-1">Pilih Atlet</label>
+                                                            <select required value={heatForm.athleteId} onChange={(e) => setHeatForm({ ...heatForm, athleteId: e.target.value })} className="w-full p-2.5 border rounded-xl bg-white font-bold">
                                                                 <option value="">-- Pilih Pelari --</option>
                                                                 {relevantAthletesForEventForm.map(ath => (
-                                                                    <option key={ath.id} value={ath.id}>{(ath.nama || "").toUpperCase()} ({ath.rumah} - {ath.kelas})</option>
+                                                                    <option key={ath.id} value={ath.id}>{(ath.nama || "").toUpperCase()} ({ath.rumah})</option>
                                                                 ))}
                                                             </select>
                                                         </div>
 
                                                         <div>
                                                             <label className="block text-slate-500 mb-1">Catatan Masa</label>
-                                                            <input type="text" required value={heatForm.catatan} onChange={(e) => setHeatForm({ ...heatForm, catatan: e.target.value })} placeholder="Cth: 12.45s" className="w-full p-2.5 border rounded-xl focus:outline-none" />
+                                                            <input type="text" required value={heatForm.catatan} onChange={(e) => setHeatForm({ ...heatForm, catatan: e.target.value })} placeholder="Cth: 12.45s" className="w-full p-2.5 border rounded-xl focus:outline-none font-bold" />
                                                         </div>
 
                                                         <button type="submit" className="w-full bg-indigo-600 text-white font-bold py-2.5 rounded-xl shadow">Simpan Catatan</button>
@@ -4007,10 +4032,10 @@ service cloud.firestore {
                                             </div>
                                         ) : (
                                             <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm space-y-4">
-                                                <h3 className="text-sm font-bold text-slate-900 border-b pb-2">🏅 Kunci Kedudukan Akhir</h3>
+                                                <h3 className="text-sm font-bold text-slate-900 border-b pb-2 font-bold">🏅 Kunci Kedudukan Akhir</h3>
 
                                                 {userRole === "pelawat" ? (
-                                                    <p className="text-xs text-amber-800 font-bold">Sila log masuk untuk memasukkan keputusan akhir.</p>
+                                                    <p className="text-xs text-amber-800">Sila log masuk untuk memasukkan keputusan akhir.</p>
                                                 ) : (
                                                     <form onSubmit={handleResultSubmit} className="space-y-4 text-xs font-semibold">
                                                         <div>
@@ -4019,23 +4044,22 @@ service cloud.firestore {
                                                                 <option value="1">🥇 Johan (Emas)</option>
                                                                 <option value="2">🥈 Naib Johan (Perak)</option>
                                                                 <option value="3">🥉 Ketiga (Gangsa)</option>
-                                                                <option value="4">🏅₄ Tempat Ke-4</option>
                                                             </select>
                                                         </div>
 
                                                         <div>
                                                             <label className="block text-slate-500 mb-1">Pilih Atlet</label>
-                                                            <select required value={resultForm.athleteId} onChange={(e) => setResultForm({ ...resultForm, athleteId: e.target.value })} className="w-full p-2.5 border rounded-xl bg-white font-bold font-bold">
+                                                            <select required value={resultForm.athleteId} onChange={(e) => setResultForm({ ...resultForm, athleteId: e.target.value })} className="w-full p-2.5 border rounded-xl bg-white font-bold">
                                                                 <option value="">-- Pilih Atlet --</option>
                                                                 {relevantAthletesForEventForm.map(ath => (
-                                                                    <option key={ath.id} value={ath.id}>{(ath.nama || "").toUpperCase()} ({ath.rumah} - {ath.kelas})</option>
+                                                                    <option key={ath.id} value={ath.id}>{(ath.nama || "").toUpperCase()} ({ath.rumah})</option>
                                                                 ))}
                                                             </select>
                                                         </div>
 
                                                         <div>
                                                             <label className="block text-slate-500 mb-1">Catatan</label>
-                                                            <input type="text" value={resultForm.catatan} onChange={(e) => setResultForm({ ...resultForm, catatan: e.target.value })} className="w-full p-2.5 border rounded-xl" placeholder="Format catatan larian/jarak" />
+                                                            <input type="text" value={resultForm.catatan} onChange={(e) => setResultForm({ ...resultForm, catatan: e.target.value })} className="w-full p-2.5 border rounded-xl font-bold text-slate-700" placeholder="Format catatan larian/jarak" />
                                                         </div>
 
                                                         <button type="submit" className="w-full bg-indigo-600 text-white font-bold py-2.5 rounded-xl shadow">Simpan Kedudukan</button>
@@ -4046,73 +4070,31 @@ service cloud.firestore {
                                     </div>
 
                                     {/* Hasil Rekod Semasa */}
-                                    <div className="lg:col-span-2 space-y-6">
+                                    <div className="lg:col-span-2 space-y-6 font-bold">
                                         {selectedEventObject ? (
-                                            <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm space-y-4">
-                                                <div className="flex justify-between items-center border-b pb-2">
-                                                    <h3 className="text-lg font-black text-slate-800 font-bold">{selectedEventObject.nama} ({getFriendlyCategory(selectedEventObject.kategori)})</h3>
-                                                    {selectedEventObject.jenis === "Balapan" && activeStageTab === "saringan" && (
-                                                        <button 
-                                                            onClick={() => executeBypassPrint('saringan_semua', selectedEventObject)} 
-                                                            className="text-[10px] font-bold bg-slate-100 hover:bg-slate-200 px-2.5 py-1.5 rounded-lg flex items-center gap-1"
-                                                        >
-                                                            🖨️ Cetak Report Saringan
-                                                        </button>
-                                                    )}
-                                                </div>
-
-                                                {selectedEventObject.jenis === "Balapan" && activeStageTab === "saringan" ? (
-                                                    <div className="space-y-4">
-                                                        {["1", "2", "3", "4"].map(num => {
-                                                            const filterHeats = (heats || []).filter(h => h.eventId === selectedEventObject.id && h.saringanNo === num);
-                                                            if (filterHeats.length === 0) return null;
+                                            <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+                                                <h3 className="text-lg font-black text-slate-800 mb-4">{selectedEventObject.nama} ({getFriendlyCategory(selectedEventObject.kategori)})</h3>
+                                                <div className="space-y-3">
+                                                    {(results || [])
+                                                        .filter(r => r.eventId === selectedEventObject.id)
+                                                        .sort((a,b) => parseInt(a.kedudukan) - parseInt(b.kedudukan))
+                                                        .map(res => {
+                                                            const ath = (athletes || []).find(a => a.id === res.athleteId);
                                                             return (
-                                                                <div key={num} className="bg-slate-50 p-3 rounded-xl border border-slate-200">
-                                                                    <h4 className="text-xs font-extrabold text-indigo-700 mb-2">Saringan Larian {num}</h4>
-                                                                    <div className="space-y-1.5">
-                                                                        {filterHeats.map(h => {
-                                                                            const ath = (athletes || []).find(a => a.id === h.athleteId);
-                                                                            return (
-                                                                                <div key={h.id} className="flex justify-between items-center bg-white p-2 rounded border border-slate-100 text-xs">
-                                                                                    <span className="font-bold">{(ath?.nama || "").toUpperCase()} ({ath?.rumah} - {ath?.kelas})</span>
-                                                                                    <div className="flex items-center gap-2">
-                                                                                        <span className="font-mono text-slate-600 font-bold">{h.catatan}</span>
-                                                                                        {userRole !== "pelawat" && (
-                                                                                            <button onClick={() => handleDeleteHeat(h.id)} className="text-red-500 hover:text-red-700">✕</button>
-                                                                                        )}
-                                                                                    </div>
-                                                                                </div>
-                                                                            );
-                                                                        })}
+                                                                <div key={res.id} className="flex justify-between items-center text-xs p-3 rounded-xl border bg-slate-50">
+                                                                    <span className="font-extrabold text-slate-800">
+                                                                        #{res.kedudukan} - {ath ? (ath.nama || "").toUpperCase() : "Atlet"} ({ath ? ath.rumah : ""})
+                                                                    </span>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className="font-mono text-slate-600 font-bold">{res.catatan}</span>
+                                                                        {userRole !== "pelawat" && (
+                                                                            <button onClick={() => handleDeleteResult(res.id)} className="text-red-500 hover:text-red-700">✕</button>
+                                                                        )}
                                                                     </div>
                                                                 </div>
                                                             );
                                                         })}
-                                                    </div>
-                                                ) : (
-                                                    <div className="space-y-3">
-                                                        {(results || [])
-                                                            .filter(r => r.eventId === selectedEventObject.id)
-                                                            .sort((a,b) => parseInt(a.kedudukan) - parseInt(b.kedudukan))
-                                                            .map(res => {
-                                                                const ath = (athletes || []).find(a => a.id === res.athleteId);
-                                                                const mapping = { "1": "🥇 Emas", "2": "🥈 Perak", "3": "🥉 Gangsa", "4": "🏅₄ Ke-4" };
-                                                                return (
-                                                                    <div key={res.id} className="flex justify-between items-center text-xs p-3 rounded-xl border bg-slate-50">
-                                                                        <span className="font-extrabold text-slate-800 font-bold">
-                                                                            {mapping[res.kedudukan] || "Ked. " + res.kedudukan} - {ath ? (ath.nama || "").toUpperCase() : "Atlet"} ({ath ? `${ath.rumah} - ${ath.kelas}` : ""})
-                                                                        </span>
-                                                                        <div className="flex items-center gap-2">
-                                                                            <span className="font-mono text-slate-600 font-bold">{res.catatan}</span>
-                                                                            {userRole !== "pelawat" && (
-                                                                                <button onClick={() => handleDeleteResult(res.id)} className="text-red-500 hover:text-red-700">✕</button>
-                                                                            )}
-                                                                        </div>
-                                                                    </div>
-                                                                );
-                                                            })}
-                                                    </div>
-                                                )}
+                                                </div>
                                             </div>
                                         ) : (
                                             <p className="text-xs text-slate-400 italic text-center py-6">Sila pilih acara terlebih dahulu.</p>
@@ -4127,80 +4109,35 @@ service cloud.firestore {
                                 <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
                                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                                         <div>
-                                            <h3 className="text-lg font-black text-slate-900 font-bold">🏆 Modul Dokumentasi Pasca Kejohanan</h3>
+                                            <h3 className="text-lg font-black text-slate-900">🏆 Modul Dokumentasi Pasca Kejohanan</h3>
                                             <p className="text-xs text-slate-400 mt-1">Urus sijil penghargaan, laporan kokum keseluruhan, dan arkib tahun semasa.</p>
                                         </div>
                                         
                                         <div className="flex flex-wrap items-center gap-2 w-full md:w-auto justify-start md:justify-end">
-                                            {userRole !== "pelawat" && (
-                                                <button 
-                                                    onClick={() => setShowSignatorySettings(!showSignatorySettings)}
-                                                    className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs px-4 py-2.5 rounded-xl border transition-all"
-                                                >
-                                                    ⚙️ {showSignatorySettings ? "Tutup Tetapan T/T" : "Tetapan Penandatangan"}
-                                                </button>
-                                            )}
                                             <button 
-                                                onClick={() => executeBypassPrint('kokum')} 
-                                                className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition-all shadow-sm"
+                                                onClick={handleArchiveAnnualRecords}
+                                                disabled={isArchiving}
+                                                className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs px-4 py-2.5 rounded-xl shadow-md flex items-center gap-2"
                                             >
-                                                <PrinterIcon />
-                                                <span>Cetak Laporan Keseluruhan</span>
+                                                <span>📂 {isArchiving ? "Mengarkib..." : `Arkib Rekod ${activeYear}`}</span>
                                             </button>
-                                            {userRole === "admin" && (
-                                                <button 
-                                                    onClick={handleArchiveAnnualRecords}
-                                                    disabled={isArchiving}
-                                                    className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs px-4 py-2.5 rounded-xl shadow-md flex items-center gap-2 transition-all hover:scale-105 active:scale-95"
-                                                >
-                                                    <span>📂 {isArchiving ? "Mengarkib..." : `Arkib Rekod ${activeYear}`}</span>
-                                                </button>
-                                            )}
                                         </div>
                                     </div>
-
-                                    {/* Tetapan Penandatangan Sijil */}
-                                    {showSignatorySettings && userRole !== "pelawat" && (
-                                        <div className="mt-6 p-4 bg-slate-50 rounded-2xl border text-xs font-semibold grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div className="space-y-3">
-                                                <h4 className="font-extrabold text-slate-800 uppercase tracking-wider">✍️ Penandatangan 1 (Kiri)</h4>
-                                                <div>
-                                                    <label className="block text-slate-500 mb-1">Nama Penuh Pegawai</label>
-                                                    <input type="text" value={certSignatory1Name} onChange={(e) => setCertSignatory1Name(e.target.value)} className="w-full p-2 border rounded-xl" />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-slate-500 mb-1">Jawatan Pegawai</label>
-                                                    <input type="text" value={certSignatory1Title} onChange={(e) => setCertSignatory1Title(e.target.value)} className="w-full p-2 border rounded-xl" />
-                                                </div>
-                                            </div>
-                                            <div className="space-y-3">
-                                                <h4 className="font-extrabold text-slate-800 uppercase tracking-wider">✍️ Penandatangan 2 (Kanan)</h4>
-                                                <div>
-                                                    <label className="block text-slate-500 mb-1">Nama Penuh Pegawai</label>
-                                                    <input type="text" value={certSignatory2Name} onChange={(e) => setCertSignatory2Name(e.target.value)} className="w-full p-2 border rounded-xl" />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-slate-500 mb-1">Jawatan Pegawai</label>
-                                                    <input type="text" value={certSignatory2Title} onChange={(e) => setCertSignatory2Title(e.target.value)} className="w-full p-2 border rounded-xl" />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
                                 </div>
 
+                                {}
                                 <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
                                     <h3 className="text-sm font-bold text-slate-900 mb-2 uppercase tracking-wider">📜 Penjana Sijil Penghargaan Pintar</h3>
-                                    <p className="text-xs text-slate-400 mb-4 font-medium">Sistem sedia menjana sijil penghargaan secara automatik mengikut nama serta pingat yang dicapai.</p>
                                     
                                     <input 
                                         type="text"
                                         placeholder="Tapis atlet... (Cth: Danish, 6 Cemerlang, Merah)"
                                         value={certSearchQuery}
                                         onChange={(e) => setCertSearchQuery(e.target.value)}
-                                        className="w-full p-2.5 rounded-xl border border-slate-200 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-4 font-bold"
+                                        className="w-full p-2.5 rounded-xl border border-slate-200 text-xs font-bold focus:outline-none mb-4"
                                     />
 
-                                    <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
+                                    <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1 font-bold">
                                         {(athletes || [])
                                             .filter(ath => {
                                                 if (!certSearchQuery.trim()) return true;
@@ -4214,11 +4151,10 @@ service cloud.firestore {
                                                 return (
                                                     <div key={ath.id} className="flex justify-between items-center p-3 rounded-xl bg-slate-50 border border-slate-100 text-xs hover:bg-slate-100/70 transition-all">
                                                         <div>
-                                                            <p className="font-extrabold text-slate-800 uppercase font-bold">{(ath.nama || "").toUpperCase()}</p>
+                                                            <p className="font-extrabold text-slate-800 uppercase">{ath.nama}</p>
                                                             <p className="text-[10px] text-slate-400 font-bold">
-                                                                Kelas: <span className="font-semibold text-slate-600">{ath.kelas}</span> | 
-                                                                Rumah Sukan: <span className="font-extrabold text-indigo-600">{ath.rumah}</span> |
-                                                                Kategori: <span className="font-bold text-indigo-700">{getFriendlyCategory(ath.kategori)}</span>
+                                                                Kelas: <span className="font-semibold">{ath.kelas}</span> | 
+                                                                Rumah Sukan: <span className="font-extrabold text-indigo-600">{ath.rumah}</span>
                                                             </p>
                                                         </div>
                                                         <button 
@@ -4241,17 +4177,17 @@ service cloud.firestore {
                     {/* Pop-up Pemberitahuan Toast */}
                     {toast.show && (
                         <div className="fixed bottom-5 right-5 z-[10000] max-w-sm p-4 rounded-xl shadow-2xl bg-slate-900 text-white text-xs font-bold flex items-center gap-3">
-                            <div className="bg-emerald-500 h-2 w-2 rounded-full shrink-0"></div>
                             <p>{toast.message}</p>
                         </div>
                     )}
 
+                    {}
                     {isLoginModalOpen && (
                         <div className="fixed inset-0 bg-slate-900/75 backdrop-blur-sm z-[10000] flex items-center justify-center p-4">
                             <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-md w-full overflow-hidden animate-in zoom-in-95 duration-150">
                                 <div className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white px-6 py-5 flex justify-between items-center">
                                     <div>
-                                        <h3 className="text-sm font-black uppercase tracking-wider font-bold">🔒 LOG MASUK PENTADBIRAN</h3>
+                                        <h3 className="text-sm font-black uppercase tracking-wider">🔒 LOG MASUK PENTADBIRAN</h3>
                                         <p className="text-[10px] text-indigo-200 mt-0.5">Sila pilih kaedah sambungan anda</p>
                                     </div>
                                     <button onClick={() => setIsLoginModalOpen(false)} className="text-slate-400 hover:text-white text-lg font-bold">✕</button>
@@ -4263,12 +4199,12 @@ service cloud.firestore {
                                         <label className="block text-[11px] font-bold text-slate-400 uppercase">Pilihan A: Log Masuk Automatik</label>
                                         <button 
                                             onClick={handleGoogleLogin}
-                                            className="w-full bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 font-extrabold py-3 rounded-2xl flex items-center justify-center gap-2.5 transition-all text-xs shadow-sm hover:scale-[1.02] active:scale-95 font-bold"
+                                            className="w-full bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 font-extrabold py-3 rounded-2xl flex items-center justify-center gap-2.5 transition-all text-xs shadow-sm hover:scale-[1.02] active:scale-95"
                                         >
                                             <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" />
                                             <span>Log Masuk Google / DELIMa</span>
                                         </button>
-                                        <p className="text-[9.5px] text-slate-400 leading-relaxed text-center font-bold">
+                                        <p className="text-[9.5px] text-slate-400 leading-relaxed text-center">
                                             Sesuai jika akaun DELIMa atau Google anda tidak disekat oleh pentadbir institusi.
                                         </p>
                                     </div>
@@ -4293,7 +4229,7 @@ service cloud.firestore {
                                             />
                                             <button 
                                                 type="submit"
-                                                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold py-3 rounded-2xl transition-all text-xs shadow-md shadow-indigo-600/10 hover:scale-[1.02] active:scale-95 font-bold"
+                                                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold py-3 rounded-2xl transition-all text-xs shadow-md shadow-indigo-600/10 hover:scale-[1.02] active:scale-95"
                                             >
                                                 Log Masuk Kunci Laluan
                                             </button>
@@ -4306,4 +4242,328 @@ service cloud.firestore {
 
                     {/* Tetingkap Pengesahan Tindakan */}
                     {confirmModal.show && (
-                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4
+                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+                            <div className="bg-white rounded-2xl shadow-2xl border border-slate-100 max-w-md w-full p-6">
+                                <h3 className="text-base font-extrabold text-slate-900 mb-2">{confirmModal.title}</h3>
+                                <p className="text-xs text-slate-500 leading-relaxed mb-6">{confirmModal.message}</p>
+                                <div className="flex justify-end gap-3 text-xs font-bold">
+                                    <button 
+                                        onClick={() => setConfirmModal({ show: false, title: "", message: "", onConfirm: null })} 
+                                        className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl"
+                                    >
+                                        Batal
+                                    </button>
+                                    <button 
+                                        onClick={() => {
+                                            if (confirmModal.onConfirm) confirmModal.onConfirm();
+                                        }} 
+                                        className="px-4 py-2 bg-red-600 text-white rounded-xl shadow-md"
+                                    >
+                                        Ya, Sahkan
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Modal Setup GAS */}
+                    {showGasModal && (
+                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+                            <div className="bg-white rounded-2xl shadow-2xl border border-slate-100 max-w-lg w-full p-6 relative">
+                                <button onClick={() => setShowGasModal(false)} className="absolute top-4 right-4 text-slate-400 text-lg">✕</button>
+                                <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider mb-2 border-b pb-2">⚡ INTEGRASI GOOGLE SHEETS</h3>
+                                <form onSubmit={handleSaveGas} className="space-y-4 text-xs font-semibold">
+                                    <input 
+                                        type="url" 
+                                        required
+                                        value={gasUrl} 
+                                        onChange={(e) => setGasUrl(e.target.value)} 
+                                        placeholder="https://script.google.com/macros/s/AKfycby.../exec"
+                                        className="w-full p-2.5 rounded-xl border border-slate-200 focus:outline-none text-slate-800 font-mono text-[11px]"
+                                    />
+                                    <button type="submit" className="w-full bg-indigo-600 text-white font-bold py-2.5 rounded-xl shadow-md">Simpan Pautan GAS URL</button>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* MODAL SETUP SEKOLAH BARU (Multi-School & SaaS Customizations) */}
+                    {showSchoolSetupModal && (
+                        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[10000] flex items-center justify-center p-4 overflow-y-auto">
+                            <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-2xl w-full h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-150">
+                                <div className="bg-slate-950 text-white px-6 py-4 flex justify-between items-center">
+                                    <div>
+                                        <h3 className="text-sm font-black uppercase tracking-wider flex items-center gap-2">
+                                            <span>⚙️ Panel Setup Sekolah Baharu</span>
+                                        </h3>
+                                        <p className="text-[10px] text-slate-400 mt-0.5">Sesuaikan aplikasi web ini dengan infrastruktur sekolah anda sendiri</p>
+                                    </div>
+                                    <button onClick={() => setShowSchoolSetupModal(false)} className="text-slate-400 hover:text-white text-lg font-bold">✕</button>
+                                </div>
+
+                                {/* Menu Tab Setup */}
+                                <div className="bg-slate-100 border-b flex overflow-x-auto text-xs font-bold text-slate-600 p-2 gap-1 shrink-0">
+                                    <button 
+                                        onClick={() => setSchoolSetupTab("config")}
+                                        className={`px-4 py-2 rounded-xl transition-all ${schoolSetupTab === 'config' ? 'bg-white text-indigo-700 shadow-sm' : 'hover:bg-slate-200'}`}
+                                    >
+                                        ⚙️ Konfigurasi Portal
+                                    </button>
+                                    <button 
+                                        onClick={() => setSchoolSetupTab("gas_script")}
+                                        className={`px-4 py-2 rounded-xl transition-all ${schoolSetupTab === 'gas_script' ? 'bg-white text-indigo-700 shadow-sm' : 'hover:bg-slate-200'}`}
+                                    >
+                                        📑 Skrip Google Sheets (GAS)
+                                    </button>
+                                    <button 
+                                        onClick={() => setSchoolSetupTab("firebase_rules")}
+                                        className={`px-4 py-2 rounded-xl transition-all ${schoolSetupTab === 'firebase_rules' ? 'bg-white text-indigo-700 shadow-sm' : 'hover:bg-slate-200'}`}
+                                    >
+                                        🛡️ Peraturan Firebase (Rules)
+                                    </button>
+                                </div>
+
+                                <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                                    {schoolSetupTab === "config" && (
+                                        <form onSubmit={handleSaveSchoolSetup} className="space-y-4 text-xs font-semibold">
+                                            <div className="bg-slate-50 p-4 border rounded-2xl border-slate-200">
+                                                <h4 className="font-extrabold text-slate-800 mb-2 uppercase">1. Penjenamaan Sekolah</h4>
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <div>
+                                                        <label className="block text-slate-500 mb-1">Nama Singkatan Sekolah</label>
+                                                        <input 
+                                                            type="text" 
+                                                            required
+                                                            value={setupSchoolName} 
+                                                            onChange={(e) => setSetupSchoolName(e.target.value)} 
+                                                            className="w-full p-2.5 border rounded-xl"
+                                                            placeholder="Cth: SK BIKANG"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-slate-500 mb-1">Slogan / Tajuk Kejohanan</label>
+                                                        <input 
+                                                            type="text" 
+                                                            required
+                                                            value={setupSchoolSubtitle} 
+                                                            onChange={(e) => setSetupSchoolSubtitle(e.target.value)} 
+                                                            className="w-full p-2.5 border rounded-xl"
+                                                            placeholder="Cth: Kejohanan Sukan Tahunan Sekolah"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="bg-slate-50 p-4 border rounded-2xl border-slate-200">
+                                                <h4 className="font-extrabold text-slate-800 mb-2 uppercase">2. Pangkalan Data Awan (Firebase Setup)</h4>
+                                                <p className="text-[10px] text-slate-400 mb-2 leading-relaxed">
+                                                    Salin dan tampal objek JSON konfigurasi aplikasi web Firebase yang anda perolehi daripada Firebase Console. <br />
+                                                    Kosongkan ruangan ini untuk terus menggunakan Firebase Projek Sekolah SK Bikang sebagai demo.
+                                                </p>
+                                                <label className="block text-slate-500 mb-1">Firebase Configuration Object (JSON)</label>
+                                                <textarea 
+                                                    rows="5"
+                                                    value={setupFirebaseConfigRaw}
+                                                    onChange={(e) => setSetupFirebaseConfigRaw(e.target.value)}
+                                                    placeholder='{&#10;  "apiKey": "AIzaSy...",&#10;  "authDomain": "...",&#10;  "projectId": "...",&#10;  "storageBucket": "...",&#10;  "messagingSenderId": "...",&#10;  "appId": "..."&#10;}'
+                                                    className="w-full p-3 font-mono text-[10px] border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                                />
+                                            </div>
+
+                                            <div className="bg-slate-50 p-4 border rounded-2xl border-slate-200">
+                                                <h4 className="font-extrabold text-slate-800 mb-2 uppercase">3. Integrasi Google Sheets (GAS API)</h4>
+                                                <label className="block text-slate-500 mb-1">Pautan Google Apps Script URL (GAS)</label>
+                                                <input 
+                                                    type="url"
+                                                    value={setupGasUrl}
+                                                    onChange={(e) => setSetupGasUrl(e.target.value)}
+                                                    placeholder="https://script.google.com/macros/s/.../exec"
+                                                    className="w-full p-2.5 border rounded-xl font-mono text-[10px]"
+                                                />
+                                            </div>
+
+                                            <div className="flex gap-2">
+                                                <button 
+                                                    type="button"
+                                                    onClick={handleResetSchoolToDefault}
+                                                    className="flex-1 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 py-3 rounded-xl font-bold transition-all text-xs"
+                                                >
+                                                    🔄 Kembali ke SK Bikang
+                                                </button>
+                                                <button 
+                                                    type="submit"
+                                                    className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-bold transition-all text-xs shadow-md"
+                                                >
+                                                    💾 Simpan & Muat Semula
+                                                </button>
+                                            </div>
+                                        </form>
+                                    )}
+
+                                    {schoolSetupTab === "gas_script" && (
+                                        <div className="space-y-4">
+                                            <div className="bg-blue-50 text-blue-800 p-4 rounded-2xl border border-blue-100 text-xs leading-relaxed">
+                                                💡 **Panduan Tindakan:** Cipta satu hamparan **Google Sheets** baharu, klik **Extensions ➔ Apps Script**, padamkan kod lalai dan tampalkan kod lengkap di bawah. Jalankan fungsi dan muatkan pautan sebagai **Web App** (akses: *Anyone*).
+                                            </div>
+                                            <div className="flex justify-between items-center text-xs font-bold text-slate-500 mb-1">
+                                                <span>KOD SUMBER GOOGLE APPS SCRIPT (code.gs)</span>
+                                                <button 
+                                                    onClick={() => handleCopyToClipboard(rawGasCodeString, "Google Apps Script")}
+                                                    className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-lg border border-indigo-100"
+                                                >
+                                                    📋 Salin Kod Apps Script
+                                                </button>
+                                            </div>
+                                            <textarea 
+                                                rows="10"
+                                                readOnly
+                                                value={rawGasCodeString}
+                                                className="w-full p-3 font-mono text-[9px] border bg-slate-50 rounded-xl outline-none"
+                                            />
+                                        </div>
+                                    )}
+
+                                    {schoolSetupTab === "firebase_rules" && (
+                                        <div className="space-y-4">
+                                            <div className="bg-amber-50 text-amber-800 p-4 rounded-2xl border border-amber-100 text-xs leading-relaxed">
+                                                ⚠️ **PENTING:** Untuk membenarkan penulisan pangkalan data kustom yang lancar, tampalkan peraturan di bawah ke dalam tab **Rules** pada **Cloud Firestore Database** di Firebase Console anda.
+                                            </div>
+                                            <div className="flex justify-between items-center text-xs font-bold text-slate-500 mb-1">
+                                                <span>FIRESTORE DATABASE SECURITY RULES</span>
+                                                <button 
+                                                    onClick={() => handleCopyToClipboard(rawFirebaseRulesString, "Firestore Rules")}
+                                                    className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-lg border border-indigo-100"
+                                                >
+                                                    📋 Salin Peraturan Firebase
+                                                </button>
+                                            </div>
+                                            <textarea 
+                                                rows="10"
+                                                readOnly
+                                                value={rawFirebaseRulesString}
+                                                className="w-full p-3 font-mono text-[10px] border bg-slate-50 rounded-xl outline-none"
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Modal Diagnostik */}
+                    {showDiagModal && (
+                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+                            <div className="bg-white rounded-2xl shadow-2xl border border-slate-100 max-w-lg w-full p-6 relative">
+                                <button onClick={() => setShowDiagModal(false)} className="absolute top-4 right-4 text-slate-400 text-lg">✕</button>
+                                <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider mb-4 border-b pb-2">ℹ️ DIAGNOSTIK SISTEM</h3>
+                                <div className="space-y-3 text-xs font-medium text-slate-700">
+                                    <div className="flex justify-between border-b pb-1.5">
+                                        <span className="text-slate-400">Penyelarasan Awan:</span>
+                                        <span className={isCloudActive ? "text-emerald-600 font-bold" : "text-amber-600 font-bold"}>
+                                            {isCloudActive ? "AKTIF 🟢" : "LOKAL 🟡"}
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between border-b pb-1.5">
+                                        <span className="text-slate-400">Peranan Kuasa:</span>
+                                        <span className="font-bold uppercase text-indigo-600">{userRole}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Modal Tetapan Mata */}
+                    {showPointsModal && (
+                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+                            <div className="bg-white rounded-2xl shadow-2xl border border-slate-100 max-w-md w-full p-6 relative">
+                                <button onClick={() => setShowPointsModal(false)} className="absolute top-4 right-4 text-slate-400 text-lg">✕</button>
+                                <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider mb-2 border-b pb-2">⚙️ TETAPAN MATA & TAHUN</h3>
+                                <div className="space-y-4 text-xs font-semibold">
+                                    <div>
+                                        <label className="block text-slate-500 mb-1">Tahun Kejohanan</label>
+                                        <input 
+                                            type="number" 
+                                            value={activeYear} 
+                                            onChange={(e) => setActiveYear(e.target.value)} 
+                                            className="w-full p-2.5 rounded-xl border"
+                                        />
+                                    </div>
+                                    <button 
+                                        type="button" 
+                                        onClick={handleSavePoints}
+                                        className="w-full bg-indigo-600 text-white font-bold py-2.5 rounded-xl shadow-md text-xs"
+                                    >
+                                        Simpan
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Modal Urus Admin */}
+                    {showAdminsModal && (
+                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+                            <div className="bg-white rounded-2xl shadow-2xl border border-slate-100 max-w-lg w-full p-6 relative">
+                                <button onClick={() => setShowAdminsModal(false)} className="absolute top-4 right-4 text-slate-400 text-lg">✕</button>
+                                <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider mb-2 border-b pb-2">👥 URUS PENTADBIR BERSAMA</h3>
+                                <form onSubmit={handleAddAdmin} className="space-y-4 text-xs font-semibold mb-6">
+                                    <div className="flex gap-2">
+                                        <input 
+                                            type="email" 
+                                            required
+                                            value={newAdminEmail} 
+                                            onChange={(e) => setNewAdminEmail(e.target.value)} 
+                                            placeholder="Masukkan e-mel DELIMa..."
+                                            className="flex-1 p-2.5 rounded-xl border focus:outline-none"
+                                        />
+                                        <button type="submit" className="bg-indigo-600 text-white font-bold px-4 rounded-xl text-xs">
+                                            + Lantik
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+
+                    {isPreviewModalOpen && (
+                        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[10000] flex flex-col items-center justify-center p-4">
+                            <div className="bg-white rounded-2xl shadow-2xl border w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden">
+                                <div className="bg-slate-950 text-white px-6 py-4 flex justify-between items-center">
+                                    <h3 className="text-sm font-black uppercase tracking-wider">📄 Pratinjau Cetak Dokumen</h3>
+                                    <button onClick={() => setIsPreviewModalOpen(false)} className="text-slate-400 text-lg font-bold">✕</button>
+                                </div>
+                                <div className="flex-grow bg-slate-100 p-4 overflow-hidden flex justify-center items-center">
+                                    <iframe 
+                                        id="preview-iframe"
+                                        srcDoc={previewContent}
+                                        className="w-full h-full max-w-[210mm] bg-white shadow-2xl border border-slate-300 rounded-xl"
+                                    />
+                                </div>
+                                <div className="bg-slate-50 border-t px-6 py-4 flex justify-end gap-3">
+                                    <button onClick={() => setIsPreviewModalOpen(false)} className="px-5 py-2.5 bg-slate-200 text-slate-700 rounded-xl">Tutup</button>
+                                    <button 
+                                        onClick={() => {
+                                            const iframe = document.getElementById('preview-iframe');
+                                            if (iframe) {
+                                                iframe.contentWindow.focus();
+                                                iframe.contentWindow.print();
+                                            }
+                                        }} 
+                                        className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-bold flex items-center gap-2"
+                                    >
+                                        <PrinterIcon />
+                                        <span>Cetak Sekarang</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />); 
+    </script>
+</body>
+</html>

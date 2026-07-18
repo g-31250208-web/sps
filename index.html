@@ -119,11 +119,27 @@
             const [isCloudActive, setIsCloudActive] = useState(false);
             const [activeTab, setActiveTab] = useState("dashboard");
 
-            const [athletes, setAthletes] = useState(INITIAL_ATHLETES);
-            const [events, setEvents] = useState(INITIAL_EVENTS);
-            const [results, setResults] = useState(INITIAL_RESULTS);
-            const [housesMetadata, setHousesMetadata] = useState(INITIAL_HOUSES_METADATA);
-            const [announcements, setAnnouncements] = useState(DEFAULT_ANNOUNCEMENTS);
+            // Load initial state with local storage fallback
+            const [athletes, setAthletes] = useState(() => {
+                const local = localStorage.getItem("sps_athletes");
+                return local ? JSON.parse(local) : INITIAL_ATHLETES;
+            });
+            const [events, setEvents] = useState(() => {
+                const local = localStorage.getItem("sps_events");
+                return local ? JSON.parse(local) : INITIAL_EVENTS;
+            });
+            const [results, setResults] = useState(() => {
+                const local = localStorage.getItem("sps_results");
+                return local ? JSON.parse(local) : INITIAL_RESULTS;
+            });
+            const [housesMetadata, setHousesMetadata] = useState(() => {
+                const local = localStorage.getItem("sps_houses_metadata");
+                return local ? JSON.parse(local) : INITIAL_HOUSES_METADATA;
+            });
+            const [announcements, setAnnouncements] = useState(() => {
+                const local = localStorage.getItem("sps_announcements");
+                return local ? JSON.parse(local) : DEFAULT_ANNOUNCEMENTS;
+            });
 
             // Filter states
             const [searchQuery, setSearchQuery] = useState("");
@@ -145,10 +161,9 @@
             const [confirmMessage, setConfirmMessage] = useState("");
             const [confirmAction, setConfirmAction] = useState(null);
 
-            // Menambah L7 dan P7 secara lalai ke dalam tatasusunan kategori sistem
+            // Kategori tersusun
             const [categories, setCategories] = useState(["L12", "P12", "L9", "P9", "L7", "P7", "Prasekolah", "Terbuka"]);
 
-            // Isih Kategori mengikut urutan huruf A-Z, kemudian nombor 1-99
             const sortedCategories = useMemo(() => {
                 return [...categories].sort((a, b) => 
                     a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })
@@ -177,6 +192,23 @@
             const [announceFormText, setAnnounceFormText] = useState("");
             const [showAnnounceForm, setShowAnnounceForm] = useState(false);
 
+            // Auto save to LocalStorage to support offline fallback
+            useEffect(() => {
+                localStorage.setItem("sps_athletes", JSON.stringify(athletes));
+            }, [athletes]);
+            useEffect(() => {
+                localStorage.setItem("sps_events", JSON.stringify(events));
+            }, [events]);
+            useEffect(() => {
+                localStorage.setItem("sps_results", JSON.stringify(results));
+            }, [results]);
+            useEffect(() => {
+                localStorage.setItem("sps_houses_metadata", JSON.stringify(housesMetadata));
+            }, [housesMetadata]);
+            useEffect(() => {
+                localStorage.setItem("sps_announcements", JSON.stringify(announcements));
+            }, [announcements]);
+
             // Kitaran hayat pintar untuk mengesan kemasukan kelas "7 tahun/Tahun 1" secara automatik ke L7/P7
             useEffect(() => {
                 if (!isEditingAthlete && athleteForm.kelas && athleteForm.jantina) {
@@ -193,101 +225,125 @@
                     }
                     
                     if (categories.includes(autoCat) && athleteForm.kategori !== autoCat) {
-                        setAthleteForm(prev => ({ ...prev, kategori: autoCat }));
+                        setAthleteForm(prev => ({ ...prev, kategori: autoCat, acaraIds: [] }));
                     }
                 }
             }, [athleteForm.kelas, athleteForm.jantina, categories, isEditingAthlete]);
 
             useEffect(() => {
+                let unsubAthletes = null;
+                let unsubEvents = null;
+                let unsubResults = null;
+                let unsubAnnouncements = null;
+                let unsubHouses = null;
+                let unsubAuth = null;
+
                 try {
-                    if (firebase.apps.length === 0) {
-                        firebase.initializeApp(DEFAULT_FIREBASE_CONFIG);
-                    }
-                    
-                    // Firestore Listeners
-                    const dbRef = firebase.firestore();
-                    setIsCloudActive(true);
+                    if (typeof firebase !== 'undefined') {
+                        if (firebase.apps.length === 0) {
+                            firebase.initializeApp(DEFAULT_FIREBASE_CONFIG);
+                        }
+                        
+                        const dbRef = firebase.firestore();
+                        setIsCloudActive(true);
 
-                    // Sync Athletes
-                    dbRef.collection("athletes").onSnapshot(snapshot => {
-                        const list = [];
-                        snapshot.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
-                        if (list.length > 0) setAthletes(list);
-                    });
+                        // Sync Athletes
+                        unsubAthletes = dbRef.collection("athletes").onSnapshot(snapshot => {
+                            const list = [];
+                            snapshot.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
+                            if (list.length > 0) setAthletes(list);
+                        }, err => console.log("Ralat sync athletes", err));
 
-                    // Sync Events
-                    dbRef.collection("events").onSnapshot(snapshot => {
-                        const list = [];
-                        snapshot.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
-                        if (list.length > 0) setEvents(list);
-                    });
+                        // Sync Events
+                        unsubEvents = dbRef.collection("events").onSnapshot(snapshot => {
+                            const list = [];
+                            snapshot.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
+                            if (list.length > 0) setEvents(list);
+                        }, err => console.log("Ralat sync events", err));
 
-                    // Sync Results
-                    dbRef.collection("results").onSnapshot(snapshot => {
-                        const list = [];
-                        snapshot.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
-                        if (list.length > 0) setResults(list);
-                    });
+                        // Sync Results
+                        unsubResults = dbRef.collection("results").onSnapshot(snapshot => {
+                            const list = [];
+                            snapshot.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
+                            if (list.length > 0) setResults(list);
+                        }, err => console.log("Ralat sync results", err));
 
-                    // Sync Announcements
-                    dbRef.collection("announcements").orderBy("date", "desc").onSnapshot(snapshot => {
-                        const list = [];
-                        snapshot.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
-                        if (list.length > 0) setAnnouncements(list);
-                    });
+                        // Sync Announcements
+                        unsubAnnouncements = dbRef.collection("announcements").orderBy("date", "desc").onSnapshot(snapshot => {
+                            const list = [];
+                            snapshot.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
+                            if (list.length > 0) setAnnouncements(list);
+                        }, err => console.log("Ralat sync announcements", err));
 
-                    // Sync Houses Metadata
-                    dbRef.collection("housesMetadata").onSnapshot(snapshot => {
-                        const obj = {};
-                        snapshot.forEach(doc => {
-                            obj[doc.id] = doc.data();
+                        // Sync Houses Metadata
+                        unsubHouses = dbRef.collection("housesMetadata").onSnapshot(snapshot => {
+                            const obj = {};
+                            snapshot.forEach(doc => {
+                                obj[doc.id] = doc.data();
+                            });
+                            if (Object.keys(obj).length > 0) setHousesMetadata(obj);
+                        }, err => console.log("Ralat sync housesMetadata", err));
+
+                        // Auth state listener
+                        unsubAuth = firebase.auth().onAuthStateChanged(user => {
+                            if (user && !user.isAnonymous) {
+                                setCurrentUser(user);
+                                const email = user.email || "";
+                                if (email === "sekolah-7608@moe-dl.edu.my") {
+                                    setUserRole("admin");
+                                    showToast("Log masuk sebagai Admin Utama berjaya!", "success");
+                                } else if (email.endsWith("@moe-dl.edu.my") || email.endsWith("@moe.edu.my")) {
+                                    setUserRole("guru");
+                                    showToast("Log masuk Urus Setia Guru berjaya!", "success");
+                                } else {
+                                    setUserRole("pelawat");
+                                    showToast("Log masuk Google Peribadi (Lihat Sahaja)", "info");
+                                }
+                            } else {
+                                setCurrentUser(null);
+                                setUserRole("pelawat");
+                                firebase.auth().signInAnonymously().catch(err => console.log("Anonymous Auth disekat"));
+                            }
                         });
-                        if (Object.keys(obj).length > 0) setHousesMetadata(obj);
-                    });
-
+                    } else {
+                        setIsCloudActive(false);
+                    }
                 } catch (e) {
                     console.warn("Menggunakan Local Storage (Offline Mode)", e);
                     setIsCloudActive(false);
                 }
 
-                // Auth state listener
-                firebase.auth().onAuthStateChanged(user => {
-                    if (user && !user.isAnonymous) {
-                        setCurrentUser(user);
-                        const email = user.email || "";
-                        if (email === "sekolah-7608@moe-dl.edu.my") {
-                            setUserRole("admin");
-                            showToast("Log masuk sebagai Admin Utama berjaya!", "success");
-                        } else if (email.endsWith("@moe-dl.edu.my") || email.endsWith("@moe.edu.my")) {
-                            setUserRole("guru");
-                            showToast("Log masuk Urus Setia Guru berjaya!", "success");
-                        } else {
-                            setUserRole("pelawat");
-                            showToast("Log masuk Google Peribadi (Lihat Sahaja)", "info");
-                        }
-                    } else {
-                        setCurrentUser(null);
-                        setUserRole("pelawat");
-                        // Fallback anonymously for backend read/write
-                        firebase.auth().signInAnonymously().catch(err => console.log("Anonymous Auth disekat"));
-                    }
-                });
+                // Cleanup listeners on unmount
+                return () => {
+                    if (unsubAthletes) unsubAthletes();
+                    if (unsubEvents) unsubEvents();
+                    if (unsubResults) unsubResults();
+                    if (unsubAnnouncements) unsubAnnouncements();
+                    if (unsubHouses) unsubHouses();
+                    if (unsubAuth) unsubAuth();
+                };
             }, []);
 
             // Login & Logout actions
             const handleGoogleLogin = () => {
-                const provider = new firebase.auth.GoogleAuthProvider();
-                firebase.auth().signInWithPopup(provider).catch(err => {
-                    showToast("Gagal melog masuk menggunakan Google.", "error");
-                });
+                if (typeof firebase !== 'undefined') {
+                    const provider = new firebase.auth.GoogleAuthProvider();
+                    firebase.auth().signInWithPopup(provider).catch(err => {
+                        showToast("Gagal melog masuk menggunakan Google.", "error");
+                    });
+                } else {
+                    showToast("Sistem berada dalam Mod Tempatan (Offline).", "error");
+                }
             };
 
             const handleLogout = () => {
-                firebase.auth().signOut().then(() => {
-                    setCurrentUser(null);
-                    setUserRole("pelawat");
-                    showToast("Berjaya log keluar.");
-                });
+                if (typeof firebase !== 'undefined') {
+                    firebase.auth().signOut().then(() => {
+                        setCurrentUser(null);
+                        setUserRole("pelawat");
+                        showToast("Berjaya log keluar.");
+                    });
+                }
             };
 
             const checkAuthority = (requiredRole) => {
@@ -367,7 +423,7 @@
                 };
 
                 try {
-                    if (isCloudActive) {
+                    if (isCloudActive && typeof firebase !== 'undefined') {
                         await firebase.firestore().collection("athletes").doc(data.id).set(data);
                     }
                     
@@ -387,14 +443,17 @@
 
             const handleEditAthlete = (ath) => {
                 if (!checkAuthority("guru")) return;
-                setAthleteForm(ath);
+                setAthleteForm({
+                    ...ath,
+                    acaraIds: ath.acaraIds || []
+                });
                 setIsEditingAthlete(true);
             };
 
             const handleDeleteAthlete = async (id) => {
                 if (!checkAuthority("guru")) return;
                 try {
-                    if (isCloudActive) {
+                    if (isCloudActive && typeof firebase !== 'undefined') {
                         await firebase.firestore().collection("athletes").doc(id).delete();
                     }
                     setAthletes(prev => prev.filter(a => a.id !== id));
@@ -416,7 +475,7 @@
                 };
 
                 try {
-                    if (isCloudActive) {
+                    if (isCloudActive && typeof firebase !== 'undefined') {
                         await firebase.firestore().collection("events").doc(data.id).set(data);
                     }
 
@@ -443,7 +502,7 @@
             const handleDeleteEvent = async (id) => {
                 if (!checkAuthority("guru")) return;
                 try {
-                    if (isCloudActive) {
+                    if (isCloudActive && typeof firebase !== 'undefined') {
                         await firebase.firestore().collection("events").doc(id).delete();
                     }
                     setEvents(prev => prev.filter(e => e.id !== id));
@@ -476,7 +535,7 @@
                 };
 
                 try {
-                    if (isCloudActive) {
+                    if (isCloudActive && typeof firebase !== 'undefined') {
                         await firebase.firestore().collection("results").doc(data.id).set(data);
                     }
                     setResults(prev => [...prev, data]);
@@ -490,7 +549,7 @@
             const handleDeleteResult = async (id) => {
                 if (!checkAuthority("guru")) return;
                 try {
-                    if (isCloudActive) {
+                    if (isCloudActive && typeof firebase !== 'undefined') {
                         await firebase.firestore().collection("results").doc(id).delete();
                     }
                     setResults(prev => prev.filter(r => r.id !== id));
@@ -544,7 +603,7 @@
                 setConfirmMessage("Adakah anda benar-benar pasti mahu menetapkan semula pangkalan data? Semua rekod atlet, acara, dan keputusan akan dipadamkan sepenuhnya.");
                 setConfirmAction(() => async () => {
                     try {
-                        if (isCloudActive) {
+                        if (isCloudActive && typeof firebase !== 'undefined') {
                             const dbRef = firebase.firestore();
                             const athSnap = await dbRef.collection("athletes").get();
                             athSnap.forEach(doc => doc.ref.delete());
@@ -578,7 +637,7 @@
                 };
 
                 try {
-                    if (isCloudActive) {
+                    if (isCloudActive && typeof firebase !== 'undefined') {
                         await firebase.firestore().collection("announcements").doc(newAnn.id).set(newAnn);
                     }
                     setAnnouncements(prev => [newAnn, ...prev]);
@@ -597,7 +656,7 @@
                     bonusPoints: Number(val) || 0
                 };
                 try {
-                    if (isCloudActive) {
+                    if (isCloudActive && typeof firebase !== 'undefined') {
                         await firebase.firestore().collection("housesMetadata").doc(houseName).set(updatedMeta);
                     }
                     setHousesMetadata(prev => ({
@@ -617,7 +676,7 @@
                     guruPenasihat: val
                 };
                 try {
-                    if (isCloudActive) {
+                    if (isCloudActive && typeof firebase !== 'undefined') {
                         await firebase.firestore().collection("housesMetadata").doc(houseName).set(updatedMeta);
                     }
                     setHousesMetadata(prev => ({
@@ -745,7 +804,7 @@
                         </div>
                     )}
 
-                    {}
+                    {/* Main Container */}
                     <main className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 transition-all">
                         {activeTab === "dashboard" && (
                             <div className="space-y-6">
@@ -861,7 +920,6 @@
                             </div>
                         )}
 
-                        {}
                         {activeTab === "houses" && (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {Object.keys(housesMetadata || INITIAL_HOUSES_METADATA).map(name => {
@@ -883,7 +941,7 @@
                                                 <div className="flex justify-between items-start border-b pb-4">
                                                     <div>
                                                         <h3 className="text-xl font-extrabold text-indigo-950">RUMAH {name.toUpperCase()}</h3>
-                                                        <p className="text-xs italic text-slate-400 font-bold mt-1">"{meta.slogan || "Gagah mara mara!"}"</p>
+                                                        <p className="text-xs italic text-slate-400 font-bold mt-1">"{meta.slogan || "Saga Perkasa, Selamanya Juara!"}"</p>
                                                     </div>
                                                     
                                                     {/* Custom Dropdown Urus Data untuk Rumah Sukan */}
@@ -952,7 +1010,6 @@
                             </div>
                         )}
 
-                        {}
                         {activeTab === "athletes" && (
                             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                                 {/* Borang Pendaftaran Atlet */}
@@ -966,11 +1023,11 @@
                                         <div className="grid grid-cols-3 gap-3">
                                             <div className="col-span-2">
                                                 <label className="block text-slate-500 mb-1">Nombor Peserta (Bib)</label>
-                                                <input type="text" required value={athleteForm.noAtlet} onChange={(e) => setAthleteForm({ ...athleteForm, noAtlet: e.target.value.toUpperCase() })} className="w-full p-2.5 border rounded-xl font-bold uppercase" placeholder="Cth: M001" />
+                                                <input type="text" required value={athleteForm.noAtlet} onChange={(e) => setAthleteForm({ ...athleteForm, noAtlet: e.target.value.toUpperCase() })} className="w-full p-2.5 border rounded-xl font-bold uppercase animate-pulse-once" placeholder="Cth: M101" />
                                             </div>
                                             <div>
                                                 <label className="block text-slate-500 mb-1">Jantina</label>
-                                                <select value={athleteForm.jantina} onChange={(e) => setAthleteForm({ ...athleteForm, jantina: e.target.value })} className="w-full p-2.5 border rounded-xl bg-white font-bold">
+                                                <select value={athleteForm.jantina} onChange={(e) => setAthleteForm({ ...athleteForm, jantina: e.target.value, acaraIds: [] })} className="w-full p-2.5 border rounded-xl bg-white font-bold">
                                                     <option value="Lelaki">Lelaki</option>
                                                     <option value="Perempuan">Perempuan</option>
                                                 </select>
@@ -979,12 +1036,12 @@
 
                                         <div>
                                             <label className="block text-slate-500 mb-1">Nama Penuh Murid (Huruf Besar)</label>
-                                            <input type="text" required value={athleteForm.nama} onChange={(e) => setAthleteForm({ ...athleteForm, nama: e.target.value.toUpperCase() })} className="w-full p-2.5 border rounded-xl font-bold uppercase" placeholder="Cth: AHMAD DANISH BIN AZHAR" />
+                                            <input type="text" required value={athleteForm.nama} onChange={(e) => setAthleteForm({ ...athleteForm, nama: e.target.value.toUpperCase() })} className="w-full p-2.5 border rounded-xl font-bold uppercase" placeholder="Cth: MUHAMMAD HAZIQ BIN ROSLI" />
                                         </div>
 
                                         <div>
-                                            <label className="block text-slate-500 mb-1">Kelas (Cth: "7 tahun" / "Tahun 1")</label>
-                                            <input type="text" required value={athleteForm.kelas} onChange={(e) => setAthleteForm({ ...athleteForm, kelas: e.target.value })} className="w-full p-2.5 border rounded-xl font-bold" placeholder="Cth: 6 Cemerlang / 7 tahun" />
+                                            <label className="block text-slate-500 mb-1">Kelas (Cth: "Tahun 6" / "7 tahun")</label>
+                                            <input type="text" required value={athleteForm.kelas} onChange={(e) => setAthleteForm({ ...athleteForm, kelas: e.target.value })} className="w-full p-2.5 border rounded-xl font-bold" placeholder="Cth: Tahun 6 / 7 tahun" />
                                         </div>
 
                                         <div className="grid grid-cols-2 gap-3">
@@ -998,11 +1055,43 @@
                                             </div>
                                             <div>
                                                 <label className="block text-slate-500 mb-1">Kategori Umur</label>
-                                                <select value={athleteForm.kategori} onChange={(e) => setAthleteForm({ ...athleteForm, kategori: e.target.value })} className="w-full p-2.5 border rounded-xl bg-white font-bold">
+                                                <select value={athleteForm.kategori} onChange={(e) => setAthleteForm({ ...athleteForm, kategori: e.target.value, acaraIds: [] })} className="w-full p-2.5 border rounded-xl bg-white font-bold">
                                                     {sortedCategories.map(cat => (
                                                         <option key={cat} value={cat}>{getFriendlyCategory(cat)}</option>
                                                     ))}
                                                 </select>
+                                            </div>
+                                        </div>
+
+                                        {/* Pilihan Acara (Hanya tunjuk acara yang sepadan dengan kategori atlet) */}
+                                        <div className="space-y-1">
+                                            <label className="block text-slate-500 mb-1">Daftar Acara Sukan (Mengikut Kategori)</label>
+                                            <div className="max-h-28 overflow-y-auto border rounded-xl p-2.5 bg-slate-50 space-y-1.5">
+                                                {eventsWithCode.filter(e => e.kategori === athleteForm.kategori).length === 0 ? (
+                                                    <p className="text-slate-400 italic text-[10.5px]">Tiada acara sukan berdaftar untuk kategori ini.</p>
+                                                ) : (
+                                                    eventsWithCode
+                                                        .filter(e => e.kategori === athleteForm.kategori)
+                                                        .map(e => {
+                                                            const isChecked = athleteForm.acaraIds ? athleteForm.acaraIds.includes(e.id) : false;
+                                                            return (
+                                                                <label key={e.id} className="flex items-center gap-2 cursor-pointer text-[10.5px] font-bold text-slate-600">
+                                                                    <input 
+                                                                        type="checkbox" 
+                                                                        checked={isChecked} 
+                                                                        onChange={(evt) => {
+                                                                            const updatedIds = evt.target.checked
+                                                                                ? [...(athleteForm.acaraIds || []), e.id]
+                                                                                : (athleteForm.acaraIds || []).filter(id => id !== e.id);
+                                                                            setAthleteForm({ ...athleteForm, acaraIds: updatedIds });
+                                                                        }}
+                                                                        className="rounded text-indigo-600 focus:ring-indigo-500 h-3.5 w-3.5"
+                                                                    />
+                                                                    <span>[{e.kodAcara}] {e.nama}</span>
+                                                                </label>
+                                                            );
+                                                        })
+                                                )}
                                             </div>
                                         </div>
 
@@ -1108,7 +1197,6 @@
                             </div>
                         )}
 
-                        {}
                         {activeTab === "events" && (
                             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                                 {/* Borang Pendaftaran Acara Sukan */}
@@ -1227,7 +1315,6 @@
                             </div>
                         )}
 
-                        {}
                         {activeTab === "results" && (
                             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                                 {/* Borang Pendaftaran Rekod Keputusan */}
@@ -1258,8 +1345,12 @@
                                                 {athletes
                                                     .filter(ath => {
                                                         const targetEvent = events.find(e => e.id === resultForm.eventId);
-                                                        if (!targetEvent) return true; // Papar semua jika tiada acara dipilih
-                                                        return ath.kategori === targetEvent.kategori;
+                                                        if (!targetEvent) return true; // Papar semua jika tiada acara
+                                                        
+                                                        // Mengutamakan atlet yang didaftarkan khusus untuk acara ini, atau fallback ke kategori yang sama
+                                                        const isRegistered = ath.acaraIds && ath.acaraIds.includes(resultForm.eventId);
+                                                        const isSameCategory = ath.kategori === targetEvent.kategori;
+                                                        return isRegistered || isSameCategory;
                                                     })
                                                     .map(ath => (
                                                         <option key={ath.id} value={ath.id}>[{ath.noAtlet}] {ath.nama} ({ath.rumah})</option>
@@ -1270,7 +1361,7 @@
 
                                         <div className="grid grid-cols-2 gap-3">
                                             <div>
-                                                <label className="block text-slate-500 mb-1">Kedudukan Podium</label>
+                                                <label className="block text-slate-500 mb-1">Kedudukan</label>
                                                 <select value={resultForm.kedudukan} onChange={(e) => setResultForm({ ...resultForm, kedudukan: e.target.value })} className="w-full p-2.5 border rounded-xl bg-white font-bold">
                                                     <option value="1">🥇 Johan (Emas)</option>
                                                     <option value="2">🥈 Naib Johan (Perak)</option>
@@ -1336,7 +1427,7 @@
                                                                         <div className="flex items-center gap-3">
                                                                             <span className="font-mono text-slate-500 font-bold text-[11px]">{res.catatan || "-"}</span>
                                                                             {userRole !== "pelawat" && (
-                                                                                <button onClick={() => handleDeleteResult(res.id)} className="text-red-600 hover:text-red-800 p-1">
+                                                                                <button onClick={() => handleDeleteResult(res.id)} className="text-red-600 hover:text-red-800 p-1" title="Padam Keputusan">
                                                                                     <i className="fa-solid fa-trash-can"></i>
                                                                                 </button>
                                                                             )}
@@ -1354,7 +1445,6 @@
                             </div>
                         )}
 
-                        {}
                         {activeTab === "certs" && (
                             <div className="space-y-6">
                                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 space-y-4">
@@ -1422,10 +1512,15 @@
                                                                             <button 
                                                                                 onClick={() => {
                                                                                     const win = window.open("", "_blank");
+                                                                                    const certTitle = "Sijil Penghargaan SK Bikang";
+                                                                                    const friendlyCat = getFriendlyCategory(ev.kategori);
+                                                                                    const medText = medLabels[med.kedudukan];
+                                                                                    const recordText = med.catatan || "-";
+
                                                                                     win.document.write(`
                                                                                         <html>
                                                                                         <head>
-                                                                                            <title>Sijil Penghargaan SK Bikang</title>
+                                                                                            <title>${certTitle}</title>
                                                                                             <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Great+Vibes&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
                                                                                             <style>
                                                                                                 @media print {
@@ -1462,9 +1557,9 @@
                                                                                                 <div class="cert-to">Dengan bangganya dianugerahkan kepada</div>
                                                                                                 <div class="winner-name">${ath.nama}</div>
                                                                                                 <div class="cert-body">
-                                                                                                    Kerana telah berjaya mendapat kedudukan <strong>${medLabels[med.kedudukan]}</strong> bagi acara 
-                                                                                                    <strong>${ev.nama} (${getFriendlyCategory(ev.kategori)})</strong> mewakili <strong>RUMAH ${ath.rumah.toUpperCase()}</strong> 
-                                                                                                    dengan catatan rekod <strong>${med.catatan || "-"}</strong>.
+                                                                                                    Kerana telah berjaya mendapat kedudukan <strong>${medText}</strong> bagi acara 
+                                                                                                    <strong>${ev.nama} (${friendlyCat})</strong> mewakili <strong>RUMAH ${ath.rumah.toUpperCase()}</strong> 
+                                                                                                    dengan catatan rekod <strong>${recordText}</strong>.
                                                                                                 </div>
                                                                                                 <div class="sig-container">
                                                                                                     <div class="sig-box">
@@ -1505,7 +1600,6 @@
                             </div>
                         )}
 
-                        {}
                         {activeTab === "admin" && userRole === "admin" && (
                             <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 space-y-6">
                                 <div className="border-b pb-3 flex justify-between items-center">

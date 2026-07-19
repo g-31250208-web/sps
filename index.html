@@ -226,7 +226,14 @@
             return normalize(a) === normalize(e);
         };
 
-        const shuffleWithSeed = (array, seedString) => {
+        const App = () => {
+            const [lang, setLang] = useState("BM");
+            const [userRole, setUserRole] = useState("pelawat");
+            const [currentUser, setCurrentUser] = useState(null);
+            const [isCloudActive, setIsCloudActive] = useState(false);
+            const [activeTab, setActiveTab] = useState("dashboard");
+            const [athletes, setAthletes] = useState(INITIAL_ATHLETES);
+            const [events, setEvents] = useState(INITIAL_EVENTS);
             const [results, setResults] = useState(INITIAL_RESULTS);
             const [heats, setHeats] = useState(INITIAL_HEATS);
             const [housesMetadata, setHousesMetadata] = useState(INITIAL_HOUSES_METADATA);
@@ -246,6 +253,19 @@
             const [categories, setCategories] = useState(["L12", "P12", "L9", "P9", "L7", "P7", "Prasekolah", "Terbuka"]);
             const [pointsConfig, setPointsConfig] = useState({ emas: 5, perak: 3, gangsa: 2, keempat: 1 });
             const [gasUrl, setGasUrl] = useState(activeCustomGasUrl);
+
+            const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+            const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
+            const [passcodeInput, setPasscodeInput] = useState("");
+            const [isAddAthleteSidebarOpen, setIsAddAthleteSidebarOpen] = useState(false);
+            const [isAssignEventSidebarOpen, setIsAssignEventSidebarOpen] = useState(false);
+            const [isEventSidebarOpen, setIsEventSidebarOpen] = useState(false);
+            const [isHouseSidebarOpen, setIsHouseSidebarOpen] = useState(false);
+            const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+            const [showPointsModal, setShowPointsModal] = useState(false);
+            const [showGasModal, setShowGasModal] = useState(false);
+            const [showSchoolSetupModal, setShowSchoolSetupModal] = useState(false);
+            const [showDiagModal, setShowDiagModal] = useState(false);
 
             const [athleteForm, setAthleteForm] = useState({ id: "", nama: "", kelas: "", rumah: "Merah", jantina: "Lelaki", kategori: "L12" });
             const [isEditingAthlete, setIsEditingAthlete] = useState(false);

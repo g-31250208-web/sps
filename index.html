@@ -130,10 +130,7 @@
             { id: "A2", nama: "SITI NURHALIZA", kelas: "5 Gemilang", rumah: "Biru", jantina: "Perempuan", kategori: "P12", acaraIds: ["E2"] },
             { id: "A3", nama: "CHONG WEI", kelas: "6 Cemerlang", rumah: "Hijau", jantina: "Lelaki", kategori: "L12", acaraIds: ["E1"] }
         ];
-        const INITIAL_EVENTS = [
-            { id: "E1", nama: "LARI 100M", kategori: "L12", jenis: "Balapan", format: "Individu", tarikh: "2026-06-15", masa: "08:30" },
-            { id: "E2", nama: "LARI 200M", kategori: "P12", jenis: "Balapan", format: "Individu", tarikh: "2026-06-15", masa: "09:15" }
-        ];
+        const INITIAL_EVENTS = [];
         const INITIAL_RESULTS = [
             { id: "R1", eventId: "E1", athleteId: "A1", kedudukan: "1", catatan: "12.45s" },
             { id: "R2", eventId: "E1", athleteId: "A3", kedudukan: "2", catatan: "12.80s" }
@@ -901,6 +898,30 @@
                             showToastMessage("Acara dipadam.");
                         } catch (e) {
                             showToastMessage("Gagal menghapus.", "error");
+                        }
+                    }
+                });
+            };
+
+            const handleDeleteAllEvents = () => {
+                if (!checkAuthority()) return;
+                setConfirmModal({
+                    show: true,
+                    title: "Padam Semua Acara?",
+                    message: "Tindakan ini akan memadamkan SEMUA acara kejohanan secara kekal. Rekod pendaftaran atlet di bawah acara-acara ini juga mungkin terjejas.",
+                    onConfirm: async () => {
+                        try {
+                            if (isCloudActive && db) {
+                                const evSnap = await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('events').get();
+                                await Promise.all(evSnap.docs.map(doc => doc.ref.delete()));
+                            } else {
+                                setEvents([]);
+                            }
+                            createLog("Padam Semua Acara", "Memadam semua acara kejohanan.");
+                            setConfirmModal({ show: false });
+                            showToastMessage("Semua acara berjaya dipadam!", "success");
+                        } catch (e) {
+                            showToastMessage("Gagal memadam semua acara.", "error");
                         }
                     }
                 });
@@ -2138,11 +2159,14 @@
                                         <p className="text-xs text-slate-400">Tambah dan kelola kategori acara balapan & padang.</p>
                                     </div>
                                     {userRole !== "pelawat" && (
-                                        <button onClick={() => {
-                                            setEventForm({ id: "", nama: "", kategori: "L12", jenis: "Balapan", format: "Individu", tarikh: "", masa: "" });
-                                            setIsEditingEvent(false);
-                                            setIsEventSidebarOpen(true);
-                                        }} className="bg-indigo-600 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow hover:bg-indigo-700 transition">+ Tambah Acara</button>
+                                        <div className="flex gap-2">
+                                            <button onClick={() => {
+                                                setEventForm({ id: "", nama: "", kategori: "L12", jenis: "Balapan", format: "Individu", tarikh: "", masa: "" });
+                                                setIsEditingEvent(false);
+                                                setIsEventSidebarOpen(true);
+                                            }} className="bg-indigo-600 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow hover:bg-indigo-700 transition">+ Tambah Acara</button>
+                                            <button onClick={handleDeleteAllEvents} className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow transition">🗑️ Padam Semua Acara</button>
+                                        </div>
                                     )}
                                 </div>
 

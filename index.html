@@ -1667,6 +1667,104 @@
                             </div>
                         </div>
                     `;
+                } else if (mode === 'hakim_penamat' && targetData) {
+                    const ev = targetData;
+                    const registeredAthletes = (athletes || []).filter(a => a.acaraIds && a.acaraIds.includes(ev.id));
+                    const sortedAthletes = [...registeredAthletes].sort((a, b) => (a.nama || "").localeCompare(b.nama || ""));
+                    
+                    const refRowsHtml = sortedAthletes.map((ath, idx) => `
+                        <tr>
+                            <td style="border: 1px solid #475569; padding: 5px; text-align: center; font-weight: bold;">${idx + 1}</td>
+                            <td style="border: 1px solid #475569; padding: 5px; text-align: center; font-family: monospace; font-weight: bold;">${ath.noAtlet || "-"}</td>
+                            <td style="border: 1px solid #475569; padding: 5px; text-transform: uppercase; font-weight: bold;">${ath.nama}</td>
+                            <td style="border: 1px solid #475569; padding: 5px; text-align: center;">${ath.kelas || "-"}</td>
+                            <td style="border: 1px solid #475569; padding: 5px; text-align: center; font-weight: bold;">Rumah ${ath.rumah}</td>
+                        </tr>
+                    `).join('');
+
+                    const finishPositions = ["JOHAN (1)", "NAIB JOHAN (2)", "KETIGA (3)", "KEEMPAT (4)", "KELIMA (5)", "KEENAM (6)", "KETUJUH (7)", "KELAPAN (8)"];
+                    const finishRowsHtml = finishPositions.map((pos, idx) => `
+                        <tr style="height: 38px;">
+                            <td style="border: 1px solid #0f172a; padding: 6px; text-align: center; font-weight: bold; background-color: #f1f5f9;">${pos}</td>
+                            <td style="border: 1px solid #0f172a; padding: 6px;"></td>
+                            <td style="border: 1px solid #0f172a; padding: 6px;"></td>
+                            <td style="border: 1px solid #0f172a; padding: 6px;"></td>
+                            <td style="border: 1px solid #0f172a; padding: 6px;"></td>
+                            <td style="border: 1px solid #0f172a; padding: 6px;"></td>
+                        </tr>
+                    `).join('');
+
+                    printContent = `
+                        <div style="font-family: sans-serif; padding: 15px; color: #1e293b;">
+                            <div style="display: flex; align-items: center; justify-content: center; border-bottom: 3px double #0f172a; padding-bottom: 12px; margin-bottom: 20px; gap: 15px;">
+                                <img src="${logoUrl}" style="height: 65px;" onerror="this.style.display='none'" />
+                                <div style="text-align: center;">
+                                    <h2 style="margin: 0; font-size: 18px; text-transform: uppercase; letter-spacing: 0.5px; color: #1e3a8a; font-weight: 800;">${activeSchoolName}</h2>
+                                    <h3 style="margin: 3px 0 0 0; font-size: 13px; color: #475569; text-transform: uppercase;">${activeSchoolSubtitle}</h3>
+                                    <h4 style="margin: 6px 0 0 0; font-size: 11px; font-weight: bold; color: #b91c1c; background: #fee2e2; display: inline-block; padding: 3px 12px; border-radius: 6px; text-transform: uppercase;">Borang Hakim Penamat (Finish Judge Sheet)</h4>
+                                </div>
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px; background: #f8fafc; border: 1px solid #cbd5e1; padding: 12px; border-radius: 8px; font-size: 11px;">
+                                <div>
+                                    <p style="margin: 4px 0;"><strong>Nama Acara:</strong> <span style="font-size: 12px; color: #1e3a8a; text-transform: uppercase; font-weight: bold;">${ev.nama} ${getFriendlyCategory(ev.kategori)}</span></p>
+                                    <p style="margin: 4px 0;"><strong>Kod Acara:</strong> <span style="font-family: monospace; font-weight: bold; background: #cbd5e1; padding: 2px 6px; border-radius: 4px;">${ev.kodAcara}</span></p>
+                                    <p style="margin: 4px 0;"><strong>Format Sukan:</strong> ${ev.format || "Individu"} (${ev.jenis})</p>
+                                </div>
+                                <div style="text-align: right;">
+                                    <p style="margin: 4px 0;"><strong>Tarikh Kejohanan:</strong> ${formatDateToDMY(ev.tarikh)}</p>
+                                    <p style="margin: 4px 0;"><strong>Masa Larian:</strong> ${ev.masa ? `${ev.masa}` : "N/A"}</p>
+                                    <p style="margin: 4px 0;"><strong>Jumlah Atlet Berdaftar:</strong> <span style="font-weight: bold; color: #b45309;">${registeredAthletes.length} Orang</span></p>
+                                </div>
+                            </div>
+
+                            <h4 style="margin: 15px 0 5px 0; font-size: 12px; text-transform: uppercase; color: #0f172a;">Jadual Keputusan Larian Rasmi</h4>
+                            <table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 25px;">
+                                <thead>
+                                    <tr style="background-color: #0f172a; color: white; text-align: left;">
+                                        <th style="border: 1px solid #0f172a; padding: 8px; text-align: center; width: 140px;">Kedudukan</th>
+                                        <th style="border: 1px solid #0f172a; padding: 8px; text-align: center; width: 80px;">No Bib</th>
+                                        <th style="border: 1px solid #0f172a; padding: 8px;">Nama Penuh Pemenang</th>
+                                        <th style="border: 1px solid #0f172a; padding: 8px; text-align: center; width: 100px;">Rumah Sukan</th>
+                                        <th style="border: 1px solid #0f172a; padding: 8px; text-align: center; width: 110px;">Catatan Masa</th>
+                                        <th style="border: 1px solid #0f172a; padding: 8px; text-align: center; width: 110px;">Tandatangan Hakim</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${finishRowsHtml}
+                                </tbody>
+                            </table>
+
+                            <h4 style="margin: 0 0 5px 0; font-size: 11px; text-transform: uppercase; color: #475569;">Rujukan No Bib / Atlet Berdaftar</h4>
+                            <table style="width: 100%; border-collapse: collapse; font-size: 9px; margin-bottom: 25px;">
+                                <thead>
+                                    <tr style="background-color: #cbd5e1; text-align: left; color: #1e293b;">
+                                        <th style="border: 1px solid #475569; padding: 5px; text-align: center; width: 35px;">No</th>
+                                        <th style="border: 1px solid #475569; padding: 5px; text-align: center; width: 60px;">No Bib</th>
+                                        <th style="border: 1px solid #475569; padding: 5px;">Nama Atlet</th>
+                                        <th style="border: 1px solid #475569; padding: 5px; text-align: center; width: 80px;">Kelas</th>
+                                        <th style="border: 1px solid #475569; padding: 5px; text-align: center; width: 100px;">Rumah Sukan</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${refRowsHtml.length > 0 ? refRowsHtml : `<tr><td colSpan="5" style="border: 1px solid #475569; padding: 10px; text-align: center; color: #64748b; font-style: italic;">Tiada peserta didaftarkan untuk acara ini.</td></tr>`}
+                                </tbody>
+                            </table>
+
+                            <div style="display: flex; justify-content: space-between; margin-top: 40px; font-size: 10px;">
+                                <div style="width: 220px; text-align: center;">
+                                    <div style="border-bottom: 1px solid #475569; height: 45px;"></div>
+                                    <p style="margin: 5px 0 0 0; font-weight: bold; text-transform: uppercase;">Hakim Penamat</p>
+                                    <p style="margin: 2px 0 0 0; color: #64748b;">Nama: ________________________</p>
+                                </div>
+                                <div style="width: 220px; text-align: center;">
+                                    <div style="border-bottom: 1px solid #475569; height: 45px;"></div>
+                                    <p style="margin: 5px 0 0 0; font-weight: bold; text-transform: uppercase;">Ketua Hakim Penamat</p>
+                                    <p style="margin: 2px 0 0 0; color: #64748b;">Nama: ________________________</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
                 }
 
                 const fullHtml = `
@@ -2395,6 +2493,11 @@
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center gap-4">
+                                                    {ev.jenis === "Balapan" && (
+                                                        <button onClick={() => executeBypassPrint('hakim_penamat', ev)} className="bg-white hover:bg-slate-100 text-rose-700 border border-rose-200 py-1.5 px-3 rounded-lg flex items-center justify-center gap-1 font-bold text-[11px] shadow-sm transition">
+                                                            🖨️ Cetak Hakim Penamat
+                                                        </button>
+                                                    )}
                                                     <button onClick={() => executeBypassPrint('marshall', ev)} className="bg-white hover:bg-slate-100 text-indigo-700 border border-indigo-200 py-1.5 px-3 rounded-lg flex items-center justify-center gap-1 font-bold text-[11px] shadow-sm transition">
                                                         🖨️ Cetak Marshall
                                                     </button>

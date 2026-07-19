@@ -1765,6 +1765,97 @@
                             </div>
                         </div>
                     `;
+                } else if (mode === 'hakim_padang' && targetData) {
+                    const ev = targetData;
+                    const registeredAthletes = (athletes || []).filter(a => a.acaraIds && a.acaraIds.includes(ev.id));
+                    const sortedAthletes = [...registeredAthletes].sort((a, b) => (a.nama || "").localeCompare(b.nama || ""));
+
+                    const rowsHtml = sortedAthletes.map((ath, idx) => `
+                        <tr style="height: 38px;">
+                            <td style="border: 1px solid #475569; padding: 6px; text-align: center; font-weight: bold;">${idx + 1}</td>
+                            <td style="border: 1px solid #475569; padding: 6px; text-align: center; font-family: monospace; font-weight: bold;">${ath.noAtlet || "-"}</td>
+                            <td style="border: 1px solid #475569; padding: 6px; text-transform: uppercase; font-weight: bold; font-size: 11px;">${ath.nama}</td>
+                            <td style="border: 1px solid #475569; padding: 6px; text-align: center;">${ath.kelas || "-"}</td>
+                            <td style="border: 1px solid #475569; padding: 6px; text-align: center; font-weight: bold;">Rumah ${ath.rumah}</td>
+                            <td style="border: 1px solid #475569; padding: 6px;"></td>
+                            <td style="border: 1px solid #475569; padding: 6px;"></td>
+                            <td style="border: 1px solid #475569; padding: 6px;"></td>
+                            <td style="border: 1px solid #475569; padding: 6px; background-color: #f8fafc;"></td>
+                            <td style="border: 1px solid #475569; padding: 6px; background-color: #f1f5f9;"></td>
+                        </tr>
+                    `).join('');
+
+                    printContent = `
+                        <div style="font-family: sans-serif; padding: 15px; color: #1e293b;">
+                            <!-- Kepala Surat Rasmi Borang -->
+                            <div style="display: flex; align-items: center; justify-content: center; border-bottom: 3px double #0f172a; padding-bottom: 12px; margin-bottom: 20px; gap: 15px;">
+                                <img src="${logoUrl}" style="height: 65px;" onerror="this.style.display='none'" />
+                                <div style="text-align: center;">
+                                    <h2 style="margin: 0; font-size: 18px; text-transform: uppercase; letter-spacing: 0.5px; color: #1e3a8a; font-weight: 800;">${activeSchoolName}</h2>
+                                    <h3 style="margin: 3px 0 0 0; font-size: 13px; color: #475569; text-transform: uppercase;">${activeSchoolSubtitle}</h3>
+                                    <h4 style="margin: 6px 0 0 0; font-size: 11px; font-weight: bold; color: #047857; background: #d1fae5; display: inline-block; padding: 3px 12px; border-radius: 6px; text-transform: uppercase;">Borang Hakim Padang (Field Event Score Sheet)</h4>
+                                </div>
+                            </div>
+
+                            <!-- Maklumat Terperinci Acara -->
+                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px; background: #f8fafc; border: 1px solid #cbd5e1; padding: 12px; border-radius: 8px; font-size: 11px;">
+                                <div>
+                                    <p style="margin: 4px 0;"><strong>Nama Acara:</strong> <span style="font-size: 12px; color: #047857; text-transform: uppercase; font-weight: bold;">${ev.nama} ${getFriendlyCategory(ev.kategori)}</span></p>
+                                    <p style="margin: 4px 0;"><strong>Kod Acara:</strong> <span style="font-family: monospace; font-weight: bold; background: #cbd5e1; padding: 2px 6px; border-radius: 4px;">${ev.kodAcara}</span></p>
+                                    <p style="margin: 4px 0;"><strong>Format Sukan:</strong> ${ev.format || "Individu"} (${ev.jenis})</p>
+                                </div>
+                                <div style="text-align: right;">
+                                    <p style="margin: 4px 0;"><strong>Tarikh Kejohanan:</strong> ${formatDateToDMY(ev.tarikh)}</p>
+                                    <p style="margin: 4px 0;"><strong>Masa Pertandingan:</strong> ${ev.masa ? `${ev.masa}` : "N/A"}</p>
+                                    <p style="margin: 4px 0;"><strong>Jumlah Atlet Layak:</strong> <span style="font-weight: bold; color: #047857;">${registeredAthletes.length} Orang</span></p>
+                                </div>
+                            </div>
+
+                            <!-- Jadual Pertandingan Acara Padang -->
+                            <table style="width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 25px;">
+                                <thead>
+                                    <tr style="background-color: #047857; color: white; text-align: left;">
+                                        <th style="border: 1px solid #475569; padding: 6px; text-align: center; width: 35px;">No</th>
+                                        <th style="border: 1px solid #475569; padding: 6px; text-align: center; width: 45px;">No Bib</th>
+                                        <th style="border: 1px solid #475569; padding: 6px;">Nama Penuh Atlet</th>
+                                        <th style="border: 1px solid #475569; padding: 6px; text-align: center; width: 75px;">Kelas/Tahun</th>
+                                        <th style="border: 1px solid #475569; padding: 6px; text-align: center; width: 90px;">Rumah Sukan</th>
+                                        <th style="border: 1px solid #475569; padding: 6px; text-align: center; width: 65px; font-size: 9px; line-height: 1.1;">Cuba 1<br><span style="font-weight: normal; font-size: 8px;">(m / cm)</span></th>
+                                        <th style="border: 1px solid #475569; padding: 6px; text-align: center; width: 65px; font-size: 9px; line-height: 1.1;">Cuba 2<br><span style="font-weight: normal; font-size: 8px;">(m / cm)</span></th>
+                                        <th style="border: 1px solid #475569; padding: 6px; text-align: center; width: 65px; font-size: 9px; line-height: 1.1;">Cuba 3<br><span style="font-weight: normal; font-size: 8px;">(m / cm)</span></th>
+                                        <th style="border: 1px solid #475569; padding: 6px; text-align: center; width: 70px; font-size: 9px; line-height: 1.1; font-weight: bold; background-color: #026245;">Keputusan<br><span style="font-weight: normal; font-size: 8px;">Terbaik</span></th>
+                                        <th style="border: 1px solid #475569; padding: 6px; text-align: center; width: 65px; font-size: 9px; line-height: 1.1; font-weight: bold; background-color: #025039;">Kedudukan</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${rowsHtml.length > 0 ? rowsHtml : `<tr><td colSpan="10" style="border: 1px solid #475569; padding: 25px; text-align: center; color: #64748b; font-style: italic;">Tiada peserta didaftarkan untuk acara padang ini buat masa ini.</td></tr>`}
+                                </tbody>
+                            </table>
+
+                            <!-- Ruangan Panduan dan Tandatangan Pegawai -->
+                            <div style="font-size: 9px; color: #475569; margin-bottom: 25px; background: #f8fafc; border: 1px solid #e2e8f0; padding: 10px; border-radius: 6px; line-height: 1.4;">
+                                <strong>Nota Panduan Hakim Padang:</strong>
+                                <ol style="margin: 4px 0 0 15px; padding: 0;">
+                                    <li>Sila catat setiap cubaan atlet dengan jelas menggunakan unit meter (cth: 3.45m) atau sentimeter jika sesuai.</li>
+                                    <li>Gunakan simbol <strong>X</strong> bagi cubaan batal/gagal, dan simbol <strong>-</strong> bagi cubaan yang dilepaskan.</li>
+                                    <li>Keputusan terbaik adalah jarak/ketinggian maksimum yang dicapai secara sah daripada mana-mana cubaan.</li>
+                                </ol>
+                            </div>
+
+                            <div style="display: flex; justify-content: space-between; margin-top: 40px; font-size: 10px;">
+                                <div style="width: 220px; text-align: center;">
+                                    <div style="border-bottom: 1px solid #475569; height: 45px;"></div>
+                                    <p style="margin: 5px 0 0 0; font-weight: bold; text-transform: uppercase;">Hakim Padang</p>
+                                    <p style="margin: 2px 0 0 0; color: #64748b;">Nama: ________________________</p>
+                                </div>
+                                <div style="width: 220px; text-align: center;">
+                                    <div style="border-bottom: 1px solid #475569; height: 45px;"></div>
+                                    <p style="margin: 5px 0 0 0; font-weight: bold; text-transform: uppercase;">Ketua Hakim Padang</p>
+                                    <p style="margin: 2px 0 0 0; color: #64748b;">Nama: ________________________</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
                 }
 
                 const fullHtml = `
@@ -2496,6 +2587,11 @@
                                                     {ev.jenis === "Balapan" && (
                                                         <button onClick={() => executeBypassPrint('hakim_penamat', ev)} className="bg-white hover:bg-slate-100 text-rose-700 border border-rose-200 py-1.5 px-3 rounded-lg flex items-center justify-center gap-1 font-bold text-[11px] shadow-sm transition">
                                                             🖨️ Cetak Hakim Penamat
+                                                        </button>
+                                                    )}
+                                                    {ev.jenis === "Padang" && (
+                                                        <button onClick={() => executeBypassPrint('hakim_padang', ev)} className="bg-white hover:bg-slate-100 text-emerald-700 border border-emerald-200 py-1.5 px-3 rounded-lg flex items-center justify-center gap-1 font-bold text-[11px] shadow-sm transition">
+                                                            🖨️ Cetak Hakim Padang
                                                         </button>
                                                     )}
                                                     <button onClick={() => executeBypassPrint('marshall', ev)} className="bg-white hover:bg-slate-100 text-indigo-700 border border-indigo-200 py-1.5 px-3 rounded-lg flex items-center justify-center gap-1 font-bold text-[11px] shadow-sm transition">

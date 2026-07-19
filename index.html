@@ -203,6 +203,12 @@
             if (a === e) return true;
             if (e === "TERBUKA") return true; 
 
+            // Pemadanan pintar khusus untuk Prasekolah (Pra / Prasekolah / Tadika / Kemas)
+            const isPra = (s) => {
+                return s.includes("PRA") || s.includes("TADIKA") || s.includes("KEMAS") || s.includes("TADIK");
+            };
+            if (isPra(a) && isPra(e)) return true;
+
             const normalize = (s) => {
                 return s
                     .replace("BAWAH", "B")

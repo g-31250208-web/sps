@@ -306,6 +306,10 @@
             const [schoolSetupTab, setSchoolSetupTab] = useState("config");
             const [newAdminEmail, setNewAdminEmail] = useState("");
 
+            const [showMembersModal, setShowMembersModal] = useState(false);
+            const [selectedMembersHouse, setSelectedMembersHouse] = useState("");
+            const [membersSortType, setMembersSortType] = useState("nama"); // "nama", "kelas", "jantina"
+
             const [previewContent, setPreviewContent] = useState("");
             const [certSignatory1Name, setCertSignatory1Name] = useState("Cikgu Adnan Bin Haji Abdul Rahman");
             const [certSignatory1Title, setCertSignatory1Title] = useState("Guru Besar SK Bikang");
@@ -331,6 +335,40 @@
             const uniqueEventDates = useMemo(() => {
                 return Array.from(new Set((events || []).map(e => e.tarikh).filter(Boolean))).sort();
             }, [events]);
+
+            const getClassWeight = (kelas) => {
+                const k = (kelas || "").toLowerCase();
+                if (k.includes("pra") || k.includes("tadika")) return 0;
+                const match = k.match(/\d+/);
+                if (match) return parseInt(match[0]);
+                return 99;
+            };
+
+            const sortedHouseMembers = useMemo(() => {
+                if (!selectedMembersHouse) return [];
+                const list = [...(athletes || []).filter(a => a.rumah === selectedMembersHouse)];
+                
+                if (membersSortType === "nama") {
+                    return list.sort((a, b) => (a.nama || "").localeCompare(b.nama || ""));
+                } else if (membersSortType === "kelas") {
+                    return list.sort((a, b) => {
+                        const wA = getClassWeight(a.kelas);
+                        const wB = getClassWeight(b.kelas);
+                        if (wA !== wB) return wA - wB;
+                        const cComp = (a.kelas || "").localeCompare(b.kelas || "");
+                        if (cComp !== 0) return cComp;
+                        return (a.nama || "").localeCompare(b.nama || "");
+                    });
+                } else if (membersSortType === "jantina") {
+                    return list.sort((a, b) => {
+                        if (a.jantina === b.jantina) {
+                            return (a.nama || "").localeCompare(b.nama || "");
+                        }
+                        return a.jantina === "Lelaki" ? -1 : 1;
+                    });
+                }
+                return list;
+            }, [athletes, selectedMembersHouse, membersSortType]);
 
             const logoUrl = "https://lh3.googleusercontent.com/d/1E8tjAd7j9DJaZgngDn38agUFCvwyUffa";
 
@@ -1921,6 +1959,12 @@
                                         const meta = housesMetadata[houseName] || {};
                                         const preset = COLOR_PRESETS[meta.warnaLabel] || COLOR_PRESETS.Merah;
                                         const advisors = meta.guruPenasihat ? meta.guruPenasihat.split(',').map(s => s.trim()).filter(Boolean) : [];
+                                        
+                                        // Mengira bilangan atlet mengikut jantina untuk setiap rumah sukan secara dinamik
+                                        const houseAthletes = (athletes || []).filter(a => a.rumah === houseName);
+                                        const countLelaki = houseAthletes.filter(a => a.jantina === "Lelaki").length;
+                                        const countPerempuan = houseAthletes.filter(a => a.jantina === "Perempuan").length;
+                                        const totalCount = houseAthletes.length;
 
                                         return (
                                             <div key={houseName} className="rounded-3xl p-6 bg-white border border-slate-100 hover:shadow-xl transition-all duration-300 relative overflow-hidden flex flex-col justify-between">
@@ -1931,19 +1975,24 @@
                                                             <h4 className="text-xl font-black text-slate-800">Rumah {houseName}</h4>
                                                             <p className="text-xs text-indigo-600 font-bold italic mt-1">"{meta.slogan || 'Slogan Gemilang'}"</p>
                                                         </div>
-                                                        {userRole !== "pelawat" && (
-                                                            <button onClick={() => {
-                                                                setOriginalHouseKey(houseName);
-                                                                setHouseForm({
-                                                                    nama: houseName,
-                                                                    slogan: meta.slogan || "",
-                                                                    bonusPoints: meta.bonusPoints || 0,
-                                                                    warnaLabel: meta.warnaLabel || "Ungu"
-                                                                });
-                                                                setIsEditingHouse(true);
-                                                                setIsHouseSidebarOpen(true);
-                                                            }} className="text-xs bg-slate-50 hover:bg-slate-100 border p-1.5 rounded-lg font-bold">✏️ Edit</button>
-                                                        )}
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-[11px] bg-slate-100 border border-slate-200 text-slate-700 px-2 py-1 rounded-lg font-bold whitespace-nowrap">
+                                                                L:{countLelaki} P:{countPerempuan} Jumlah:{totalCount}
+                                                            </span>
+                                                            {userRole !== "pelawat" && (
+                                                                <button onClick={() => {
+                                                                    setOriginalHouseKey(houseName);
+                                                                    setHouseForm({
+                                                                        nama: houseName,
+                                                                        slogan: meta.slogan || "",
+                                                                        bonusPoints: meta.bonusPoints || 0,
+                                                                        warnaLabel: meta.warnaLabel || "Ungu"
+                                                                    });
+                                                                    setIsEditingHouse(true);
+                                                                    setIsHouseSidebarOpen(true);
+                                                                }} className="text-xs bg-slate-50 hover:bg-slate-100 border p-1.5 rounded-lg font-bold whitespace-nowrap">✏️ Edit</button>
+                                                            )}
+                                                        </div>
                                                     </div>
 
                                                     <div className="space-y-3 text-xs">
@@ -1978,10 +2027,15 @@
                                                     </div>
                                                 </div>
 
-                                                <div className="border-t pt-4 mt-6 flex gap-2">
-                                                    <button onClick={() => executeBypassPrint('kehadiran_rumah', { houseName })} className="flex-1 bg-slate-50 hover:bg-slate-100 text-slate-700 py-1.5 px-2 rounded-lg flex items-center justify-center gap-1 font-semibold text-[11px] border">📄 Kehadiran</button>
-                                                    <button onClick={() => executeBypassPrint('sukantara_rumah', { houseName })} className="flex-1 bg-slate-50 hover:bg-slate-100 text-slate-700 py-1.5 px-2 rounded-lg flex items-center justify-center gap-1 font-semibold text-[11px] border">📄 Sukantara</button>
-                                                    <button onClick={() => handleExportHouseMembersJSON(houseName)} className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 py-1.5 px-3 rounded-lg border border-emerald-100 font-semibold text-[11px]">📥 JSON</button>
+                                                <div className="border-t pt-4 mt-6">
+                                                    <button onClick={() => { setSelectedMembersHouse(houseName); setMembersSortType("nama"); setShowMembersModal(true); }} className="w-full bg-indigo-50 hover:bg-indigo-100 text-indigo-700 py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 font-bold text-xs border border-indigo-100 transition mb-3">
+                                                        👥 Papar Ahli ({totalCount})
+                                                    </button>
+                                                    <div className="flex gap-2">
+                                                        <button onClick={() => executeBypassPrint('kehadiran_rumah', { houseName })} className="flex-1 bg-slate-50 hover:bg-slate-100 text-slate-700 py-1.5 px-2 rounded-lg flex items-center justify-center gap-1 font-semibold text-[11px] border">📄 Kehadiran</button>
+                                                        <button onClick={() => executeBypassPrint('sukantara_rumah', { houseName })} className="flex-1 bg-slate-50 hover:bg-slate-100 text-slate-700 py-1.5 px-2 rounded-lg flex items-center justify-center gap-1 font-semibold text-[11px] border">📄 Sukantara</button>
+                                                        <button onClick={() => handleExportHouseMembersJSON(houseName)} className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 py-1.5 px-3 rounded-lg border border-emerald-100 font-semibold text-[11px]">📥 JSON</button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         );
@@ -2715,6 +2769,86 @@
                                 </div>
                                 <div className="flex justify-end font-bold">
                                     <button onClick={() => setShowDiagModal(false)} className="px-4 py-2 bg-slate-100 rounded-xl">Tutup</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {}
+                    {showMembersModal && (
+                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+                            <div className="bg-white rounded-2xl max-w-2xl w-full h-[80vh] flex flex-col overflow-hidden text-xs font-semibold">
+                                <div className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white px-6 py-4 flex justify-between items-center">
+                                    <h3 className="text-sm font-black uppercase">👥 Senarai Ahli Rumah {selectedMembersHouse}</h3>
+                                    <button onClick={() => setShowMembersModal(false)} className="text-slate-400 hover:text-white text-base">✕</button>
+                                </div>
+                                
+                                <div className="p-4 border-b bg-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                    <span className="text-slate-500">Jumlah Ahli: <strong>{sortedHouseMembers.length} Orang</strong></span>
+                                    <div className="flex flex-wrap items-center gap-1.5">
+                                        <span className="text-slate-400">Isih Mengikut:</span>
+                                        <button 
+                                            onClick={() => setMembersSortType("nama")} 
+                                            className={`px-3 py-1.5 rounded-lg border font-bold transition ${membersSortType === "nama" ? "bg-indigo-600 text-white border-indigo-600" : "bg-white hover:bg-slate-100 text-slate-700"}`}
+                                        >
+                                            🔠 Nama (A-Z)
+                                        </button>
+                                        <button 
+                                            onClick={() => setMembersSortType("kelas")} 
+                                            className={`px-3 py-1.5 rounded-lg border font-bold transition ${membersSortType === "kelas" ? "bg-indigo-600 text-white border-indigo-600" : "bg-white hover:bg-slate-100 text-slate-700"}`}
+                                        >
+                                            🏫 Kelas (Pra-T6)
+                                        </button>
+                                        <button 
+                                            onClick={() => setMembersSortType("jantina")} 
+                                            className={`px-3 py-1.5 rounded-lg border font-bold transition ${membersSortType === "jantina" ? "bg-indigo-600 text-white border-indigo-600" : "bg-white hover:bg-slate-100 text-slate-700"}`}
+                                        >
+                                            🚻 Jantina (L ➔ P)
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="flex-grow overflow-y-auto p-4">
+                                    {sortedHouseMembers.length === 0 ? (
+                                        <p className="text-center text-slate-400 italic py-12">Tiada ahli berdaftar untuk rumah sukan ini.</p>
+                                    ) : (
+                                        <table className="w-full text-left">
+                                            <thead>
+                                                <tr className="border-b text-slate-400 uppercase text-[10px] tracking-wider">
+                                                    <th className="py-2 w-10">Bil</th>
+                                                    <th className="py-2 w-16">Bib</th>
+                                                    <th className="py-2">Nama Penuh</th>
+                                                    <th className="py-2">Kelas</th>
+                                                    <th className="py-2">Jantina</th>
+                                                    <th className="py-2">Kategori</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {sortedHouseMembers.map((ath, idx) => (
+                                                    <tr key={ath.id} className="border-b last:border-0 hover:bg-slate-50 font-bold">
+                                                        <td className="py-2 text-slate-500">{idx + 1}</td>
+                                                        <td className="py-2">
+                                                            <span className="bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded font-mono text-[10px]">
+                                                                {ath.noAtlet || "-"}
+                                                            </span>
+                                                        </td>
+                                                        <td className="py-2 text-slate-900 uppercase">{ath.nama}</td>
+                                                        <td className="py-2 text-slate-600">{ath.kelas}</td>
+                                                        <td className="py-2">
+                                                            <span className={`px-2 py-0.5 rounded text-[10px] ${ath.jantina === "Lelaki" ? "bg-blue-100 text-blue-700" : "bg-pink-100 text-pink-700"}`}>
+                                                                {ath.jantina}
+                                                            </span>
+                                                        </td>
+                                                        <td className="py-2 text-indigo-600">{ath.kategori}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    )}
+                                </div>
+
+                                <div className="bg-slate-50 border-t px-6 py-3.5 flex justify-end">
+                                    <button onClick={() => setShowMembersModal(false)} className="px-5 py-2 bg-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-300 transition">Tutup</button>
                                 </div>
                             </div>
                         </div>

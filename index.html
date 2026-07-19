@@ -245,6 +245,7 @@
             const [categories, setCategories] = useState(["L12", "P12", "L9", "P9", "L7", "P7", "Prasekolah", "Terbuka"]);
             const [pointsConfig, setPointsConfig] = useState({ emas: 5, perak: 3, gangsa: 2, keempat: 1 });
             const [gasUrl, setGasUrl] = useState(activeCustomGasUrl);
+            const [gasModalTab, setGasModalTab] = useState("config"); // State baharu untuk tab integrasi
 
             const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
             const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
@@ -1304,9 +1305,22 @@
                     if (isCloudActive && db) {
                         await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('metadata').doc('gas').set({ url: gasUrl });
                     }
-                    createLog("Ubah Konfigurasi GAS", "Mengemaskini pautan GAS.");
+                    localStorage.setItem('sps_custom_gas_url', gasUrl.trim());
+                    if (setupFirebaseConfigRaw.trim()) {
+                        try {
+                            JSON.parse(setupFirebaseConfigRaw.trim());
+                            localStorage.setItem('sps_custom_firebase_config', setupFirebaseConfigRaw.trim());
+                        } catch (err) {
+                            showToastMessage("Ralat: Format Konfigurasi Firebase JSON tidak sah.", "error");
+                            return;
+                        }
+                    } else {
+                        localStorage.removeItem('sps_custom_firebase_config');
+                    }
+                    createLog("Ubah Konfigurasi GAS & Firebase", "Mengemaskini pautan GAS dan Firebase sekolah.");
                     setShowGasModal(false);
-                    showToastMessage("Integrasi GAS disimpan!", "success");
+                    showToastMessage("Integrasi Sekolah Berjaya Disimpan!", "success");
+                    setTimeout(() => { window.location.reload(); }, 1200);
                 } catch (e) {
                     showToastMessage("Ralat mengemaskini.", "error");
                 }
@@ -2910,25 +2924,85 @@
                         </div>
                     )}
 
-                    {/* Modal Setup GAS URL */}
+                    {/* Modal Setup GAS URL & Firebase Script Sekolah Baharu */}
                     {showGasModal && (
                         <div className="fixed inset-0 bg-slate-900/60 z-[9999] flex items-center justify-center p-4">
-                            <form onSubmit={handleSaveGas} className="bg-white rounded-2xl p-6 max-w-md w-full text-xs font-semibold space-y-4">
-                                <h3 className="text-sm font-extrabold text-slate-900 uppercase">⚡ Hubungan Google Apps Script</h3>
-                                <p className="text-slate-400">Masukkan pautan GAS API Web App URL anda untuk menyegerakkan data ke Google Sheets.</p>
-                                <div>
-                                    <label className="block mb-1">Web App GAS URL</label>
-                                    <input type="text" value={gasUrl} onChange={(e) => setGasUrl(e.target.value)} className="w-full p-2 border rounded-xl" />
+                            <div className="bg-white rounded-2xl p-6 max-w-2xl w-full text-xs font-semibold space-y-4">
+                                <div className="flex justify-between items-center border-b pb-2">
+                                    <h3 className="text-sm font-extrabold text-slate-900 uppercase">⚡ Hubungan & Integrasi Sekolah Baharu</h3>
+                                    <button onClick={() => setShowGasModal(false)} className="text-slate-400 hover:text-slate-600">✕</button>
                                 </div>
-                                <div className="flex justify-end gap-3 font-bold">
-                                    <button type="button" onClick={() => setShowGasModal(false)} className="px-4 py-2 bg-slate-100 rounded-xl">Batal</button>
-                                    <button type="submit" className="px-4 py-2 bg-indigo-600 text-white rounded-xl">Simpan Pautan</button>
+
+                                {/* Pengepala Tab dalam Modal */}
+                                <div className="flex border-b text-[11px]">
+                                    <button onClick={() => setGasModalTab("config")} className={`flex-1 pb-2 text-center border-b-2 font-bold ${gasModalTab === "config" ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-400"}`}>⚙️ Konfigurasi</button>
+                                    <button onClick={() => setGasModalTab("rules")} className={`flex-1 pb-2 text-center border-b-2 font-bold ${gasModalTab === "rules" ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-400"}`}>🔒 Rules Firestore</button>
+                                    <button onClick={() => setGasModalTab("script")} className={`flex-1 pb-2 text-center border-b-2 font-bold ${gasModalTab === "script" ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-400"}`}>📄 Apps Script (Code.gs)</button>
                                 </div>
-                            </form>
+
+                                {gasModalTab === "config" && (
+                                    <form onSubmit={handleSaveGas} className="space-y-4">
+                                        <p className="text-slate-400 text-[11px] leading-relaxed">
+                                            Masukkan tetapan kustom sekolah anda di sini. Portal akan menyambung terus kepada pangkalan data Firebase dan helaian Google Sheets sekolah anda secara automatik.
+                                        </p>
+                                        <div>
+                                            <label className="block mb-1 font-bold text-slate-700">Pautan Web App Google Apps Script (GAS URL)</label>
+                                            <input type="text" value={gasUrl} onChange={(e) => setGasUrl(e.target.value)} placeholder="https://script.google.com/macros/s/.../exec" className="w-full p-2.5 border rounded-xl font-mono text-[11px]" />
+                                        </div>
+                                        <div>
+                                            <label className="block mb-1 font-bold text-slate-700">Konfigurasi Firebase JSON Sekolah</label>
+                                            <textarea rows="6" value={setupFirebaseConfigRaw} onChange={(e) => setSetupFirebaseConfigRaw(e.target.value)} placeholder={`{\n  "apiKey": "AIzaSy...",\n  "authDomain": "sps-sekolah.firebaseapp.com",\n  "projectId": "sps-sekolah",\n  "storageBucket": "sps-sekolah.firebasestorage.app",\n  "messagingSenderId": "123456789",\n  "appId": "1:12345:web:abcd"\n}`} className="w-full p-2.5 border rounded-xl font-mono text-[10px]" />
+                                            <p className="text-[10px] text-slate-400 mt-1">Kosongkan sekiranya ingin kembali menggunakan Firebase lalai sistem.</p>
+                                        </div>
+                                        <div className="flex justify-end gap-3 font-bold pt-2 border-t">
+                                            <button type="button" onClick={() => setShowGasModal(false)} className="px-4 py-2 bg-slate-100 rounded-xl">Batal</button>
+                                            <button type="submit" className="px-5 py-2 bg-indigo-600 text-white rounded-xl">Simpan Integrasi</button>
+                                        </div>
+                                    </form>
+                                )}
+
+                                {gasModalTab === "rules" && (
+                                    <div className="space-y-3">
+                                        <p className="text-slate-400 text-[11px] leading-relaxed">
+                                            Salin kod di bawah dan tampalkan ke dalam ruangan <strong>Rules</strong> pada Cloud Firestore Console sekolah anda bagi membolehkan sistem menulis/membaca data dengan selamat.
+                                        </p>
+                                        <div className="relative">
+                                            <textarea readOnly rows="8" value={`rules_version = '2';\nservice cloud.firestore {\n  match /databases/{database}/documents {\n    match /artifacts/{appId}/public/data/{collectionName}/{docId} {\n      allow read: if true;\n      allow write: if true; // Sesuai untuk mod kejohanan sekolah\n    }\n    match /artifacts/{appId}/public/data/logs/{logId} {\n      allow read: if true;\n      allow write: if true;\n    }\n  }\n}`} className="w-full p-2.5 border rounded-xl font-mono text-[10px] bg-slate-50 cursor-text" id="firestore-rules-text" />
+                                            <button onClick={() => {
+                                                const txt = document.getElementById('firestore-rules-text');
+                                                if (txt) {
+                                                    txt.select();
+                                                    document.execCommand('copy');
+                                                    showToastMessage("Rules Firestore disalin ke papan klip!", "success");
+                                                }
+                                            }} className="absolute top-2 right-2 bg-slate-800 text-white px-2 py-1 rounded text-[10px] hover:bg-slate-700">Salin Rules</button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {gasModalTab === "script" && (
+                                    <div className="space-y-3">
+                                        <p className="text-slate-400 text-[11px] leading-relaxed">
+                                            Salin kod Google Apps Script (GAS) di bawah. Cipta projek baharu di Google Sheets sekolah anda, buka <strong>Extensions > Apps Script</strong>, padam kod asal, tampalkan kod ini dan pilih <strong>Deploy > New Deployment as Web App</strong> (Setiap kali kemaskini dijalankan).
+                                        </p>
+                                        <div className="relative">
+                                            <textarea readOnly rows="8" value={`function doPost(e) {\n  try {\n    var params = JSON.parse(e.postData.contents);\n    var action = params.action;\n    var data = params.data;\n    \n    var ss = SpreadsheetApp.getActiveSpreadsheet();\n    \n    if (action === "syncAthletes") {\n      var sheet = getOrCreateSheet(ss, "Senarai Atlet");\n      sheet.clearContents();\n      sheet.appendRow(["ID Atlet", "Nama Penuh", "Kelas", "Rumah Sukan", "Jantina", "Kategori", "No Bib", "Acara"]);\n      data.forEach(function(item) {\n        sheet.appendRow([\n          item.id || "",\n          item.nama || "",\n          item.kelas || "",\n          item.rumah || "",\n          item.jantina || "",\n          item.kategori || "",\n          item.noAtlet || "",\n          item.acaraIds ? item.acaraIds.join(", ") : ""\n        ]);\n      });\n      return ContentService.createTextOutput(JSON.stringify({status: "success", message: "Data atlet berjaya disinkronkan"})).setMimeType(ContentService.MimeType.JSON);\n    }\n    \n    return ContentService.createTextOutput(JSON.stringify({status: "error", message: "Aksi tidak dikenali"})).setMimeType(ContentService.MimeType.JSON);\n  } catch (err) {\n    return ContentService.createTextOutput(JSON.stringify({status: "error", message: err.toString()})).setMimeType(ContentService.MimeType.JSON);\n  }\n}\n\nfunction getOrCreateSheet(ss, name) {\n  var sheet = ss.getSheetByName(name);\n  if (!sheet) {\n    sheet = ss.insertSheet(name);\n  }\n  return sheet;\n}`} className="w-full p-2.5 border rounded-xl font-mono text-[10px] bg-slate-50 cursor-text" id="gas-script-text" />
+                                            <button onClick={() => {
+                                                const txt = document.getElementById('gas-script-text');
+                                                if (txt) {
+                                                    txt.select();
+                                                    document.execCommand('copy');
+                                                    showToastMessage("Google Apps Script disalin ke papan klip!", "success");
+                                                }
+                                            }} className="absolute top-2 right-2 bg-slate-800 text-white px-2 py-1 rounded text-[10px] hover:bg-slate-700">Salin Kod</button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     )}
 
-                    {}
+                    {/* Hapus Modal Setup Portal sedia ada jika bertindih atau biarkan sahaja */}
                     {showSchoolSetupModal && (
                         <div className="fixed inset-0 bg-slate-900/60 z-[9999] flex items-center justify-center p-4">
                             <form onSubmit={handleSaveSchoolSetup} className="bg-white rounded-2xl p-6 max-w-md w-full text-xs font-semibold space-y-4">

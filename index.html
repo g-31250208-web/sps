@@ -234,9 +234,15 @@
             const [logs, setLogs] = useState(INITIAL_LOGS);
             const [adminList, setAdminList] = useState([]);
 
-            const [activeYear, setActiveYear] = useState(new Date().getFullYear().toString());
-            const [maxIndividu, setMaxIndividu] = useState(3);
-            const [maxKumpulan, setMaxKumpulan] = useState(2);
+            const [activeYear, setActiveYear] = useState(() => {
+                return localStorage.getItem('sps_active_year') || new Date().getFullYear().toString();
+            });
+            const [maxIndividu, setMaxIndividu] = useState(() => {
+                return parseInt(localStorage.getItem('sps_max_individu')) || 3;
+            });
+            const [maxKumpulan, setMaxKumpulan] = useState(() => {
+                return parseInt(localStorage.getItem('sps_max_kumpulan')) || 2;
+            });
             const [categories, setCategories] = useState(["L12", "P12", "L9", "P9", "L7", "P7", "Prasekolah", "Terbuka"]);
             const [pointsConfig, setPointsConfig] = useState({ emas: 5, perak: 3, gangsa: 2, keempat: 1 });
             const [gasUrl, setGasUrl] = useState(activeCustomGasUrl);
@@ -1226,12 +1232,17 @@
                         await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('metadata').doc('config').set({
                             activeYear, maxIndividu, maxKumpulan, categories
                         });
+                    } else {
+                        localStorage.setItem('sps_max_individu', maxIndividu);
+                        localStorage.setItem('sps_max_kumpulan', maxKumpulan);
+                        localStorage.setItem('sps_active_year', activeYear);
+                        localStorage.setItem('sps_points_config', JSON.stringify(pointsConfig));
                     }
-                    createLog("Ubah Konfigurasi Mata", "Mengemaskini poin kedudukan sukan.");
+                    createLog("Ubah Konfigurasi Mata", `Mengemaskini poin kedudukan & had acara murid (Individu: ${maxIndividu}, Kumpulan: ${maxKumpulan}).`);
                     setShowPointsModal(false);
-                    showToastMessage("Tetapan mata disimpan!", "success");
+                    showToastMessage("Tetapan sukan disimpan!", "success");
                 } catch (e) {
-                    showToastMessage("Ralat menyimpan tetapan mata.", "error");
+                    showToastMessage("Ralat menyimpan tetapan.", "error");
                 }
             };
 
@@ -2558,6 +2569,22 @@
                                         <label className="block mb-1">Tahun Aktif Kejohanan</label>
                                         <input type="text" value={activeYear} onChange={(e) => setActiveYear(e.target.value)} className="w-full p-2 border rounded-xl" />
                                     </div>
+                                    
+                                    {}
+                                    <div className="border-t pt-2 border-b pb-2 space-y-2">
+                                        <p className="font-extrabold text-[10px] text-slate-400 uppercase tracking-wider">Had Penyertaan Acara Murid</p>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <div>
+                                                <label className="block mb-1 font-bold text-indigo-700">Had Acara Individu</label>
+                                                <input type="number" min="0" value={maxIndividu} onChange={(e) => setMaxIndividu(parseInt(e.target.value) || 0)} className="w-full p-2 border border-indigo-100 rounded-xl font-bold font-mono text-center text-xs" />
+                                            </div>
+                                            <div>
+                                                <label className="block mb-1 font-bold text-indigo-700">Had Acara Kumpulan</label>
+                                                <input type="number" min="0" value={maxKumpulan} onChange={(e) => setMaxKumpulan(parseInt(e.target.value) || 0)} className="w-full p-2 border border-indigo-100 rounded-xl font-bold font-mono text-center text-xs" />
+                                            </div>
+                                        </div>
+                                    </div>
+
                                     <div className="grid grid-cols-2 gap-2">
                                         <div>
                                             <label className="block mb-1">Poin Johan (🥇)</label>

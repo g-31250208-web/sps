@@ -126,15 +126,14 @@
         const appId = activeFirebaseConfig.projectId || "sps-skb-d8256";
 
         const INITIAL_ATHLETES = [
-            { id: "A1", nama: "AHMAD DANISH", kelas: "6 Cemerlang", rumah: "Merah", jantina: "Lelaki", kategori: "L12", acaraIds: ["E1"] },
-            { id: "A2", nama: "SITI NURHALIZA", kelas: "5 Gemilang", rumah: "Biru", jantina: "Perempuan", kategori: "P12", acaraIds: ["E2"] },
-            { id: "A3", nama: "CHONG WEI", kelas: "6 Cemerlang", rumah: "Hijau", jantina: "Lelaki", kategori: "L12", acaraIds: ["E1"] }
+            { id: "A1", nama: "AHMAD DANISH", kelas: "6 Cemerlang", rumah: "Merah", jantina: "Lelaki", kategori: "L12", acaraIds: [] },
+            { id: "A2", nama: "SITI NURHALIZA", kelas: "5 Gemilang", rumah: "Biru", jantina: "Perempuan", kategori: "P12", acaraIds: [] },
+            { id: "A3", nama: "CHONG WEI", kelas: "6 Cemerlang", rumah: "Hijau", jantina: "Lelaki", kategori: "L12", acaraIds: [] }
         ];
+        
+        // Memulakan keadaan bersih tanpa acara ter-hardcode mengikut arahan
         const INITIAL_EVENTS = [];
-        const INITIAL_RESULTS = [
-            { id: "R1", eventId: "E1", athleteId: "A1", kedudukan: "1", catatan: "12.45s" },
-            { id: "R2", eventId: "E1", athleteId: "A3", kedudukan: "2", catatan: "12.80s" }
-        ];
+        const INITIAL_RESULTS = [];
         const INITIAL_HEATS = [];
         const DEFAULT_ANNOUNCEMENTS = [
             { id: "ann_1", text: "Selamat Datang ke Portal Sukan SPS-SK Bikang 2026! Kejohanan akan dirasmikan oleh Guru Besar pada pukul 8:00 pagi.", date: "17/06/2026", author: "Urus Setia Sukan" }
@@ -191,6 +190,18 @@
                 [arr[i], arr[j]] = [arr[j], arr[i]];
             }
             return arr;
+        };
+
+        const formatDateToDMY = (dateStr) => {
+            if (!dateStr) return "N/A";
+            const parts = dateStr.split('-');
+            if (parts.length === 3) {
+                // Pastikan susunannya adalah DD-MM-YYYY
+                if (parts[0].length === 4) {
+                    return `${parts[2]}-${parts[1]}-${parts[0]}`;
+                }
+            }
+            return dateStr;
         };
 
         function App() {
@@ -1526,12 +1537,12 @@
                             <!-- Maklumat Terperinci Acara -->
                             <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px; background: #f8fafc; border: 1px solid #cbd5e1; padding: 12px; border-radius: 8px; font-size: 11px;">
                                 <div>
-                                    <p style="margin: 4px 0;"><strong>Nama Acara:</strong> <span style="font-size: 12px; color: #1e3a8a; text-transform: uppercase; font-weight: bold;">${ev.nama} ${ev.kategori}</span></p>
+                                    <p style="margin: 4px 0;"><strong>Nama Acara:</strong> <span style="font-size: 12px; color: #1e3a8a; text-transform: uppercase; font-weight: bold;">${ev.nama} ${getFriendlyCategory(ev.kategori)}</span></p>
                                     <p style="margin: 4px 0;"><strong>Kod Acara:</strong> <span style="font-family: monospace; font-weight: bold; background: #cbd5e1; padding: 2px 6px; border-radius: 4px;">${ev.kodAcara}</span></p>
                                     <p style="margin: 4px 0;"><strong>Format Sukan:</strong> ${ev.format || "Individu"} (${ev.jenis})</p>
                                 </div>
                                 <div style="text-align: right;">
-                                    <p style="margin: 4px 0;"><strong>Tarikh Kejohanan:</strong> ${ev.tarikh || "N/A"}</p>
+                                    <p style="margin: 4px 0;"><strong>Tarikh Kejohanan:</strong> ${formatDateToDMY(ev.tarikh)}</p>
                                     <p style="margin: 4px 0;"><strong>Masa Panggilan:</strong> ${ev.masa ? `${ev.masa}` : "N/A"}</p>
                                     <p style="margin: 4px 0;"><strong>Jumlah Atlet Berdaftar:</strong> <span style="font-weight: bold; color: #b45309;">${registeredAthletes.length} Orang</span></p>
                                 </div>
@@ -1739,6 +1750,7 @@
                                 </div>
                                 <span className={`text-2xl font-black ${h.teks}`}>{h.mata} <span className="text-xs font-bold text-slate-400">mata</span></span>
                             </div>
+                            {/* Paparan saiz emoji medal tek-4xl diperkemas dengan hover pop-up untuk kejelasan optimum */}
                             <div className="grid grid-cols-4 gap-2 mt-6 text-center text-xs font-bold bg-slate-50 p-3 rounded-xl">
                                 <div><span className="text-4xl block mb-2 transform hover:scale-125 transition-transform duration-200">🥇</span><p className="text-slate-700 text-sm font-extrabold">{h.emas}</p></div>
                                 <div><span className="text-4xl block mb-2 transform hover:scale-125 transition-transform duration-200">🥈</span><p className="text-slate-700 text-sm font-extrabold">{h.perak}</p></div>
@@ -2177,11 +2189,8 @@
                                         >
                                             <option value="Semua">Semua Hari</option>
                                             {uniqueEventDates.map((date, idx) => {
-                                                const dateObj = new Date(date);
                                                 const dayText = `Hari ke-${idx + 1}`;
-                                                const formattedDate = !isNaN(dateObj.getTime()) 
-                                                    ? dateObj.toLocaleDateString('ms-MY', { day: '2-digit', month: '2-digit' }) 
-                                                    : date;
+                                                const formattedDate = formatDateToDMY(date);
                                                 return (
                                                     <option key={date} value={date}>{dayText} ({formattedDate})</option>
                                                 );
@@ -2257,7 +2266,7 @@
                                                 <div className="flex items-center gap-3">
                                                     <span className="font-mono bg-indigo-600 text-white px-2.5 py-1 rounded-xl text-[10px]">{ev.kodAcara}</span>
                                                     <div>
-                                                        <h4 className="font-extrabold text-slate-800 uppercase">{ev.nama} {ev.kategori}</h4>
+                                                        <h4 className="font-extrabold text-slate-800 uppercase">{ev.nama} {getFriendlyCategory(ev.kategori)}</h4>
                                                         <span className="text-slate-400 text-[10px]">{ev.jenis} | {ev.format || "Individu"}</span>
                                                     </div>
                                                 </div>
@@ -2265,7 +2274,7 @@
                                                     <button onClick={() => executeBypassPrint('marshall', ev)} className="bg-white hover:bg-slate-100 text-indigo-700 border border-indigo-200 py-1.5 px-3 rounded-lg flex items-center justify-center gap-1 font-bold text-[11px] shadow-sm transition">
                                                         🖨️ Cetak Marshall
                                                     </button>
-                                                    <span>📅 {ev.tarikh || "N/A"} {ev.masa ? `@ ${ev.masa}` : ''}</span>
+                                                    <span>📅 {formatDateToDMY(ev.tarikh)} {ev.masa ? `@ ${ev.masa}` : ''}</span>
                                                     {userRole !== "pelawat" && (
                                                         <div className="flex gap-2">
                                                             <button onClick={() => { setEventForm(ev); setIsEditingEvent(true); setIsEventSidebarOpen(true); }} className="text-blue-600 hover:text-blue-800">✏️</button>

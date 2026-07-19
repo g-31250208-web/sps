@@ -1685,12 +1685,12 @@
                     const finishPositions = ["JOHAN (1)", "NAIB JOHAN (2)", "KETIGA (3)", "KEEMPAT (4)", "KELIMA (5)", "KEENAM (6)", "KETUJUH (7)", "KELAPAN (8)"];
                     const finishRowsHtml = finishPositions.map((pos, idx) => `
                         <tr style="height: 38px;">
-                            <td style="border: 1px solid #0f172a; padding: 6px; text-align: center; font-weight: bold; background-color: #f1f5f9;">${pos}</td>
-                            <td style="border: 1px solid #0f172a; padding: 6px;"></td>
-                            <td style="border: 1px solid #0f172a; padding: 6px;"></td>
-                            <td style="border: 1px solid #0f172a; padding: 6px;"></td>
-                            <td style="border: 1px solid #0f172a; padding: 6px;"></td>
-                            <td style="border: 1px solid #0f172a; padding: 6px;"></td>
+                            <td style="border: 1px solid #0f172a; padding: 6px; text-align: center; font-weight: bold; background-color: #f1f5f9; font-size: 11px;">${pos}</td>
+                            <td style="border: 1px solid #0f172a; padding: 6px; text-align: center; font-family: monospace; font-size: 11px;"></td>
+                            <td style="border: 1px solid #0f172a; padding: 6px; font-size: 11px;"></td>
+                            <td style="border: 1px solid #0f172a; padding: 6px; text-align: center; font-size: 9px; line-height: 1.1;"></td>
+                            <td style="border: 1px solid #0f172a; padding: 6px; text-align: center; font-size: 9px; line-height: 1.1;"></td>
+                            <td style="border: 1px solid #0f172a; padding: 6px; text-align: center; font-size: 9px; line-height: 1.1;"></td>
                         </tr>
                     `).join('');
 
@@ -1719,15 +1719,15 @@
                             </div>
 
                             <h4 style="margin: 15px 0 5px 0; font-size: 12px; text-transform: uppercase; color: #0f172a;">Jadual Keputusan Larian Rasmi</h4>
-                            <table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 25px;">
+                            <table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 25px; table-layout: fixed;">
                                 <thead>
                                     <tr style="background-color: #0f172a; color: white; text-align: left;">
-                                        <th style="border: 1px solid #0f172a; padding: 8px; text-align: center; width: 140px;">Kedudukan</th>
-                                        <th style="border: 1px solid #0f172a; padding: 8px; text-align: center; width: 80px;">No Bib</th>
-                                        <th style="border: 1px solid #0f172a; padding: 8px;">Nama Penuh Pemenang</th>
-                                        <th style="border: 1px solid #0f172a; padding: 8px; text-align: center; width: 100px;">Rumah Sukan</th>
-                                        <th style="border: 1px solid #0f172a; padding: 8px; text-align: center; width: 110px;">Catatan Masa</th>
-                                        <th style="border: 1px solid #0f172a; padding: 8px; text-align: center; width: 110px;">Tandatangan Hakim</th>
+                                        <th style="border: 1px solid #0f172a; padding: 6px; text-align: center; width: 110px; font-size: 11px;">Kedudukan</th>
+                                        <th style="border: 1px solid #0f172a; padding: 6px; text-align: center; width: 45px; font-size: 11px;">No<br>Bib</th>
+                                        <th style="border: 1px solid #0f172a; padding: 6px; font-size: 11px;">Nama Penuh Pemenang</th>
+                                        <th style="border: 1px solid #0f172a; padding: 6px; text-align: center; width: 60px; font-size: 9px; line-height: 1.1; word-wrap: break-word;">Rumah<br>Sukan</th>
+                                        <th style="border: 1px solid #0f172a; padding: 6px; text-align: center; width: 70px; font-size: 9px; line-height: 1.1; word-wrap: break-word;">Catatan<br>Masa</th>
+                                        <th style="border: 1px solid #0f172a; padding: 6px; text-align: center; width: 90px; font-size: 9px; line-height: 1.1; word-wrap: break-word;">Tandatangan<br>Hakim</th>
                                     </tr>
                                 </thead>
                                 <tbody>

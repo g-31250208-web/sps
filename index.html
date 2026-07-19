@@ -42,18 +42,10 @@
     <!-- React and ReactDOM CDN -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-    <!-- Babel Standalone CDN -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Babel Standalone CDN Versi Stabil Terpin untuk Elak Whitescreen -->
+    <script src="https://unpkg.com/@babel/standalone@7.26.4/babel.min.js"></script>
 
-    <script>
-        Babel.registerPreset('react-classic', {
-            presets: [
-                [Babel.availablePresets['react'], { runtime: 'classic' }]
-            ]
-        });
-    </script>
-
-    <script type="text/babel" data-presets="react-classic">
+    <script type="text/babel">
         const { useState, useEffect, useMemo, useRef } = React;
 
         const translations = {
@@ -88,6 +80,7 @@
 
         const DEFAULT_SCHOOL_NAME = "SK BIKANG";
         const DEFAULT_SCHOOL_SUBTITLE = "Kejohanan Sukan Tahunan Sekolah";
+        const DEFAULT_SCHOOL_LOGO = "https://lh3.googleusercontent.com/d/1E8tjAd7j9DJaZgngDn38agUFCvwyUffa";
 
         let activeFirebaseConfig = DEFAULT_FIREBASE_CONFIG;
         let isCustomConfigUsed = false;
@@ -104,6 +97,7 @@
 
         const activeSchoolName = localStorage.getItem('sps_school_name') || DEFAULT_SCHOOL_NAME;
         const activeSchoolSubtitle = localStorage.getItem('sps_school_subtitle') || DEFAULT_SCHOOL_SUBTITLE;
+        const activeSchoolLogo = localStorage.getItem('sps_school_logo') || DEFAULT_SCHOOL_LOGO;
         const activeCustomGasUrl = localStorage.getItem('sps_custom_gas_url') || "";
 
         let db = null;
@@ -131,7 +125,6 @@
             { id: "A3", nama: "CHONG WEI", kelas: "6 Cemerlang", rumah: "Hijau", jantina: "Lelaki", kategori: "L12", acaraIds: [] }
         ];
         
-        // Memulakan keadaan bersih tanpa acara ter-hardcode mengikut arahan
         const INITIAL_EVENTS = [];
         const INITIAL_RESULTS = [];
         const INITIAL_HEATS = [];
@@ -196,7 +189,6 @@
             if (!dateStr) return "N/A";
             const parts = dateStr.split('-');
             if (parts.length === 3) {
-                // Pastikan susunannya adalah DD-MM-YYYY
                 if (parts[0].length === 4) {
                     return `${parts[2]}-${parts[1]}-${parts[0]}`;
                 }
@@ -301,6 +293,7 @@
 
             const [setupSchoolName, setSetupSchoolName] = useState(activeSchoolName);
             const [setupSchoolSubtitle, setSetupSchoolSubtitle] = useState(activeSchoolSubtitle);
+            const [setupSchoolLogo, setSetupSchoolLogo] = useState(activeSchoolLogo);
             const [setupFirebaseConfigRaw, setSetupFirebaseConfigRaw] = useState(cachedConfigRaw ? JSON.stringify(activeFirebaseConfig, null, 2) : "");
             const [setupGasUrl, setSetupGasUrl] = useState(activeCustomGasUrl);
             const [schoolSetupTab, setSchoolSetupTab] = useState("config");
@@ -308,7 +301,7 @@
 
             const [showMembersModal, setShowMembersModal] = useState(false);
             const [selectedMembersHouse, setSelectedMembersHouse] = useState("");
-            const [membersSortType, setMembersSortType] = useState("nama"); // "nama", "kelas", "jantina"
+            const [membersSortType, setMembersSortType] = useState("nama"); 
 
             const [previewContent, setPreviewContent] = useState("");
             const [certSignatory1Name, setCertSignatory1Name] = useState("Cikgu Adnan Bin Haji Abdul Rahman");
@@ -370,7 +363,7 @@
                 return list;
             }, [athletes, selectedMembersHouse, membersSortType]);
 
-            const logoUrl = "https://lh3.googleusercontent.com/d/1E8tjAd7j9DJaZgngDn38agUFCvwyUffa";
+            const logoUrl = activeSchoolLogo;
 
             const createLog = async (action, details) => {
                 const logId = "log_" + Date.now();
@@ -1516,7 +1509,6 @@
 
                     printContent = `
                         <div style="font-family: sans-serif; padding: 20px; color: #1e293b;">
-                            <!-- Logo Sekolah Di Atas Tengah -->
                             <div style="text-align: center; margin-bottom: 20px; border-bottom: 2px solid #cbd5e1; padding-bottom: 15px;">
                                 <img src="${logoUrl}" style="height: 75px; margin-bottom: 8px;" onerror="this.style.display='none'" />
                                 <h3 style="margin: 0; text-transform: uppercase; font-size: 14px; color: #1e3a8a; font-weight: 800;">${activeSchoolName}</h3>
@@ -1532,7 +1524,6 @@
                                         <th style="border: 1px solid #94a3b8; padding: 6px;">Nama Penuh Ahli</th>
                                         <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 80px;">Kelas</th>
                                         <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center; width: 50px;">Jantina</th>
-                                        <!-- Top-align Tarikh cell to leave empty space for writing physical dates below -->
                                         <th style="border: 1px solid #94a3b8; padding: 4px; text-align: center; width: 65px; height: 50px; vertical-align: top; font-size: 10px;">Tarikh 1<br><span style="font-weight: normal; color: #94a3b8;">___/___</span></th>
                                         <th style="border: 1px solid #94a3b8; padding: 4px; text-align: center; width: 65px; height: 50px; vertical-align: top; font-size: 10px;">Tarikh 2<br><span style="font-weight: normal; color: #94a3b8;">___/___</span></th>
                                         <th style="border: 1px solid #94a3b8; padding: 4px; text-align: center; width: 65px; height: 50px; vertical-align: top; font-size: 10px;">Tarikh 3<br><span style="font-weight: normal; color: #94a3b8;">___/___</span></th>
@@ -1565,7 +1556,12 @@
 
                     printContent = `
                         <div style="font-family: sans-serif; padding: 20px;">
-                            <h2 style="text-align:center; text-transform:uppercase; margin-bottom:15px;">Keputusan Sukantara Ahli Rumah ${targetData.houseName}</h2>
+                            <div style="text-align: center; margin-bottom: 20px; border-bottom: 2px solid #cbd5e1; padding-bottom: 15px;">
+                                <img src="${logoUrl}" style="height: 75px; margin-bottom: 8px;" onerror="this.style.display='none'" />
+                                <h3 style="margin: 0; text-transform: uppercase; font-size: 14px; color: #1e3a8a; font-weight: 800;">${activeSchoolName}</h3>
+                                <h4 style="margin: 2px 0 0 0; text-transform: uppercase; font-size: 11px; color: #475569;">${activeSchoolSubtitle}</h4>
+                                <h2 style="margin: 10px 0 0 0; text-transform: uppercase; font-size: 16px; font-weight: bold; color: #0f172a;">Keputusan Sukantara Ahli Rumah ${targetData.houseName}</h2>
+                            </div>
                             <table style="width:100%; border-collapse:collapse; font-size:11px;">
                                 <thead>
                                     <tr style="background:#cbd5e1;">
@@ -1609,7 +1605,6 @@
 
                     printContent = `
                         <div style="font-family: sans-serif; padding: 15px; color: #1e293b;">
-                            <!-- Kepala Surat Rasmi Borang -->
                             <div style="display: flex; align-items: center; justify-content: center; border-bottom: 3px double #0f172a; padding-bottom: 12px; margin-bottom: 20px; gap: 15px;">
                                 <img src="${logoUrl}" style="height: 65px;" onerror="this.style.display='none'" />
                                 <div style="text-align: center;">
@@ -1619,7 +1614,6 @@
                                 </div>
                             </div>
 
-                            <!-- Maklumat Terperinci Acara -->
                             <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px; background: #f8fafc; border: 1px solid #cbd5e1; padding: 12px; border-radius: 8px; font-size: 11px;">
                                 <div>
                                     <p style="margin: 4px 0;"><strong>Nama Acara:</strong> <span style="font-size: 12px; color: #1e3a8a; text-transform: uppercase; font-weight: bold;">${ev.nama} ${getFriendlyCategory(ev.kategori)}</span></p>
@@ -1633,7 +1627,6 @@
                                 </div>
                             </div>
 
-                            <!-- Jadual Pengesahan Peserta di Balapan/Padang -->
                             <table style="width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 30px;">
                                 <thead>
                                     <tr style="background-color: #cbd5e1; text-align: left;">
@@ -1652,7 +1645,6 @@
                                 </tbody>
                             </table>
 
-                            <!-- Ruangan Tandatangan Pegawai -->
                             <div style="display: flex; justify-content: space-between; margin-top: 50px; font-size: 10px;">
                                 <div style="width: 220px; text-align: center;">
                                     <div style="border-bottom: 1px solid #475569; height: 50px;"></div>
@@ -1787,7 +1779,6 @@
 
                     printContent = `
                         <div style="font-family: sans-serif; padding: 15px; color: #1e293b;">
-                            <!-- Kepala Surat Rasmi Borang -->
                             <div style="display: flex; align-items: center; justify-content: center; border-bottom: 3px double #0f172a; padding-bottom: 12px; margin-bottom: 20px; gap: 15px;">
                                 <img src="${logoUrl}" style="height: 65px;" onerror="this.style.display='none'" />
                                 <div style="text-align: center;">
@@ -1797,7 +1788,6 @@
                                 </div>
                             </div>
 
-                            <!-- Maklumat Terperinci Acara -->
                             <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px; background: #f8fafc; border: 1px solid #cbd5e1; padding: 12px; border-radius: 8px; font-size: 11px;">
                                 <div>
                                     <p style="margin: 4px 0;"><strong>Nama Acara:</strong> <span style="font-size: 12px; color: #047857; text-transform: uppercase; font-weight: bold;">${ev.nama} ${getFriendlyCategory(ev.kategori)}</span></p>
@@ -1811,7 +1801,6 @@
                                 </div>
                             </div>
 
-                            <!-- Jadual Pertandingan Acara Padang -->
                             <table style="width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 25px;">
                                 <thead>
                                     <tr style="background-color: #047857; color: white; text-align: left;">
@@ -1832,7 +1821,6 @@
                                 </tbody>
                             </table>
 
-                            <!-- Ruangan Panduan dan Tandatangan Pegawai -->
                             <div style="font-size: 9px; color: #475569; margin-bottom: 25px; background: #f8fafc; border: 1px solid #e2e8f0; padding: 10px; border-radius: 6px; line-height: 1.4;">
                                 <strong>Nota Panduan Hakim Padang:</strong>
                                 <ol style="margin: 4px 0 0 15px; padding: 0;">
@@ -1906,6 +1894,7 @@
                 }
                 localStorage.setItem('sps_school_name', setupSchoolName.trim() || DEFAULT_SCHOOL_NAME);
                 localStorage.setItem('sps_school_subtitle', setupSchoolSubtitle.trim() || DEFAULT_SCHOOL_SUBTITLE);
+                localStorage.setItem('sps_school_logo', setupSchoolLogo.trim() || DEFAULT_SCHOOL_LOGO);
                 if (setupFirebaseConfigRaw.trim()) {
                     localStorage.setItem('sps_custom_firebase_config', setupFirebaseConfigRaw.trim());
                 } else {
@@ -1928,6 +1917,7 @@
                     onConfirm: () => {
                         localStorage.removeItem('sps_school_name');
                         localStorage.removeItem('sps_school_subtitle');
+                        localStorage.removeItem('sps_school_logo');
                         localStorage.removeItem('sps_custom_firebase_config');
                         localStorage.removeItem('sps_custom_gas_url');
                         showToastMessage("Mengembalikan sistem ke mod asal...", "success");
@@ -1965,7 +1955,7 @@
                                                 <button onClick={() => { setShowDiagModal(true); setIsAdminMenuOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-semibold">ℹ️ Info Diag</button>
                                                 <button onClick={() => { setShowGasModal(true); setIsAdminMenuOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-semibold">⚡ Setup GAS API</button>
                                                 <button onClick={() => { setShowPointsModal(true); setIsAdminMenuOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-semibold">⚙️ Tetapan Mata & Tahun</button>
-                                                <button onClick={() => { setShowSchoolSetupModal(true); setIsAdminMenuOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-semibold">🏫 Tetapan Nama Sekolah</button>
+                                                <button onClick={() => { setShowSchoolSetupModal(true); setIsAdminMenuOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-semibold">🏫 Tetapan Portal & Logo</button>
                                                 <button onClick={() => { handleBackup(); setIsAdminMenuOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-emerald-50 text-xs font-semibold text-emerald-700">📥 Sandaran Data (JSON)</button>
                                                 <button onClick={() => { handleRestoreClick(); setIsAdminMenuOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-amber-50 text-xs font-semibold text-amber-700">📤 Muat Naik Sandaran</button>
                                                 <button onClick={() => { handleResetDatabase(); setIsAdminMenuOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-red-50 text-xs font-semibold text-red-600">🔄 Kosongkan DB</button>
@@ -2016,26 +2006,25 @@
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                                     {houseStandings.map((h, idx) => (
                                         <div key={h.nama} className={`rounded-2xl p-5 border bg-white relative overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg ${h.glow || 'hover:shadow-indigo-100'}`}>
-                            <div className={`absolute top-0 left-0 w-full h-1.5 ${h.warna}`}></div>
-                            <div className="flex justify-between items-start">
-                                <div>
-                                    <span className="text-[10px] font-black uppercase text-slate-400">Kedudukan #{idx+1}</span>
-                                    <h3 className="text-lg font-black text-slate-800 flex items-center gap-2">Rumah {h.nama}</h3>
+                                            <div className={`absolute top-0 left-0 w-full h-1.5 ${h.warna}`}></div>
+                                            <div className="flex justify-between items-start">
+                                                <div>
+                                                    <span className="text-[10px] font-black uppercase text-slate-400">Kedudukan #{idx+1}</span>
+                                                    <h3 className="text-lg font-black text-slate-800 flex items-center gap-2">Rumah {h.nama}</h3>
+                                                </div>
+                                                <span className={`text-2xl font-black ${h.teks}`}>{h.mata} <span className="text-xs font-bold text-slate-400">mata</span></span>
+                                            </div>
+                                            <div className="grid grid-cols-4 gap-2 mt-6 text-center text-xs font-bold bg-slate-50 p-3 rounded-xl">
+                                                <div><span className="text-4xl block mb-2 transform hover:scale-125 transition-transform duration-200">🥇</span><p className="text-slate-700 text-sm font-extrabold">{h.emas}</p></div>
+                                                <div><span className="text-4xl block mb-2 transform hover:scale-125 transition-transform duration-200">🥈</span><p className="text-slate-700 text-sm font-extrabold">{h.perak}</p></div>
+                                                <div><span className="text-4xl block mb-2 transform hover:scale-125 transition-transform duration-200">🥉</span><p className="text-slate-700 text-sm font-extrabold">{h.gangsa}</p></div>
+                                                <div><span className="text-4xl block mb-2 transform hover:scale-125 transition-transform duration-200">🏅</span><p className="text-slate-700 text-sm font-extrabold">{h.keempat}</p></div>
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
-                                <span className={`text-2xl font-black ${h.teks}`}>{h.mata} <span className="text-xs font-bold text-slate-400">mata</span></span>
-                            </div>
-                            {/* Paparan saiz emoji medal tek-4xl diperkemas dengan hover pop-up untuk kejelasan optimum */}
-                            <div className="grid grid-cols-4 gap-2 mt-6 text-center text-xs font-bold bg-slate-50 p-3 rounded-xl">
-                                <div><span className="text-4xl block mb-2 transform hover:scale-125 transition-transform duration-200">🥇</span><p className="text-slate-700 text-sm font-extrabold">{h.emas}</p></div>
-                                <div><span className="text-4xl block mb-2 transform hover:scale-125 transition-transform duration-200">🥈</span><p className="text-slate-700 text-sm font-extrabold">{h.perak}</p></div>
-                                <div><span className="text-4xl block mb-2 transform hover:scale-125 transition-transform duration-200">🥉</span><p className="text-slate-700 text-sm font-extrabold">{h.gangsa}</p></div>
-                                <div><span className="text-4xl block mb-2 transform hover:scale-125 transition-transform duration-200">🏅</span><p className="text-slate-700 text-sm font-extrabold">{h.keempat}</p></div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                                     <div className="lg:col-span-2 bg-white rounded-2xl p-6 border shadow-sm">
                                         <div className="flex justify-between items-center border-b pb-3 mb-4">
                                             <h3 className="text-sm font-bold text-slate-900 uppercase">{t.announcement}</h3>
@@ -2106,7 +2095,7 @@
                             </div>
                         )}
 
-                        {/* Pengurusan Rumah Sukan */}
+                        {}
                         {activeTab === "rumah_sukan" && (
                             <div className="space-y-6">
                                 <div className="flex justify-between items-center bg-white p-4 rounded-2xl border shadow-sm">
@@ -2165,7 +2154,6 @@
                                         const preset = COLOR_PRESETS[meta.warnaLabel] || COLOR_PRESETS.Merah;
                                         const advisors = meta.guruPenasihat ? meta.guruPenasihat.split(',').map(s => s.trim()).filter(Boolean) : [];
                                         
-                                        // Mengira bilangan atlet mengikut jantina untuk setiap rumah sukan secara dinamik
                                         const houseAthletes = (athletes || []).filter(a => a.rumah === houseName);
                                         const countLelaki = houseAthletes.filter(a => a.jantina === "Lelaki").length;
                                         const countPerempuan = houseAthletes.filter(a => a.jantina === "Perempuan").length;
@@ -2181,7 +2169,7 @@
                                                             <p className="text-xs text-indigo-600 font-bold italic mt-1">"{meta.slogan || 'Slogan Gemilang'}"</p>
                                                         </div>
                                                         <div className="flex items-center gap-2">
-                                                            <span className="text-[11px] bg-slate-100 border border-slate-200 text-slate-700 px-2 py-1 rounded-lg font-bold whitespace-nowrap">
+                                                            <span className="text-[11px] bg-slate-100 border border-slate-200 text-slate-700 px-2.5 py-1.5 rounded-xl font-bold whitespace-nowrap">
                                                                 L:{countLelaki} P:{countPerempuan} Jumlah:{totalCount}
                                                             </span>
                                                             {userRole !== "pelawat" && (
@@ -2249,7 +2237,7 @@
                             </div>
                         )}
 
-                        {/* Tab Atlit / Pengurusan Atlet */}
+                        {}
                         {activeTab === "atlit" && (
                             <div className="space-y-6">
                                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-2xl border shadow-sm">
@@ -2360,7 +2348,6 @@
                                                         <input type="text" value={noAtletInput} onChange={(e) => setNoAtletInput(e.target.value)} className="w-full p-2 border rounded-xl" />
                                                     </div>
                                                     
-                                                    {}
                                                     {(() => {
                                                         const ath = athletes.find(a => a.id === selectedStudentId);
                                                         const selectedEventsObj = selectedEventIds.map(id => eventsWithCode.find(e => e.id === id)).filter(Boolean);
@@ -2486,7 +2473,7 @@
                             </div>
                         )}
 
-                        {/* Tab Acara / Pengurusan Acara */}
+                        {}
                         {activeTab === "acara" && (
                             <div className="space-y-6">
                                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-4 rounded-2xl border shadow-sm gap-4">
@@ -2612,7 +2599,7 @@
                             </div>
                         )}
 
-                        {/* Tab Keputusan / Kunci Masuk Keputusan */}
+                        {}
                         {activeTab === "keputusan" && (
                             <div className="space-y-6">
                                 <div className="bg-white p-5 rounded-2xl border shadow-sm">
@@ -2760,7 +2747,7 @@
                             </div>
                         )}
 
-                        {/* Tab Pasca Sukan / Penjana Dokumentasi Sijil */}
+                        {}
                         {activeTab === "pasca_sukan" && (
                             <div className="space-y-6">
                                 <div className="bg-white p-6 rounded-2xl border shadow-sm">
@@ -2882,7 +2869,6 @@
                                         <input type="text" value={activeYear} onChange={(e) => setActiveYear(e.target.value)} className="w-full p-2 border rounded-xl" />
                                     </div>
                                     
-                                    {}
                                     <div className="border-t pt-2 border-b pb-2 space-y-2">
                                         <p className="font-extrabold text-[10px] text-slate-400 uppercase tracking-wider">Had Penyertaan Acara Murid</p>
                                         <div className="grid grid-cols-2 gap-2">
@@ -2942,7 +2928,7 @@
                         </div>
                     )}
 
-                    {/* Modal Setup Nama Sekolah */}
+                    {}
                     {showSchoolSetupModal && (
                         <div className="fixed inset-0 bg-slate-900/60 z-[9999] flex items-center justify-center p-4">
                             <form onSubmit={handleSaveSchoolSetup} className="bg-white rounded-2xl p-6 max-w-md w-full text-xs font-semibold space-y-4">
@@ -2955,6 +2941,10 @@
                                     <div>
                                         <label className="block mb-1">Tajuk Sukan Kejohanan</label>
                                         <input type="text" required value={setupSchoolSubtitle} onChange={(e) => setSetupSchoolSubtitle(e.target.value)} className="w-full p-2 border rounded-xl" />
+                                    </div>
+                                    <div>
+                                        <label className="block mb-1">Pautan (URL) Logo Sekolah</label>
+                                        <input type="text" required value={setupSchoolLogo} onChange={(e) => setSetupSchoolLogo(e.target.value)} className="w-full p-2 border rounded-xl" placeholder="https://..." />
                                     </div>
                                 </div>
                                 <div className="flex justify-between items-center pt-2">

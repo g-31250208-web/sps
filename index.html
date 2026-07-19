@@ -56,6 +56,27 @@
     <script type="text/babel" data-presets="react-classic">
         const { useState, useEffect, useMemo, useRef } = React;
 
+        const translations = {
+            BM: {
+                dashboard: "Papan Pemuka",
+                rumah_sukan: "Rumah Sukan",
+                atlit: "Pengurusan Atlet",
+                acara: "Pengurusan Acara",
+                keputusan: "Keputusan Acara",
+                pasca_sukan: "Pasca Sukan",
+                announcement: "Hebahan Semasa Kejohanan"
+            },
+            EN: {
+                dashboard: "Dashboard",
+                rumah_sukan: "Sports Houses",
+                atlit: "Athletes Management",
+                acara: "Events Management",
+                keputusan: "Event Results",
+                pasca_sukan: "Post-Sports",
+                announcement: "Tournament Announcements"
+            }
+        };
+
         const DEFAULT_FIREBASE_CONFIG = {
             apiKey: "AIzaSyAJ5LrENOSzRkClehZmu3dy3JKrt6QvtcU",
             authDomain: "sps-skb-d8256.firebaseapp.com",
@@ -190,6 +211,7 @@
             const [showGasModal, setShowGasModal] = useState(false);
             const [showSchoolSetupModal, setShowSchoolSetupModal] = useState(false);
             const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+            
             const [isAddAthleteSidebarOpen, setIsAddAthleteSidebarOpen] = useState(false);
             const [isEventSidebarOpen, setIsEventSidebarOpen] = useState(false);
             const [isAssignEventSidebarOpen, setIsAssignEventSidebarOpen] = useState(false);
@@ -296,7 +318,7 @@
 
             const checkAuthority = () => {
                 if (userRole !== "admin" && userRole !== "guru") {
-                    showToastMessage("Akses Dihalang: Sila log masuk dengan ID DELIMa KPM Guru atau Admin untuk melakukan tindakan ini.", "error");
+                    showToastMessage("Akses Dihalang: Sila log masuk dengan ID DELIMa KPM Guru atau Admin.", "error");
                     return false;
                 }
                 return true;
@@ -304,7 +326,7 @@
 
             const checkAdminAuthority = () => {
                 if (userRole !== "admin") {
-                    showToastMessage("Akses Dihalang: Hanya Admin Utama sahaja dibenarkan untuk mengakses fungsi pentadbiran ini.", "error");
+                    showToastMessage("Akses Dihalang: Hanya Admin Utama sahaja dibenarkan.", "error");
                     return false;
                 }
                 return true;
@@ -617,7 +639,7 @@
                 return {
                     kedudukan: mapping[best.kedudukan] || "Kedudukan " + best.kedudukan,
                     acara: event ? `${event.nama} ${getFriendlyCategory(event.kategori)}` : "Acara Sukan",
-                    catatan: best.catatan ? "dengan catatan " + best.catatan : ""
+                    catatan: db ? best.catatan : ""
                 };
             };
 
@@ -1589,7 +1611,7 @@
                     </div>
 
                     <main className="max-w-7xl mx-auto px-4 py-6 flex-grow w-full">
-                        {}
+                        {/* Papan Pemuka / Dashboard */}
                         {activeTab === "dashboard" && (
                             <div className="space-y-6">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1684,7 +1706,7 @@
                             </div>
                         )}
 
-                        {}
+                        {/* Pengurusan Rumah Sukan */}
                         {activeTab === "rumah_sukan" && (
                             <div className="space-y-6">
                                 <div className="flex justify-between items-center bg-white p-4 rounded-2xl border shadow-sm">
@@ -1737,14 +1759,14 @@
                                     </div>
                                 )}
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     {Object.keys(housesMetadata || INITIAL_HOUSES_METADATA).map(houseName => {
                                         const meta = housesMetadata[houseName] || {};
                                         const preset = COLOR_PRESETS[meta.warnaLabel] || COLOR_PRESETS.Merah;
                                         const advisors = meta.guruPenasihat ? meta.guruPenasihat.split(',').map(s => s.trim()).filter(Boolean) : [];
 
                                         return (
-                                            <div key={houseName} className={`rounded-3xl p-6 bg-white border border-slate-100 hover:shadow-xl transition-all duration-300 relative overflow-hidden flex flex-col justify-between`}>
+                                            <div key={houseName} className="rounded-3xl p-6 bg-white border border-slate-100 hover:shadow-xl transition-all duration-300 relative overflow-hidden flex flex-col justify-between">
                                                 <div className={`absolute top-0 left-0 w-full h-2 ${preset.warna}`}></div>
                                                 <div>
                                                     <div className="flex justify-between items-start mb-4">
@@ -1811,7 +1833,7 @@
                             </div>
                         )}
 
-                        {}
+                        {/* Tab Atlit / Pengurusan Atlet */}
                         {activeTab === "atlit" && (
                             <div className="space-y-6">
                                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-2xl border shadow-sm">
@@ -1933,7 +1955,7 @@
                                                                         <input type="checkbox" checked={isChecked} onChange={() => {
                                                                             setSelectedEventIds(isChecked ? selectedEventIds.filter(id => id !== ev.id) : [...selectedEventIds, ev.id]);
                                                                         }} />
-                                                                        <span>[{ev.kodAcara}] {ev.nama} {ev.kategori}</span>
+                                                                        <span>[{ev.kodAcara}] {ev.nama} {getFriendlyCategory(ev.kategori)}</span>
                                                                     </label>
                                                                 );
                                                             })
@@ -1959,7 +1981,7 @@
                                             <select value={filterEvent} onChange={(e) => setFilterEvent(e.target.value)} className="p-1.5 border bg-white rounded-lg text-xs font-semibold">
                                                 <option value="Semua">Semua Acara</option>
                                                 {eventsWithCode.map(ev => (
-                                                    <option key={ev.id} value={ev.id}>{ev.nama} {ev.kategori}</option>
+                                                    <option key={ev.id} value={ev.id}>{ev.nama} {getFriendlyCategory(ev.kategori)}</option>
                                                 ))}
                                             </select>
                                         </div>
@@ -2000,7 +2022,7 @@
                                                                             if (!ev) return null;
                                                                             return (
                                                                                 <span key={id} className="bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded text-[10px] font-bold">
-                                                                                    {ev.nama} {ev.kategori}
+                                                                                    {ev.nama} {getFriendlyCategory(ev.kategori)}
                                                                                 </span>
                                                                             );
                                                                         })
@@ -2025,7 +2047,7 @@
                             </div>
                         )}
 
-                        {}
+                        {/* Tab Acara / Pengurusan Acara */}
                         {activeTab === "acara" && (
                             <div className="space-y-6">
                                 <div className="flex justify-between items-center bg-white p-4 rounded-2xl border shadow-sm">
@@ -2099,7 +2121,7 @@
                                                 <div className="flex items-center gap-3">
                                                     <span className="font-mono bg-indigo-600 text-white px-2.5 py-1 rounded-xl text-[10px]">{ev.kodAcara}</span>
                                                     <div>
-                                                        <h4 className="font-extrabold text-slate-800 uppercase">{ev.nama} {ev.kategori}</h4>
+                                                        <h4 className="font-extrabold text-slate-800 uppercase">{ev.nama} {getFriendlyCategory(ev.kategori)}</h4>
                                                         <span className="text-slate-400 text-[10px]">{ev.jenis} | {ev.format || "Individu"}</span>
                                                     </div>
                                                 </div>
@@ -2119,7 +2141,7 @@
                             </div>
                         )}
 
-                        {}
+                        {/* Tab Keputusan / Kunci Masuk Keputusan */}
                         {activeTab === "keputusan" && (
                             <div className="space-y-6">
                                 <div className="bg-white p-5 rounded-2xl border shadow-sm">
@@ -2133,7 +2155,7 @@
                                             }} className="w-full p-2.5 border rounded-xl bg-white text-xs font-bold">
                                                 <option value="">-- Pilih Acara --</option>
                                                 {eventsWithCode.map(ev => (
-                                                    <option key={ev.id} value={ev.id}>[{ev.kodAcara}] {ev.nama} {ev.kategori}</option>
+                                                    <option key={ev.id} value={ev.id}>[{ev.kodAcara}] {ev.nama} {getFriendlyCategory(ev.kategori)}</option>
                                                 ))}
                                             </select>
                                         </div>
@@ -2215,7 +2237,7 @@
                                     <div className="lg:col-span-2 bg-white rounded-2xl p-5 border shadow-sm space-y-4">
                                         {selectedEventObject ? (
                                             <div>
-                                                <h3 className="text-sm font-bold text-slate-800 uppercase mb-4">{selectedEventObject.nama} {selectedEventObject.kategori}</h3>
+                                                <h3 className="text-sm font-bold text-slate-800 uppercase mb-4">{selectedEventObject.nama} {getFriendlyCategory(selectedEventObject.kategori)}</h3>
                                                 <div className="space-y-2">
                                                     <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Keputusan Rasmi Podium</h4>
                                                     {(results || []).filter(r => r.eventId === selectedEventObject.id).length === 0 ? (
@@ -2267,7 +2289,7 @@
                             </div>
                         )}
 
-                        {}
+                        {/* Tab Pasca Sukan / Penjana Dokumentasi Sijil */}
                         {activeTab === "pasca_sukan" && (
                             <div className="space-y-6">
                                 <div className="bg-white p-6 rounded-2xl border shadow-sm">

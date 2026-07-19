@@ -1457,6 +1457,88 @@
                             </table>
                         </div>
                     `;
+                } else if (mode === 'marshall' && targetData) {
+                    const ev = targetData;
+                    const registeredAthletes = (athletes || []).filter(a => a.acaraIds && a.acaraIds.includes(ev.id));
+                    const isBalapan = ev.jenis === "Balapan";
+                    const sortedAthletes = [...registeredAthletes].sort((a, b) => (a.nama || "").localeCompare(b.nama || ""));
+                    
+                    const rowsHtml = sortedAthletes.map((ath, idx) => {
+                        const laneStr = isBalapan ? `Lorong ${idx + 1}` : `Giliran ${idx + 1}`;
+                        return `
+                            <tr style="height: 40px;">
+                                <td style="border: 1px solid #475569; padding: 8px; text-align: center; font-weight: bold;">${idx + 1}</td>
+                                <td style="border: 1px solid #475569; padding: 8px; text-align: center; font-weight: bold; background-color: #f8fafc; font-size: 11px;">${laneStr}</td>
+                                <td style="border: 1px solid #475569; padding: 8px; text-align: center; font-family: monospace; font-weight: bold; font-size: 12px;">${ath.noAtlet || "-"}</td>
+                                <td style="border: 1px solid #475569; padding: 8px; text-transform: uppercase; font-weight: bold; font-size: 11px;">${ath.nama}</td>
+                                <td style="border: 1px solid #475569; padding: 8px; text-align: center; font-weight: 500;">${ath.kelas || "-"}</td>
+                                <td style="border: 1px solid #475569; padding: 8px; text-align: center; font-weight: bold;">Rumah ${ath.rumah}</td>
+                                <td style="border: 1px solid #475569; padding: 8px; width: 90px;"></td>
+                                <td style="border: 1px solid #475569; padding: 8px; width: 110px;"></td>
+                            </tr>
+                        `;
+                    }).join('');
+
+                    printContent = `
+                        <div style="font-family: sans-serif; padding: 15px; color: #1e293b;">
+                            <!-- Kepala Surat Rasmi Borang -->
+                            <div style="display: flex; align-items: center; justify-content: center; border-bottom: 3px double #0f172a; padding-bottom: 12px; margin-bottom: 20px; gap: 15px;">
+                                <img src="${logoUrl}" style="height: 65px;" onerror="this.style.display='none'" />
+                                <div style="text-align: center;">
+                                    <h2 style="margin: 0; font-size: 18px; text-transform: uppercase; letter-spacing: 0.5px; color: #1e3a8a; font-weight: 800;">${activeSchoolName}</h2>
+                                    <h3 style="margin: 3px 0 0 0; font-size: 13px; color: #475569; text-transform: uppercase;">${activeSchoolSubtitle}</h3>
+                                    <h4 style="margin: 6px 0 0 0; font-size: 11px; font-weight: bold; color: #0f172a; background: #e2e8f0; display: inline-block; padding: 3px 12px; border-radius: 6px; text-transform: uppercase;">Borang Panggilan Peserta (Marshall Sheet)</h4>
+                                </div>
+                            </div>
+
+                            <!-- Maklumat Terperinci Acara -->
+                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px; background: #f8fafc; border: 1px solid #cbd5e1; padding: 12px; border-radius: 8px; font-size: 11px;">
+                                <div>
+                                    <p style="margin: 4px 0;"><strong>Nama Acara:</strong> <span style="font-size: 12px; color: #1e3a8a; text-transform: uppercase; font-weight: bold;">${ev.nama} ${ev.kategori}</span></p>
+                                    <p style="margin: 4px 0;"><strong>Kod Acara:</strong> <span style="font-family: monospace; font-weight: bold; background: #cbd5e1; padding: 2px 6px; border-radius: 4px;">${ev.kodAcara}</span></p>
+                                    <p style="margin: 4px 0;"><strong>Format Sukan:</strong> ${ev.format || "Individu"} (${ev.jenis})</p>
+                                </div>
+                                <div style="text-align: right;">
+                                    <p style="margin: 4px 0;"><strong>Tarikh Kejohanan:</strong> ${ev.tarikh || "N/A"}</p>
+                                    <p style="margin: 4px 0;"><strong>Masa Panggilan:</strong> ${ev.masa ? `${ev.masa}` : "N/A"}</p>
+                                    <p style="margin: 4px 0;"><strong>Jumlah Atlet Berdaftar:</strong> <span style="font-weight: bold; color: #b45309;">${registeredAthletes.length} Orang</span></p>
+                                </div>
+                            </div>
+
+                            <!-- Jadual Pengesahan Peserta di Balapan/Padang -->
+                            <table style="width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 30px;">
+                                <thead>
+                                    <tr style="background-color: #cbd5e1; text-align: left;">
+                                        <th style="border: 1px solid #475569; padding: 8px; text-align: center; width: 40px;">No</th>
+                                        <th style="border: 1px solid #475569; padding: 8px; text-align: center; width: 90px;">Lorong/Giliran</th>
+                                        <th style="border: 1px solid #475569; padding: 8px; text-align: center; width: 60px;">No Bib</th>
+                                        <th style="border: 1px solid #475569; padding: 8px;">Nama Penuh Atlet</th>
+                                        <th style="border: 1px solid #475569; padding: 8px; text-align: center; width: 85px;">Kelas</th>
+                                        <th style="border: 1px solid #475569; padding: 8px; text-align: center; width: 95px;">Rumah Sukan</th>
+                                        <th style="border: 1px solid #475569; padding: 8px; text-align: center;">Tandatangan/Tanda</th>
+                                        <th style="border: 1px solid #475569; padding: 8px; text-align: center;">Catatan Rasmi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${rowsHtml.length > 0 ? rowsHtml : `<tr><td colSpan="8" style="border: 1px solid #475569; padding: 25px; text-align: center; color: #64748b; font-style: italic;">Tiada peserta didaftarkan untuk acara ini buat masa ini.</td></tr>`}
+                                </tbody>
+                            </table>
+
+                            <!-- Ruangan Tandatangan Pegawai -->
+                            <div style="display: flex; justify-content: space-between; margin-top: 50px; font-size: 10px;">
+                                <div style="width: 220px; text-align: center;">
+                                    <div style="border-bottom: 1px solid #475569; height: 50px;"></div>
+                                    <p style="margin: 5px 0 0 0; font-weight: bold; text-transform: uppercase;">Penyelia Peserta (Marshall)</p>
+                                    <p style="margin: 2px 0 0 0; color: #64748b;">Nama: ________________________</p>
+                                </div>
+                                <div style="width: 220px; text-align: center;">
+                                    <div style="border-bottom: 1px solid #475569; height: 50px;"></div>
+                                    <p style="margin: 5px 0 0 0; font-weight: bold; text-transform: uppercase;">Pelepas / Hakim Penamat</p>
+                                    <p style="margin: 2px 0 0 0; color: #64748b;">Nama: ________________________</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
                 }
 
                 const fullHtml = `
@@ -2121,11 +2203,14 @@
                                                 <div className="flex items-center gap-3">
                                                     <span className="font-mono bg-indigo-600 text-white px-2.5 py-1 rounded-xl text-[10px]">{ev.kodAcara}</span>
                                                     <div>
-                                                        <h4 className="font-extrabold text-slate-800 uppercase">{ev.nama} {getFriendlyCategory(ev.kategori)}</h4>
+                                                        <h4 className="font-extrabold text-slate-800 uppercase">{ev.nama} {ev.kategori}</h4>
                                                         <span className="text-slate-400 text-[10px]">{ev.jenis} | {ev.format || "Individu"}</span>
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center gap-4">
+                                                    <button onClick={() => executeBypassPrint('marshall', ev)} className="bg-white hover:bg-slate-100 text-indigo-700 border border-indigo-200 py-1.5 px-3 rounded-lg flex items-center justify-center gap-1 font-bold text-[11px] shadow-sm transition">
+                                                        🖨️ Cetak Marshall
+                                                    </button>
                                                     <span>📅 {ev.tarikh || "N/A"} {ev.masa ? `@ ${ev.masa}` : ''}</span>
                                                     {userRole !== "pelawat" && (
                                                         <div className="flex gap-2">

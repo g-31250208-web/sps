@@ -172,12 +172,12 @@
             const [logs, setLogs] = useState(INITIAL_LOGS);
 
             const [activeYear, setActiveYear] = useState(() => localStorage.getItem('sps_active_year') || "2026");
-            const [maxIndividu, setMaxIndividu] = useState(() => parseInt(localStorage.getItem('sps_max_individu')) || 3);
-            const [maxKumpulan, setMaxKumpulan] = useState(() => parseInt(localStorage.getItem('sps_max_kumpulan')) || 2);
-            const [categories, setCategories] = useState(["L12", "P12", "L9", "P9", "L7", "P7", "Prasekolah", "Terbuka"]);
-            const [pointsConfig, setPointsConfig] = useState({ emas: 5, perak: 3, gangsa: 2, keempat: 1 });
+        const [maxIndividu, setMaxIndividu] = useState(() => parseInt(localStorage.getItem('sps_max_individu')) || 3);
+        const [maxKumpulan, setMaxKumpulan] = useState(() => parseInt(localStorage.getItem('sps_max_kumpulan')) || 2);
+        const [categories, setCategories] = useState(["LB12", "PB12", "L12", "P12", "L9", "P9", "L7", "P7", "Prasekolah", "Terbuka"]);
+        const [pointsConfig, setPointsConfig] = useState({ emas: 5, perak: 3, gangsa: 2, keempat: 1 });
 
-            // UI Modals & Sidebars
+        // UI Modals & Sidebars
             const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
             const [passcodeInput, setPasscodeInput] = useState("");
             const [isAddAthleteSidebarOpen, setIsAddAthleteSidebarOpen] = useState(false);
@@ -424,37 +424,37 @@
                             <div className="flex items-center space-x-3">
                                 <div className="w-10 h-10 rounded-lg bg-amber-500 flex items-center justify-center font-black text-slate-900 text-xl shadow-lg">
                                     <i className="fa-solid fa-trophy"></i>
-                                </div>
-                                <div>
-                                    <h1 className="font-extrabold text-lg tracking-tight leading-none text-white">{activeSchoolName}</h1>
-                                    <p className="text-xs text-amber-400 font-medium">{activeSchoolSubtitle} ({activeYear})</p>
-                                </div>
-                            </div>
-
-                            {/* Nav Bar Links */}
+                            {}
                             <nav className="flex items-center space-x-1 overflow-x-auto py-1">
                                 {[
                                     { id: "dashboard", label: "Papan Pemuka", icon: "fa-chart-pie" },
                                     { id: "rumah_sukan", label: "Rumah Sukan", icon: "fa-flag" },
                                     { id: "atlit", label: "Pengurusan Atlet", icon: "fa-user-ninja" },
-                                    { id: "acara", label: "Pengurusan Acara", icon: "fa-stopwatch" },
+                                    { id: "acara", label: "Tambah Acara", icon: "fa-stopwatch" },
                                     { id: "keputusan", label: "Keputusan", icon: "fa-medal" },
                                     { id: "pasca_sukan", label: "Pasca Sukan", icon: "fa-file-certificate" },
                                     { id: "hebahan", label: "Hebahan & Log", icon: "fa-bullhorn" }
-                                ].map(tab => (
-                                    <button
-                                        key={tab.id}
-                                        onClick={() => setActiveTab(tab.id)}
-                                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-2 transition-all whitespace-nowrap ${
-                                            activeTab === tab.id 
-                                                ? "bg-amber-500 text-slate-950 shadow-sm" 
-                                                : "text-slate-300 hover:bg-slate-800 hover:text-white"
-                                        }`}
-                                    >
-                                        <i className={`fa-solid ${tab.icon}`}></i>
-                                        <span>{tab.label}</span>
-                                    </button>
-                                ))}
+                                ].map(tab => {
+                                    const isActive = activeTab === tab.id;
+                                    let activeClass = "bg-amber-500 text-slate-950 shadow-sm";
+                                    if (tab.id === "acara" && isActive) {
+                                        activeClass = "bg-emerald-600 text-white shadow-sm";
+                                    }
+                                    return (
+                                        <button
+                                            key={tab.id}
+                                            onClick={() => setActiveTab(tab.id)}
+                                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-2 transition-all whitespace-nowrap ${
+                                                isActive 
+                                                    ? activeClass 
+                                                    : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                                            }`}
+                                        >
+                                            <i className={`fa-solid ${tab.icon}`}></i>
+                                            <span>{tab.label}</span>
+                                        </button>
+                                    );
+                                })}
                             </nav>
 
                             {/* User Profile / Login */}
@@ -498,278 +498,21 @@
                     <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6">
 
                         {}
-                        {activeTab === "dashboard" && (
-                            <div className="space-y-6">
-                                {/* Top Banner */}
-                                <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-6 text-white shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
-                                    <div className="space-y-2 max-w-xl z-10">
-                                        <span className="bg-amber-500/20 text-amber-400 text-xs font-bold px-3 py-1 rounded-full border border-amber-500/30">
-                                            LIVE SCOREBOARD 2026
-                                        </span>
-                                        <h2 className="text-2xl sm:text-3xl font-black tracking-tight">Kedudukan Kejohanan Sukan Tahunan</h2>
-                                        <p className="text-slate-300 text-xs leading-relaxed">
-                                            Pantau jumlah kutipan pingat dan mata terkini bagi setiap Rumah Sukan secara automatik.
-                                        </p>
-                                    </div>
-                                    <div className="flex items-center space-x-4 z-10">
-                                        <button 
-                                            onClick={() => setShowPointsModal(true)}
-                                            className="bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/40 px-4 py-2 rounded-xl text-xs font-bold flex items-center space-x-2 transition"
-                                        >
-                                            <i className="fa-solid fa-sliders"></i>
-                                            <span>Konfigurasi Mata</span>
-                                        </button>
-                                    </div>
-                                </div>
-
-                                {/* House Standings Grid */}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                                    {houseStandings.map((house, idx) => (
-                                        <div key={house.nama} className={`bg-white rounded-2xl p-5 border shadow-sm relative overflow-hidden flex flex-col justify-between ${house.border}`}>
-                                            <div className="flex items-start justify-between">
-                                                <div>
-                                                    <span className="text-xs font-bold text-slate-400">Kedudukan #{idx + 1}</span>
-                                                    <h3 className={`text-xl font-black ${house.teks}`}>Rumah {house.nama}</h3>
-                                                    <p className="text-[11px] text-slate-500 italic mt-0.5">{house.slogan}</p>
-                                                </div>
-                                                <div className={`w-10 h-10 rounded-xl ${house.warna} text-white flex items-center justify-center font-extrabold text-lg shadow-md`}>
-                                                    {idx === 0 ? "🥇" : idx === 1 ? "🥈" : idx === 2 ? "🥉" : "🏅"}
-                                                </div>
-                                            </div>
-
-                                            <div className="mt-4 pt-4 border-t border-slate-100 grid grid-cols-4 gap-1 text-center">
-                                                <div className="bg-amber-50 p-1.5 rounded-lg border border-amber-200">
-                                                    <span className="block text-[10px] text-amber-800 font-bold">EMAS</span>
-                                                    <span className="text-sm font-black text-amber-900">{house.emas}</span>
-                                                </div>
-                                                <div className="bg-slate-100 p-1.5 rounded-lg border border-slate-200">
-                                                    <span className="block text-[10px] text-slate-600 font-bold">PERAK</span>
-                                                    <span className="text-sm font-black text-slate-800">{house.perak}</span>
-                                                </div>
-                                                <div className="bg-orange-50 p-1.5 rounded-lg border border-orange-200">
-                                                    <span className="block text-[10px] text-orange-800 font-bold">GANGSA</span>
-                                                    <span className="text-sm font-black text-orange-900">{house.gangsa}</span>
-                                                </div>
-                                                <div className="bg-slate-50 p-1.5 rounded-lg border border-slate-200">
-                                                    <span className="block text-[10px] text-slate-500 font-bold">BONUS</span>
-                                                    <span className="text-sm font-black text-slate-700">{house.bonus}</span>
-                                                </div>
-                                            </div>
-
-                                            <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
-                                                <span className="text-xs font-bold text-slate-500">Jumlah Mata:</span>
-                                                <span className="text-2xl font-black text-slate-900">{house.mata}</span>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-
-                                {/* Announcements Section */}
-                                <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4">
-                                    <div className="flex items-center justify-between">
-                                        <h3 className="font-extrabold text-slate-900 flex items-center space-x-2">
-                                            <i className="fa-solid fa-bullhorn text-amber-500"></i>
-                                            <span>Hebahan Terkini Kejohanan</span>
-                                        </h3>
-                                    </div>
-                                    <div className="space-y-3">
-                                        {announcements.map(ann => (
-                                            <div key={ann.id} className="bg-amber-50/60 border border-amber-200/60 p-4 rounded-xl flex items-start space-x-3">
-                                                <i className="fa-solid fa-circle-info text-amber-600 mt-0.5"></i>
-                                                <div className="flex-1">
-                                                    <p className="text-sm text-slate-800 font-medium">{ann.text}</p>
-                                                    <span className="text-[11px] text-slate-500 font-semibold mt-1 block">
-                                                        Oleh: {ann.author} • {ann.date}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {}
-                        {activeTab === "rumah_sukan" && (
-                            <div className="space-y-6">
-                                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                                    <div>
-                                        <h2 className="text-xl font-bold text-slate-900">Pengurusan Rumah Sukan</h2>
-                                        <p className="text-xs text-slate-500">Urus senarai guru penasihat, slogan, dan paparan keahlian murid.</p>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    {Object.entries(housesMetadata).map(([houseName, meta]) => {
-                                        const preset = COLOR_PRESETS[meta.warnaLabel] || COLOR_PRESETS.Merah;
-                                        const memberCount = athletes.filter(a => a.rumah === houseName).length;
-                                        return (
-                                            <div key={houseName} className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4 flex flex-col justify-between">
-                                                <div>
-                                                    <div className="flex items-center justify-between">
-                                                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${preset.badge}`}>
-                                                            Rumah {houseName}
-                                                        </span>
-                                                        <span className="text-xs font-semibold text-slate-500">{memberCount} Ahli Berdaftar</span>
-                                                    </div>
-                                                    <h3 className="text-lg font-black text-slate-900 mt-2">{meta.slogan}</h3>
-                                                    <div className="mt-3 text-xs space-y-1">
-                                                        <p className="text-slate-500"><strong className="text-slate-700">Guru Penasihat:</strong> {meta.guruPenasihat || "Belum ditetapkan"}</p>
-                                                        <p className="text-slate-500"><strong className="text-slate-700">Mata Bonus Kejohanan:</strong> +{meta.bonusPoints} mata</p>
-                                                    </div>
-                                                </div>
-
-                                                <div className="pt-4 border-t border-slate-100 flex items-center space-x-2">
-                                                    <button
-                                                        onClick={() => { setSelectedMembersHouse(houseName); setShowMembersModal(true); }}
-                                                        className="flex-1 bg-slate-900 hover:bg-slate-800 text-white py-2 rounded-xl text-xs font-bold transition flex items-center justify-center space-x-1"
-                                                    >
-                                                        <i className="fa-solid fa-users"></i>
-                                                        <span>Lihat Senarai Ahli</span>
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        )}
-
-                        {}
-                        {activeTab === "atlit" && (
-                            <div className="space-y-6">
-                                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                                    <div>
-                                        <h2 className="text-xl font-bold text-slate-900">Pengurusan Atlet Sukan</h2>
-                                        <p className="text-xs text-slate-500">Daftar atlet, daftarkan acara kejohanan, dan urus maklumat profil.</p>
-                                    </div>
-                                    <div className="flex items-center space-x-2">
-                                        <button
-                                            onClick={() => { setIsAssignEventSidebarOpen(true); }}
-                                            className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-xl text-xs font-bold flex items-center space-x-2 transition shadow-sm"
-                                        >
-                                            <i className="fa-solid fa-list-check"></i>
-                                            <span>Daftar Acara Atlet</span>
-                                        </button>
-                                        <button
-                                            onClick={() => { setIsEditingAthlete(false); setAthleteForm({ id: "", nama: "", kelas: "", rumah: "Merah", jantina: "Lelaki", kategori: "L12" }); setIsAddAthleteSidebarOpen(true); }}
-                                            className="bg-amber-500 hover:bg-amber-400 text-slate-950 px-3 py-2 rounded-xl text-xs font-bold flex items-center space-x-2 transition shadow"
-                                        >
-                                            <i className="fa-solid fa-user-plus"></i>
-                                            <span>Tambah Atlet</span>
-                                        </button>
-                                    </div>
-                                </div>
-
-                                {/* Filters */}
-                                <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-wrap items-center gap-4 text-xs">
-                                    <div className="flex items-center space-x-2">
-                                        <label className="font-bold text-slate-600">Rumah Sukan:</label>
-                                        <select 
-                                            value={filterHouse} 
-                                            onChange={(e) => setFilterHouse(e.target.value)}
-                                            className="bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 font-semibold text-slate-700 focus:outline-none"
-                                        >
-                                            <option value="Semua">Semua Rumah</option>
-                                            {Object.keys(housesMetadata).map(h => <option key={h} value={h}>{h}</option>)}
-                                        </select>
-                                    </div>
-
-                                    <div className="flex items-center space-x-2">
-                                        <label className="font-bold text-slate-600">Acara:</label>
-                                        <select 
-                                            value={filterEvent} 
-                                            onChange={(e) => setFilterEvent(e.target.value)}
-                                            className="bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 font-semibold text-slate-700 focus:outline-none"
-                                        >
-                                            <option value="Semua">Semua Acara</option>
-                                            {events.map(ev => <option key={ev.id} value={ev.id}>{ev.nama} ({ev.kategori})</option>)}
-                                        </select>
-                                    </div>
-                                </div>
-
-                                {/* Athlete Table */}
-                                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full text-left text-xs">
-                                            <thead className="bg-slate-50 text-slate-600 uppercase font-bold border-b border-slate-200">
-                                                <tr>
-                                                    <th className="p-3">Nama Atlet</th>
-                                                    <th className="p-3">Kelas</th>
-                                                    <th className="p-3">Rumah Sukan</th>
-                                                    <th className="p-3">Kategori</th>
-                                                    <th className="p-3">Acara Berdaftar</th>
-                                                    <th className="p-3 text-right">Tindakan</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-slate-100">
-                                                {filteredAthletes.length === 0 ? (
-                                                    <tr>
-                                                        <td colSpan="6" className="p-6 text-center text-slate-400 italic">Tiada rekod atlet ditemui.</td>
-                                                    </tr>
-                                                ) : (
-                                                    filteredAthletes.map(ath => {
-                                                        const preset = COLOR_PRESETS[housesMetadata[ath.rumah]?.warnaLabel] || COLOR_PRESETS.Merah;
-                                                        const registeredEvs = (ath.acaraIds || []).map(id => events.find(e => e.id === id)).filter(Boolean);
-                                                        return (
-                                                            <tr key={ath.id} className="hover:bg-slate-50/80 transition">
-                                                                <td className="p-3 font-bold text-slate-900">{ath.nama}</td>
-                                                                <td className="p-3 text-slate-600 font-medium">{ath.kelas}</td>
-                                                                <td className="p-3">
-                                                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${preset.badge}`}>
-                                                                        {ath.rumah}
-                                                                    </span>
-                                                                </td>
-                                                                <td className="p-3 font-semibold text-slate-700">{ath.kategori}</td>
-                                                                <td className="p-3">
-                                                                    <div className="flex flex-wrap gap-1">
-                                                                        {registeredEvs.length === 0 ? (
-                                                                            <span className="text-slate-400 italic">Belum mendaftar</span>
-                                                                        ) : (
-                                                                            registeredEvs.map(ev => (
-                                                                                <span key={ev.id} className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-[10px] border border-slate-200 font-medium">
-                                                                                    {ev.nama}
-                                                                                </span>
-                                                                            ))
-                                                                        )}
-                                                                    </div>
-                                                                </td>
-                                                                <td className="p-3 text-right space-x-1">
-                                                                    <button
-                                                                        onClick={() => { setIsEditingAthlete(true); setAthleteForm(ath); setIsAddAthleteSidebarOpen(true); }}
-                                                                        className="p-1.5 text-slate-600 hover:text-indigo-600 transition"
-                                                                    >
-                                                                        <i className="fa-solid fa-pen-to-square"></i>
-                                                                    </button>
-                                                                    <button
-                                                                        onClick={() => handleDeleteAthlete(ath.id)}
-                                                                        className="p-1.5 text-slate-600 hover:text-red-600 transition"
-                                                                    >
-                                                                        <i className="fa-solid fa-trash-can"></i>
-                                                                    </button>
-                                                                </td>
-                                                            </tr>
-                                                        );
-                                                    })
-                                                )}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {}
                         {activeTab === "acara" && (
-                            <div className="space-y-6">
-                                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                            <div className="space-y-6 bg-emerald-50/70 p-5 sm:p-6 rounded-3xl border border-emerald-200/80 shadow-sm">
+                                <div className="bg-gradient-to-r from-emerald-800 via-teal-800 to-emerald-900 rounded-2xl p-6 text-white shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                                     <div>
-                                        <h2 className="text-xl font-bold text-slate-900">Pengurusan Acara Kejohanan</h2>
-                                        <p className="text-xs text-slate-500">Tetapkan jadual, kategori, dan format acara pertandingan.</p>
+                                        <h2 className="text-xl font-bold text-white flex items-center gap-2.5">
+                                            <div className="w-8 h-8 rounded-lg bg-emerald-500/30 text-emerald-300 flex items-center justify-center text-sm border border-emerald-400/30">
+                                                <i className="fa-solid fa-stopwatch"></i>
+                                            </div>
+                                            <span>Tambah & Senarai Acara Kejohanan</span>
+                                        </h2>
+                                        <p className="text-xs text-emerald-100/90 mt-1">Tetapkan jadual, kategori, dan format acara pertandingan.</p>
                                     </div>
                                     <button
                                         onClick={() => { setIsEditingEvent(false); setEventForm({ id: "", nama: "", kategori: "L12", jenis: "Balapan", format: "Individu", tarikh: "2026-07-25", masa: "08:00" }); setIsEventSidebarOpen(true); }}
-                                        className="bg-amber-500 hover:bg-amber-400 text-slate-950 px-3 py-2 rounded-xl text-xs font-bold flex items-center space-x-2 transition shadow"
+                                        className="bg-emerald-400 hover:bg-emerald-300 text-slate-950 px-4 py-2.5 rounded-xl text-xs font-bold flex items-center space-x-2 transition shadow-md hover:shadow-lg"
                                     >
                                         <i className="fa-solid fa-plus"></i>
                                         <span>Tambah Acara Baru</span>
@@ -778,24 +521,24 @@
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                     {eventsWithCode.map(ev => (
-                                        <div key={ev.id} className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between space-y-3">
+                                        <div key={ev.id} className="bg-white rounded-2xl p-5 border border-emerald-200/80 shadow-sm flex flex-col justify-between space-y-3 hover:border-emerald-400 transition">
                                             <div>
                                                 <div className="flex items-center justify-between">
-                                                    <span className="bg-slate-100 text-slate-700 font-mono font-bold text-[10px] px-2 py-0.5 rounded border border-slate-200">
+                                                    <span className="bg-emerald-100 text-emerald-800 font-mono font-bold text-[10px] px-2 py-0.5 rounded border border-emerald-200">
                                                         KOD: {ev.kodAcara}
                                                     </span>
-                                                    <span className="text-[11px] font-bold text-amber-600">{ev.jenis}</span>
+                                                    <span className="text-[11px] font-bold text-emerald-700">{ev.jenis}</span>
                                                 </div>
                                                 <h3 className="text-base font-extrabold text-slate-900 mt-2">{ev.nama}</h3>
                                                 <p className="text-xs text-slate-500 font-semibold mt-0.5">Kategori: {ev.kategori} • {ev.format}</p>
                                             </div>
 
                                             <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-                                                <span><i className="fa-regular fa-clock mr-1"></i>{ev.masa || "08:00"}</span>
+                                                <span><i className="fa-regular fa-clock mr-1 text-emerald-600"></i>{ev.masa || "08:00"}</span>
                                                 <div className="space-x-1">
                                                     <button
                                                         onClick={() => { setIsEditingEvent(true); setEventForm(ev); setIsEventSidebarOpen(true); }}
-                                                        className="p-1.5 text-slate-600 hover:text-indigo-600 transition"
+                                                        className="p-1.5 text-slate-600 hover:text-emerald-700 transition"
                                                     >
                                                         <i className="fa-solid fa-pen-to-square"></i>
                                                     </button>
@@ -1138,8 +881,18 @@
                                                 onChange={(e) => setAthleteForm({ ...athleteForm, kategori: e.target.value })}
                                                 className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 font-semibold text-slate-900 focus:outline-none"
                                             >
-                                                {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                                                {categories.map(c => (
+                                                    <option key={c} value={c}>
+                                                        {c} {(c === "LB12" || c === "PB12") ? "(Tahun 4 & 5 / 10-11 Thn)" : ""}
+                                                    </option>
+                                                ))}
                                             </select>
+                                            {(athleteForm.kategori === "LB12" || athleteForm.kategori === "PB12") && (
+                                                <p className="text-[10px] text-emerald-700 font-semibold mt-1 flex items-center gap-1 bg-emerald-50 p-1.5 rounded-lg border border-emerald-200">
+                                                    <i className="fa-solid fa-circle-info"></i>
+                                                    <span>Layak untuk murid Tahun 4 & 5 (10 & 11 tahun).</span>
+                                                </p>
+                                            )}
                                         </div>
                                     </div>
 
@@ -1273,8 +1026,17 @@
                                                 onChange={(e) => setEventForm({ ...eventForm, kategori: e.target.value })}
                                                 className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 font-semibold text-slate-900 focus:outline-none"
                                             >
-                                                {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                                                {categories.map(c => (
+                                                    <option key={c} value={c}>
+                                                        {c} {(c === "LB12" || c === "PB12") ? "(Tahun 4 & 5 / 10-11 Thn)" : ""}
+                                                    </option>
+                                                ))}
                                             </select>
+                                            {(eventForm.kategori === "LB12" || eventForm.kategori === "PB12") && (
+                                                <p className="text-[10px] text-emerald-700 font-semibold mt-1 bg-emerald-50 p-1.5 rounded-lg border border-emerald-200">
+                                                    <i className="fa-solid fa-circle-info mr-1"></i> Acara khusus murid Tahun 4 & 5 (10-11 tahun).
+                                                </p>
+                                            )}
                                         </div>
                                         <div>
                                             <label className="block font-bold text-slate-700 mb-1">Jenis Acara:</label>

@@ -118,6 +118,13 @@
         const activeSchoolLogo = localStorage.getItem('sps_school_logo') || DEFAULT_SCHOOL_LOGO;
         const activeCustomGasUrl = localStorage.getItem('sps_custom_gas_url') || "";
 
+        const FALLBACK_LOGO = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='48' fill='%231e293b' stroke='%23fbbf24' stroke-width='4'/><path d='M50 20 L80 40 L80 70 L50 90 L20 70 L20 40 Z' fill='none' stroke='%23fbbf24' stroke-width='3'/><text x='50' y='55' text-anchor='middle' fill='%23ffffff' font-size='12' font-weight='bold' font-family='sans-serif'>SPS</text></svg>";
+
+        const handleImgError = (e) => {
+            e.target.onerror = null;
+            e.target.src = FALLBACK_LOGO;
+        };
+
         let db = null;
         let auth = null;
         let isCloudAvailable = false;
@@ -231,6 +238,11 @@
             const [currentUser, setCurrentUser] = useState(null);
             const [isCloudActive, setIsCloudActive] = useState(false);
             const [activeTab, setActiveTab] = useState("dashboard");
+
+            const [schoolName, setSchoolName] = useState(() => localStorage.getItem('sps_school_name') || DEFAULT_SCHOOL_NAME);
+            const [schoolSubtitle, setSchoolSubtitle] = useState(() => localStorage.getItem('sps_school_subtitle') || DEFAULT_SCHOOL_SUBTITLE);
+            const [schoolLogo, setSchoolLogo] = useState(() => localStorage.getItem('sps_school_logo') || DEFAULT_SCHOOL_LOGO);
+
             const [athletes, setAthletes] = useState(INITIAL_ATHLETES);
             const [events, setEvents] = useState(INITIAL_EVENTS);
             const [results, setResults] = useState(INITIAL_RESULTS);
@@ -891,6 +903,10 @@
                 localStorage.setItem('sps_school_logo', setupSchoolLogo);
                 localStorage.setItem('sps_custom_gas_url', setupGasUrl);
 
+                setSchoolName(setupSchoolName);
+                setSchoolSubtitle(setupSchoolSubtitle);
+                setSchoolLogo(setupSchoolLogo);
+
                 if (setupFirebaseConfigRaw.trim()) {
                     try {
                         JSON.parse(setupFirebaseConfigRaw);
@@ -903,9 +919,9 @@
                     localStorage.removeItem('sps_custom_firebase_config');
                 }
 
-                showToastMessage("Tetapan sekolah berjaya disimpan! Halaman akan dimuat semula.");
-                createLog("Tetapan Sekolah", "Mengemaskini maklumat sekolah dan pangkalan data.");
-                setTimeout(() => window.location.reload(), 1500);
+                showToastMessage("Tetapan sekolah & logo berjaya dikemaskini!");
+                createLog("Tetapan Sekolah", "Mengemaskini logo dan maklumat sekolah.");
+                setShowSchoolSetupModal(false);
             };
 
             const renderCertPreview = () => {
@@ -941,14 +957,10 @@
                                 return (
                                     <div key={ath.id} className="bg-white p-12 rounded-xl shadow-lg border-8 border-double border-slate-800 text-center relative overflow-hidden cert-border max-w-4xl mx-auto my-4">
                                         <div className="flex justify-center mb-4">
-                                            <img src={activeSchoolLogo} alt="Logo" className="h-20 w-20 object-contain" />
+                                            <img src={schoolLogo || FALLBACK_LOGO} alt="Logo Sekolah" onError={handleImgError} className="h-20 w-20 object-contain" />
                                         </div>
-                                        <h2 className="text-xl font-bold tracking-widest text-slate-600 uppercase">{activeSchoolName}</h2>
-                                        <p className="text-sm text-slate-500 uppercase tracking-wider mb-6">{activeSchoolSubtitle}</p>
-
-                                        <h1 className="font-serif text-4xl font-bold text-amber-600 my-4 italic">SIJIL PENGHARGAAN</h1>
-                                        <p className="text-slate-600 text-sm italic mb-6">Dengan ini disahkan bahawa</p>
-
+                                        <h2 className="text-xl font-bold tracking-widest text-slate-600 uppercase">{schoolName}</h2>
+                                        <p className="text-sm text-slate-500 uppercase tracking-wider mb-6">{schoolSubtitle}</p>
                                         <h3 className="text-2xl font-black text-slate-800 tracking-wide border-b-2 border-slate-300 pb-2 inline-block px-8 mb-4">
                                             {ath.nama}
                                         </h3>
@@ -1000,13 +1012,18 @@
                     <header className="bg-slate-900 text-white sticky top-0 z-40 shadow-md no-print">
                         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
                             <div className="flex items-center gap-3">
-                                <img src={activeSchoolLogo} alt="Logo Sekolah" className="w-10 h-10 rounded-full object-cover border-2 border-amber-400 shadow" />
+                                <img 
+                                    src={schoolLogo || FALLBACK_LOGO} 
+                                    alt="Logo Sekolah" 
+                                    onError={handleImgError}
+                                    className="w-10 h-10 rounded-full object-cover border-2 border-amber-400 shadow bg-slate-800" 
+                                />
                                 <div>
                                     <h1 className="font-extrabold text-base sm:text-lg tracking-wide text-amber-400 leading-tight">
-                                        {activeSchoolName}
+                                        {schoolName}
                                     </h1>
                                     <p className="text-xs text-slate-300 font-medium">
-                                        SPS-SK • {activeSchoolSubtitle} ({activeYear})
+                                        SPS-SK • {schoolSubtitle} ({activeYear})
                                     </p>
                                 </div>
                             </div>
@@ -1713,8 +1730,15 @@
                     {/* Login Modal */}
                     {isLoginModalOpen && (
                         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                            <div className="bg-white rounded-2xl p-6 max-w-sm w-full space-y-4 shadow-xl">
-                                <h3 className="font-bold text-lg text-slate-800 text-center">Log Masuk Pentadbir / Guru</h3>
+                            <div className="bg-white rounded-2xl p-6 max-w-sm w-full space-y-4 shadow-xl text-center">
+                                <img 
+                                    src={schoolLogo || FALLBACK_LOGO} 
+                                    alt="Logo Sekolah" 
+                                    onError={handleImgError} 
+                                    className="w-14 h-14 mx-auto rounded-full object-cover border-2 border-amber-400 shadow bg-slate-800 mb-1" 
+                                />
+                                <h3 className="font-bold text-lg text-slate-800">{schoolName}</h3>
+                                <p className="text-xs text-slate-500 font-medium -mt-2">Log Masuk Pentadbir / Guru</p>
                                 
                                 <button
                                     onClick={handleGoogleLogin}

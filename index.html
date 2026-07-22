@@ -4,14 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistem Pengurusan Sukan SPS-SK</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet">
     
+    <!-- Firebase Compat SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
     <style>
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f8fafc;
         }
+        /* Gulir Kustom */
         ::-webkit-scrollbar {
             width: 6px;
             height: 6px;
@@ -59,6 +67,11 @@
 <body class="text-slate-800 antialiased selection:bg-indigo-500 selection:text-white min-h-screen flex flex-col">
     <div id="root"></div>
 
+    <!-- React and ReactDOM CDN -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone@7.26.4/babel.min.js"></script>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -84,10 +97,6 @@
         };
         window.dispatchEvent(new Event("firebase-ready"));
     </script>
-
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-    <script src="https://unpkg.com/@babel/standalone@7.26.4/babel.min.js"></script>
 
     <script type="text/babel">
         const { useState, useEffect, useMemo, useCallback } = React;
@@ -170,7 +179,7 @@
             const [isSyncing, setIsSyncing] = useState(false);
             const [fbRefs, setFbRefs] = useState({ auth: null, db: null, appId: 'sps-skb-app' });
 
-            // Data States - Empty by default, loaded strictly from Cloud
+            // Data States
             const [athletes, setAthletes] = useState([]);
             const [events, setEvents] = useState([]);
             const [results, setResults] = useState([]);
@@ -191,7 +200,7 @@
             const [showBulkImportModal, setShowBulkImportModal] = useState(false);
 
             // Bulk Import State
-            const [bulkTarget, setBulkTarget] = useState("athletes"); // "athletes" or "events"
+            const [bulkTarget, setBulkTarget] = useState("athletes");
             const [bulkInputText, setBulkInputText] = useState("");
             const [isProcessingBulk, setIsProcessingBulk] = useState(false);
 
@@ -285,7 +294,6 @@
 
                 const unsubs = [];
 
-                // 1. Athletes Listener - Reads real database directly
                 const un1 = onSnapshot(getPublicCol('athletes'), (snapshot) => {
                     const list = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
                     setAthletes(list);
@@ -296,21 +304,18 @@
                 });
                 unsubs.push(un1);
 
-                // 2. Events Listener
                 const un2 = onSnapshot(getPublicCol('events'), (snapshot) => {
                     const list = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
                     setEvents(list);
                 }, (err) => console.warn("Events cloud sync err:", err));
                 unsubs.push(un2);
 
-                // 3. Results Listener
                 const un3 = onSnapshot(getPublicCol('results'), (snapshot) => {
                     const list = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
                     setResults(list);
                 }, (err) => console.warn("Results cloud sync err:", err));
                 unsubs.push(un3);
 
-                // 4. Announcements Listener
                 const un4 = onSnapshot(getPublicCol('announcements'), (snapshot) => {
                     const list = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
                     list.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
@@ -318,7 +323,6 @@
                 }, (err) => console.warn("Announcements cloud sync err:", err));
                 unsubs.push(un4);
 
-                // 5. Settings Listener
                 const settingsDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'config');
                 const un5 = onSnapshot(settingsDocRef, (docSnap) => {
                     if (docSnap.exists()) {
@@ -426,13 +430,11 @@
 
                 try {
                     if (bulkTarget === "athletes") {
-                        // Format: NAMA, KELAS, RUMAH, JANTINA, KATEGORI
                         for (let i = 0; i < lines.length; i++) {
                             const line = lines[i].trim();
                             if (!line) continue;
                             const cols = line.includes('\t') ? line.split('\t') : line.split(',');
                             
-                            // Ignore header row if present
                             if (i === 0 && (cols[0].toLowerCase().includes('nama') || cols[0].toLowerCase().includes('name'))) continue;
 
                             const nama = (cols[0] || "").trim().toUpperCase();
@@ -462,7 +464,6 @@
                         }
                         showToastMessage(`Berjaya memuat naik ${addedCount} orang murid ke awan!`, "success");
                     } else if (bulkTarget === "events") {
-                        // Format: NAMA ACARA, KATEGORI, JENIS, FORMAT, MASA
                         for (let i = 0; i < lines.length; i++) {
                             const line = lines[i].trim();
                             if (!line) continue;
@@ -591,7 +592,6 @@
                 });
             }, [housePointsTally]);
 
-            // CRUD Handlers
             const handleSaveAthlete = async (e) => {
                 e.preventDefault();
                 if (!checkAuthority()) return;
@@ -931,7 +931,6 @@
                         </div>
                     )}
 
-                    {/* Main Content Area */}
                     <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
 
                         {/* TAB 1: Dashboard */}
@@ -1119,7 +1118,7 @@
                             </div>
                         )}
 
-                        {/* TAB 3: Pengurusan Atlet (259+ Murid Support) */}
+                        {/* TAB 3: Pengurusan Atlet */}
                         {activeTab === "atlit" && (
                             <div className="space-y-6">
                                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -1160,7 +1159,6 @@
                                 </div>
 
                                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                                    {/* Search & Filters */}
                                     <div className="p-4 border-b border-slate-100 grid grid-cols-1 sm:grid-cols-3 gap-3">
                                         <input
                                             type="text"
@@ -1190,7 +1188,6 @@
                                         </select>
                                     </div>
 
-                                    {/* Athletes Table */}
                                     <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
                                         <table className="w-full text-left text-xs text-slate-600">
                                             <thead className="bg-slate-50 text-slate-500 font-bold uppercase border-b border-slate-100 sticky top-0 z-10">
@@ -1256,7 +1253,7 @@
                             </div>
                         )}
 
-                        {/* TAB 4: Pengurusan Acara (39+ Events Support) */}
+                        {/* TAB 4: Pengurusan Acara */}
                         {activeTab === "acara" && (
                             <div className="space-y-6">
                                 <div className="flex justify-between items-center flex-wrap gap-2">
@@ -1514,7 +1511,7 @@
                         )}
                     </main>
 
-                    {/* BULK IMPORT MODAL (FOR 259 STUDENTS / 39 EVENTS) */}
+                    {/* BULK IMPORT MODAL */}
                     {showBulkImportModal && (
                         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                             <div className="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl relative max-h-[90vh] flex flex-col">
@@ -1528,7 +1525,6 @@
                                     <p className="text-xs text-slate-500">Tampal senarai dari Excel atau muat naik terus kesemua 259 Murid / 39 Acara</p>
                                 </div>
 
-                                {/* Target Selection Tabs */}
                                 <div className="flex gap-2 mb-4">
                                     <button
                                         onClick={() => setBulkTarget("athletes")}
@@ -1582,7 +1578,7 @@
                         </div>
                     )}
 
-                    {/* Login Modal with Google DELIMa */}
+                    {/* LOGIN MODAL */}
                     {isLoginModalOpen && (
                         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                             <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl relative">
@@ -1632,7 +1628,7 @@
                         </div>
                     )}
 
-                    {/* School Setup Modal */}
+                    {/* SCHOOL SETUP MODAL */}
                     {showSchoolSetupModal && (
                         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                             <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
@@ -1680,7 +1676,7 @@
                         </div>
                     )}
 
-                    {/* Points Configuration Modal */}
+                    {/* POINTS MODAL */}
                     {showPointsModal && (
                         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                             <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
@@ -1737,7 +1733,7 @@
                         </div>
                     )}
 
-                    {/* Athlete Sidebar */}
+                    {/* ATHLETE SIDEBAR */}
                     {isAddAthleteSidebarOpen && (
                         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex justify-end">
                             <div className="bg-white w-full max-w-md h-full p-6 shadow-2xl overflow-y-auto">
@@ -1812,7 +1808,7 @@
                         </div>
                     )}
 
-                    {/* Event Sidebar */}
+                    {/* EVENT SIDEBAR */}
                     {isEventSidebarOpen && (
                         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex justify-end">
                             <div className="bg-white w-full max-w-md h-full p-6 shadow-2xl overflow-y-auto">
@@ -1864,7 +1860,7 @@
                         </div>
                     )}
 
-                    {/* Toast Notification */}
+                    {/* TOAST NOTIFICATION */}
                     {toast.show && (
                         <div className={`fixed bottom-5 right-5 px-4 py-3 rounded-xl shadow-lg z-50 text-xs font-bold text-white transition ${toast.type === "error" ? "bg-red-600" : "bg-emerald-600"}`}>
                             {toast.message}

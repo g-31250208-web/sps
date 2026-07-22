@@ -7,7 +7,7 @@
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
     <!-- Firebase Compat SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -19,7 +19,6 @@
             font-family: 'Inter', sans-serif;
             background-color: #f8fafc;
         }
-        /* Custom Scrollbar */
         ::-webkit-scrollbar {
             width: 6px;
             height: 6px;
@@ -35,7 +34,19 @@
             background: #94a3b8;
         }
 
-        /* Print styling for certificates and reports */
+        @keyframes marquee {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
+        .animate-marquee {
+            display: inline-block;
+            white-space: nowrap;
+            animation: marquee 20s linear infinite;
+        }
+        .animate-marquee:hover {
+            animation-play-state: paused;
+        }
+
         @media print {
             .no-print {
                 display: none !important;
@@ -52,7 +63,7 @@
         }
     </style>
 </head>
-<body class="text-slate-800 antialiased selection:bg-indigo-500 selection:text-white">
+<body class="text-slate-800 antialiased selection:bg-indigo-500 selection:text-white min-h-screen flex flex-col">
     <div id="root"></div>
 
     <!-- React and ReactDOM CDN -->
@@ -72,8 +83,7 @@
                 acara: "Pengurusan Acara",
                 keputusan: "Keputusan Acara",
                 pasca_sukan: "Pasca Sukan",
-                announcement: "Hebahan Semasa Kejohanan",
-                logs: "Log Aktiviti Sistem"
+                logs: "Log Aktiviti"
             },
             EN: {
                 dashboard: "Dashboard",
@@ -82,8 +92,7 @@
                 acara: "Events Management",
                 keputusan: "Event Results",
                 pasca_sukan: "Post-Sports",
-                announcement: "Tournament Announcements",
-                logs: "System Activity Logs"
+                logs: "Activity Logs"
             }
         };
 
@@ -98,32 +107,35 @@
 
         const DEFAULT_SCHOOL_NAME = "SK BIKANG";
         const DEFAULT_SCHOOL_SUBTITLE = "Kejohanan Sukan Tahunan Sekolah";
-        const DEFAULT_SCHOOL_LOGO = "https://placehold.co/120x120/475569/ffffff?text=SK+BIKANG";
-
-        let activeFirebaseConfig = DEFAULT_FIREBASE_CONFIG;
-        let isCustomConfigUsed = false;
-        
-        const cachedConfigRaw = localStorage.getItem('sps_custom_firebase_config');
-        if (cachedConfigRaw) {
-            try {
-                activeFirebaseConfig = JSON.parse(cachedConfigRaw);
-                isCustomConfigUsed = true;
-            } catch (e) {
-                console.error("Gagal membaca konfigurasi Firebase kustom.", e);
-            }
-        }
-
-        const activeSchoolName = localStorage.getItem('sps_school_name') || DEFAULT_SCHOOL_NAME;
-        const activeSchoolSubtitle = localStorage.getItem('sps_school_subtitle') || DEFAULT_SCHOOL_SUBTITLE;
-        const activeSchoolLogo = localStorage.getItem('sps_school_logo') || DEFAULT_SCHOOL_LOGO;
-        const activeCustomGasUrl = localStorage.getItem('sps_custom_gas_url') || "";
+        const DEFAULT_SCHOOL_LOGO = "https://drive.google.com/file/d/1E8tjAd7j9DJaZgngDn38agUFCvwyUffa/view?usp=drive_link";
 
         const FALLBACK_LOGO = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='48' fill='%231e293b' stroke='%23fbbf24' stroke-width='4'/><path d='M50 20 L80 40 L80 70 L50 90 L20 70 L20 40 Z' fill='none' stroke='%23fbbf24' stroke-width='3'/><text x='50' y='55' text-anchor='middle' fill='%23ffffff' font-size='12' font-weight='bold' font-family='sans-serif'>SPS</text></svg>";
+
+        const formatLogoUrl = (url) => {
+            if (!url) return FALLBACK_LOGO;
+            if (url.includes('drive.google.com')) {
+                const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+                if (match && match[1]) {
+                    return `https://lh3.googleusercontent.com/d/${match[1]}`;
+                }
+            }
+            return url;
+        };
 
         const handleImgError = (e) => {
             e.target.onerror = null;
             e.target.src = FALLBACK_LOGO;
         };
+
+        let activeFirebaseConfig = DEFAULT_FIREBASE_CONFIG;
+        const cachedConfigRaw = localStorage.getItem('sps_custom_firebase_config');
+        if (cachedConfigRaw) {
+            try {
+                activeFirebaseConfig = JSON.parse(cachedConfigRaw);
+            } catch (e) {
+                console.error("Gagal membaca konfigurasi Firebase.", e);
+            }
+        }
 
         let db = null;
         let auth = null;
@@ -145,10 +157,10 @@
         const appId = activeFirebaseConfig.projectId || "sps-skb-d8256";
 
         const INITIAL_ATHLETES = [
-            { id: "A1", nama: "AHMAD DANISH", kelas: "6 Cemerlang", rumah: "Merah", jantina: "Lelaki", kategori: "L12", acaraIds: [] },
-            { id: "A2", nama: "SITI NURHALIZA", kelas: "5 Gemilang", rumah: "Biru", jantina: "Perempuan", kategori: "P12", acaraIds: [] },
-            { id: "A3", nama: "CHONG WEI", kelas: "6 Cemerlang", rumah: "Hijau", jantina: "Lelaki", kategori: "L12", acaraIds: [] },
-            { id: "A4", nama: "MUTHUSAMY", kelas: "4 Tekun", rumah: "Kuning", jantina: "Lelaki", kategori: "L12", acaraIds: [] }
+            { id: "A1", nama: "AHMAD DANISH", kelas: "6 Cemerlang", rumah: "Merah", jantina: "Lelaki", kategori: "L12", acaraIds: ["E101"] },
+            { id: "A2", nama: "SITI NURHALIZA", kelas: "5 Gemilang", rumah: "Biru", jantina: "Perempuan", kategori: "P12", acaraIds: ["E102"] },
+            { id: "A3", nama: "CHONG WEI", kelas: "6 Cemerlang", rumah: "Hijau", jantina: "Lelaki", kategori: "L12", acaraIds: ["E101"] },
+            { id: "A4", nama: "MUTHUSAMY", kelas: "4 Tekun", rumah: "Kuning", jantina: "Lelaki", kategori: "L12", acaraIds: ["E101"] }
         ];
         
         const INITIAL_EVENTS = [
@@ -157,79 +169,22 @@
             { id: "E103", nama: "4x100m Lelaki B12", kategori: "L12", jenis: "Balapan", format: "Kumpulan", tarikh: "2026-07-25", masa: "10:30" }
         ];
 
-        const INITIAL_RESULTS = [];
-        const INITIAL_HEATS = [];
         const DEFAULT_ANNOUNCEMENTS = [
-            { id: "ann_1", text: "Selamat Datang ke Portal Sukan SPS-SK! Kejohanan akan dirasmikan oleh Guru Besar jam 8:00 pagi.", date: "25/07/2026", author: "Urus Setia Sukan" }
+            { id: "ann_1", text: "Selamat Datang ke Portal Kejohanan Sukan SPS-SK! Acara rasmi bermula jam 8:00 pagi.", date: "25/07/2026", author: "Urus Setia Sukan" }
         ];
-        const INITIAL_LOGS = [];
 
         const INITIAL_HOUSES_METADATA = {
-            Merah: { slogan: "Saga Membara Selamanya Juara", guruPenasihat: "Cikgu Rosli, Ustazah Aminah", bonusPoints: 0, warnaLabel: "Merah" },
-            Biru: { slogan: "Biru Gagah Juara Sepanjang Zaman", guruPenasihat: "Cikgu Sarah, Ustaz Fahmi", bonusPoints: 0, warnaLabel: "Biru" },
-            Hijau: { slogan: "Hijau Perkasa Sentiasa Di Puncak", guruPenasihat: "Cikgu Lim, Cikgu Azhar", bonusPoints: 0, warnaLabel: "Hijau" },
-            Kuning: { slogan: "Kuning Diraja Mewarisi Kegemilangan", guruPenasihat: "Cikgu Tan, Ustazah Nor", bonusPoints: 0, warnaLabel: "Kuning" }
+            Merah: { slogan: "Saga Membara Selamanya Juara", guruPenasihat: "Cikgu Rosli, Ustazah Aminah", bonusPoints: 0 },
+            Biru: { slogan: "Biru Gagah Juara Sepanjang Zaman", guruPenasihat: "Cikgu Sarah, Ustaz Fahmi", bonusPoints: 0 },
+            Hijau: { slogan: "Hijau Perkasa Sentiasa Di Puncak", guruPenasihat: "Cikgu Lim, Cikgu Azhar", bonusPoints: 0 },
+            Kuning: { slogan: "Kuning Diraja Mewarisi Kegemilangan", guruPenasihat: "Cikgu Tan, Ustazah Nor", bonusPoints: 0 }
         };
 
         const COLOR_PRESETS = {
-            Merah: { bg: "bg-red-100", text: "text-red-700", warna: "bg-red-500", teks: "text-red-600", border: "border-red-300", glow: "hover:shadow-[0_0_20px_rgba(239,68,68,0.4)] hover:border-red-300", emoji: "🔴" },
-            Biru: { bg: "bg-blue-100", text: "text-blue-700", warna: "bg-blue-500", teks: "text-blue-600", border: "border-blue-300", glow: "hover:shadow-[0_0_20px_rgba(59,130,246,0.4)] hover:border-blue-300", emoji: "🔵" },
-            Hijau: { bg: "bg-emerald-100", text: "text-emerald-700", warna: "bg-emerald-500", teks: "text-emerald-600", border: "border-emerald-300", glow: "hover:shadow-[0_0_20px_rgba(16,185,129,0.4)] hover:border-emerald-300", emoji: "🟢" },
-            Kuning: { bg: "bg-amber-100", text: "text-amber-700", warna: "bg-amber-400", teks: "text-amber-500", border: "border-amber-300", glow: "hover:shadow-[0_0_20px_rgba(251,191,36,0.4)] hover:border-amber-300", emoji: "🟡" },
-            Ungu: { bg: "bg-purple-100", text: "text-purple-700", warna: "bg-purple-500", teks: "text-purple-600", border: "border-purple-300", glow: "hover:shadow-[0_0_20px_rgba(168,85,247,0.4)] hover:border-purple-300", emoji: "🟣" },
-            Oren: { bg: "bg-orange-100", text: "text-orange-700", warna: "bg-orange-500", teks: "text-orange-600", border: "border-orange-300", glow: "hover:shadow-[0_0_20px_rgba(249,115,22,0.4)] hover:border-orange-300", emoji: "🟠" }
-        };
-
-        const getFriendlyCategory = (cat) => {
-            if (!cat) return "";
-            return String(cat).trim().toUpperCase();
-        };
-
-        const parseTimeToSeconds = (str) => {
-            if (!str) return Infinity;
-            const cleaned = str.trim().toLowerCase();
-            if (cleaned.includes(':')) {
-                const parts = cleaned.split(':');
-                const minutes = parseFloat(parts[0]) || 0;
-                const seconds = parseFloat(parts[1]) || 0;
-                return (minutes * 60) + seconds;
-            }
-            const numericStr = cleaned.replace(/[^\d.]/g, '');
-            const seconds = parseFloat(numericStr);
-            return isNaN(seconds) ? Infinity : seconds;
-        };
-
-        const formatDateToDMY = (dateStr) => {
-            if (!dateStr) return "N/A";
-            const parts = dateStr.split('-');
-            if (parts.length === 3) {
-                if (parts[0].length === 4) {
-                    return `${parts[2]}-${parts[1]}-${parts[0]}`;
-                }
-            }
-            return dateStr;
-        };
-
-        const categoriesMatch = (athCat, evCat) => {
-            if (!athCat || !evCat) return false;
-            const a = athCat.trim().toUpperCase().replace(/\s+/g, '');
-            const e = evCat.trim().toUpperCase().replace(/\s+/g, '');
-            if (a === e) return true;
-            if (e === "TERBUKA") return true; 
-
-            const normalize = (s) => {
-                return s
-                    .replace("BAWAH", "B")
-                    .replace("LELAKI", "L")
-                    .replace("PEREMPUAN", "P")
-                    .replace("LB", "L")
-                    .replace("PB", "P")
-                    .replace("B12", "12")
-                    .replace("B9", "9")
-                    .replace("B7", "7")
-                    .replace(/[^A-Z0-9]/g, '');
-            };
-            return normalize(a) === normalize(e);
+            Merah: { bg: "bg-red-50", text: "text-red-700", warna: "bg-red-500", teks: "text-red-600", border: "border-red-200", glow: "hover:shadow-lg hover:border-red-400", emoji: "🔴" },
+            Biru: { bg: "bg-blue-50", text: "text-blue-700", warna: "bg-blue-500", teks: "text-blue-600", border: "border-blue-200", glow: "hover:shadow-lg hover:border-blue-400", emoji: "🔵" },
+            Hijau: { bg: "bg-emerald-50", text: "text-emerald-700", warna: "bg-emerald-500", teks: "text-emerald-600", border: "border-emerald-200", glow: "hover:shadow-lg hover:border-emerald-400", emoji: "🟢" },
+            Kuning: { bg: "bg-amber-50", text: "text-amber-700", warna: "bg-amber-400", teks: "text-amber-500", border: "border-amber-200", glow: "hover:shadow-lg hover:border-amber-400", emoji: "🟡" }
         };
 
         const App = () => {
@@ -245,163 +200,66 @@
 
             const [athletes, setAthletes] = useState(INITIAL_ATHLETES);
             const [events, setEvents] = useState(INITIAL_EVENTS);
-            const [results, setResults] = useState(INITIAL_RESULTS);
-            const [heats, setHeats] = useState(INITIAL_HEATS);
+            const [results, setResults] = useState([]);
             const [housesMetadata, setHousesMetadata] = useState(INITIAL_HOUSES_METADATA);
             const [announcements, setAnnouncements] = useState(DEFAULT_ANNOUNCEMENTS);
-            const [logs, setLogs] = useState(INITIAL_LOGS);
-            const [adminList, setAdminList] = useState([]);
+            const [logs, setLogs] = useState([]);
 
-            const [activeYear, setActiveYear] = useState(() => {
-                return localStorage.getItem('sps_active_year') || new Date().getFullYear().toString();
-            });
-            const [maxIndividu, setMaxIndividu] = useState(() => {
-                return parseInt(localStorage.getItem('sps_max_individu')) || 3;
-            });
-            const [maxKumpulan, setMaxKumpulan] = useState(() => {
-                return parseInt(localStorage.getItem('sps_max_kumpulan')) || 2;
-            });
-            const [categories, setCategories] = useState(["L12", "P12", "L9", "P9", "L7", "P7", "Prasekolah", "Terbuka"]);
+            const [activeYear, setActiveYear] = useState(() => localStorage.getItem('sps_active_year') || new Date().getFullYear().toString());
             const [pointsConfig, setPointsConfig] = useState({ emas: 5, perak: 3, gangsa: 2, keempat: 1 });
-            const [gasUrl, setGasUrl] = useState(activeCustomGasUrl);
-            const [gasModalTab, setGasModalTab] = useState("config");
 
+            // Modals & Sidebars
             const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
-            const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
             const [passcodeInput, setPasscodeInput] = useState("");
             const [isAddAthleteSidebarOpen, setIsAddAthleteSidebarOpen] = useState(false);
-            const [isAssignEventSidebarOpen, setIsAssignEventSidebarOpen] = useState(false);
             const [isEventSidebarOpen, setIsEventSidebarOpen] = useState(false);
-            const [isHouseSidebarOpen, setIsHouseSidebarOpen] = useState(false);
-            const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
             const [showPointsModal, setShowPointsModal] = useState(false);
-            const [showGasModal, setShowGasModal] = useState(false);
             const [showSchoolSetupModal, setShowSchoolSetupModal] = useState(false);
-            const [showDiagModal, setShowDiagModal] = useState(false);
 
+            // Forms
             const [athleteForm, setAthleteForm] = useState({ id: "", nama: "", kelas: "", rumah: "Merah", jantina: "Lelaki", kategori: "L12" });
             const [isEditingAthlete, setIsEditingAthlete] = useState(false);
-            const [regMode, setRegMode] = useState("tunggal");
-            const [tsvInput, setTsvInput] = useState("");
-
             const [eventForm, setEventForm] = useState({ id: "", nama: "", kategori: "L12", jenis: "Balapan", format: "Individu", tarikh: "", masa: "" });
             const [isEditingEvent, setIsEditingEvent] = useState(false);
-
-            const [heatForm, setHeatForm] = useState({ eventId: "", athleteId: "", saringanNo: "1", catatan: "" });
-            const [activeStageTab, setActiveStageTab] = useState("saringan");
             const [resultForm, setResultForm] = useState({ eventId: "", athleteId: "", kedudukan: "1", catatan: "" });
 
-            const [houseForm, setHouseForm] = useState({ nama: "", slogan: "", guruPenasihat: "", bonusPoints: 0, warnaLabel: "Ungu" });
-            const [isEditingHouse, setIsEditingHouse] = useState(false);
-            const [originalHouseKey, setOriginalHouseKey] = useState("");
-            const [newAdvisorText, setNewAdvisorText] = useState({});
-
+            // Filters & Searches
+            const [filterHouse, setFilterHouse] = useState("Semua");
             const [announceFormText, setAnnounceFormText] = useState("");
             const [showAnnounceForm, setShowAnnounceForm] = useState(false);
 
-            const [filterHouse, setFilterHouse] = useState("Semua");
-            const [filterEvent, setFilterEvent] = useState("Semua");
-            const [filterLogQuery, setFilterLogQuery] = useState("");
-            const [studentSearchQuery, setStudentSearchQuery] = useState("");
-            const [noAtletInput, setNoAtletInput] = useState("");
-            const [selectedEventIds, setSelectedEventIds] = useState([]);
-            const [selectedStudentId, setSelectedStudentId] = useState("");
-            const [showSearchDropdown, setShowSearchDropdown] = useState(false);
-            const [certSearchQuery, setCertSearchQuery] = useState("");
-
-            const [selectedEventDate, setSelectedEventDate] = useState("Semua");
-
-            const [setupSchoolName, setSetupSchoolName] = useState(activeSchoolName);
-            const [setupSchoolSubtitle, setSetupSchoolSubtitle] = useState(activeSchoolSubtitle);
-            const [setupSchoolLogo, setSetupSchoolLogo] = useState(activeSchoolLogo);
-            const [setupFirebaseConfigRaw, setSetupFirebaseConfigRaw] = useState(cachedConfigRaw ? JSON.stringify(activeFirebaseConfig, null, 2) : "");
-            const [setupGasUrl, setSetupGasUrl] = useState(activeCustomGasUrl);
-            const [schoolSetupTab, setSchoolSetupTab] = useState("config");
-            const [newAdminEmail, setNewAdminEmail] = useState("");
-
-            const [showMembersModal, setShowMembersModal] = useState(false);
-            const [selectedMembersHouse, setSelectedMembersHouse] = useState("");
-            const [membersSortType, setMembersSortType] = useState("nama"); 
-
-            const [previewContent, setPreviewContent] = useState("");
-            const [certSignatory1Name, setCertSignatory1Name] = useState("Guru Besar");
-            const [certSignatory1Title, setCertSignatory1Title] = useState("Guru Besar SK");
-            const [certSignatory2Name, setCertSignatory2Name] = useState("GPK Kokurikulum");
-            const [certSignatory2Title, setCertSignatory2Title] = useState("GPK Kokurikulum SK");
+            // Setup inputs
+            const [setupSchoolName, setSetupSchoolName] = useState(schoolName);
+            const [setupSchoolSubtitle, setSetupSchoolSubtitle] = useState(schoolSubtitle);
+            const [setupSchoolLogo, setSetupSchoolLogo] = useState(schoolLogo);
 
             const [toast, setToast] = useState({ show: false, message: "", type: "info" });
-            const [confirmModal, setConfirmModal] = useState({ show: false, title: "", message: "", onConfirm: null });
 
-            const adminMenuRef = useRef(null);
-            const fileInputRef = useRef(null);
+            const t = translations[lang] || translations.BM;
 
-            const t = useMemo(() => {
-                return translations[lang] || translations.BM;
-            }, [lang]);
-
-            const sortedCategories = useMemo(() => {
-                return [...categories].sort((a, b) => 
-                    a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })
-                );
-            }, [categories]);
-
-            const uniqueEventDates = useMemo(() => {
-                return Array.from(new Set((events || []).map(e => e.tarikh).filter(Boolean))).sort();
-            }, [events]);
-
-            const getClassWeight = (kelas) => {
-                const k = (kelas || "").toLowerCase();
-                if (k.includes("pra") || k.includes("tadika")) return 0;
-                const match = k.match(/\d+/);
-                if (match) return parseInt(match[0]);
-                return 99;
+            const showToastMessage = (message, type = "success") => {
+                setToast({ show: true, message, type });
+                setTimeout(() => setToast({ show: false, message: "", type: "info" }), 3500);
             };
 
-            const sortedHouseMembers = useMemo(() => {
-                if (!selectedMembersHouse) return [];
-                const list = [...(athletes || []).filter(a => a.rumah === selectedMembersHouse)];
-                
-                if (membersSortType === "nama") {
-                    return list.sort((a, b) => (a.nama || "").localeCompare(b.nama || ""));
-                } else if (membersSortType === "kelas") {
-                    return list.sort((a, b) => {
-                        const wA = getClassWeight(a.kelas);
-                        const wB = getClassWeight(b.kelas);
-                        if (wA !== wB) return wA - wB;
-                        const cComp = (a.kelas || "").localeCompare(b.kelas || "");
-                        if (cComp !== 0) return cComp;
-                        return (a.nama || "").localeCompare(b.nama || "");
-                    });
-                } else if (membersSortType === "jantina") {
-                    return list.sort((a, b) => {
-                        if (a.jantina === b.jantina) {
-                            return (a.nama || "").localeCompare(b.nama || "");
-                        }
-                        return a.jantina === "Lelaki" ? -1 : 1;
-                    });
-                }
-                return list;
-            }, [athletes, selectedMembersHouse, membersSortType]);
-
             const createLog = async (action, details) => {
-                const logId = "log_" + Date.now();
                 const logData = {
-                    id: logId,
+                    id: "log_" + Date.now(),
                     timestamp: new Date().toLocaleString('ms-MY'),
-                    userEmail: currentUser ? (currentUser.email || "Anonym") : "Pelawat",
+                    userEmail: currentUser ? (currentUser.email || "Pengguna") : "Pelawat",
                     userName: currentUser ? (currentUser.displayName || "Sesi Anon") : "Pelawat",
                     action,
                     details
                 };
 
-                try {
-                    if (isCloudActive && db) {
-                        await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('logs').doc(logId).set(logData);
-                    } else {
-                        setLogs(prev => [logData, ...prev]);
+                if (isCloudActive && db) {
+                    try {
+                        await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('logs').doc(logData.id).set(logData);
+                    } catch (e) {
+                        console.error(e);
                     }
-                } catch (e) {
-                    console.error("Gagal merekod log aktiviti:", e);
+                } else {
+                    setLogs(prev => [logData, ...prev]);
                 }
             };
 
@@ -413,169 +271,36 @@
                 return true;
             };
 
-            const checkAdminAuthority = () => {
-                if (userRole !== "admin") {
-                    showToastMessage("Akses Dihalang: Hanya Admin Utama sahaja dibenarkan.", "error");
-                    return false;
-                }
-                return true;
-            };
-
-            const handleGoogleLogin = async () => {
-                if (!auth) return;
-                const provider = new firebase.auth.GoogleAuthProvider();
-                try {
-                    await auth.signInWithPopup(provider);
-                    setIsLoginModalOpen(false);
-                    setIsAdminMenuOpen(false);
-                } catch (error) {
-                    showToastMessage("Log masuk Google gagal: " + error.message, "error");
-                }
-            };
-
             const handlePasscodeLogin = (e) => {
                 e.preventDefault();
                 const trimmed = passcodeInput.trim();
-                const defaultAdminPass = "ADMIN7608";
-                const defaultGuruPass = "GURU7608";
-
-                if (trimmed === defaultAdminPass) {
+                if (trimmed === "ADMIN7608") {
                     localStorage.setItem('sps_local_role', 'admin');
-                    localStorage.setItem('sps_local_name', 'Pentadbir Utama');
-                    localStorage.setItem('sps_local_email', 'sekolah@moe-dl.edu.my');
-                    setCurrentUser({ displayName: 'Pentadbir Utama', email: 'sekolah@moe-dl.edu.my', isAnonymous: false });
+                    setCurrentUser({ displayName: 'Pentadbir Utama', email: 'admin@sps-sk.edu.my' });
                     setUserRole('admin');
                     showToastMessage("Log Masuk Pentadbir Utama Berjaya!", "success");
                     setIsLoginModalOpen(false);
                     setPasscodeInput("");
-                    createLog("Log Masuk Kunci Laluan", "Melog masuk sebagai Pentadbir Utama.");
-                } else if (trimmed === defaultGuruPass) {
+                    createLog("Log Masuk", "Melog masuk sebagai Admin");
+                } else if (trimmed === "GURU7608") {
                     localStorage.setItem('sps_local_role', 'guru');
-                    localStorage.setItem('sps_local_name', 'Urus Setia Guru');
-                    localStorage.setItem('sps_local_email', 'guru@moe-dl.edu.my');
-                    setCurrentUser({ displayName: 'Urus Setia Guru', email: 'guru@moe-dl.edu.my', isAnonymous: false });
+                    setCurrentUser({ displayName: 'Urus Setia Guru', email: 'guru@sps-sk.edu.my' });
                     setUserRole('guru');
                     showToastMessage("Log Masuk Urus Setia Guru Berjaya!", "success");
                     setIsLoginModalOpen(false);
                     setPasscodeInput("");
-                    createLog("Log Masuk Kunci Laluan", "Melog masuk sebagai Urus Setia Guru.");
+                    createLog("Log Masuk", "Melog masuk sebagai Guru");
                 } else {
                     showToastMessage("Kunci Laluan salah!", "error");
                 }
             };
 
-            const handleLogout = async () => {
-                try {
-                    localStorage.removeItem('sps_local_role');
-                    localStorage.removeItem('sps_local_name');
-                    localStorage.removeItem('sps_local_email');
-                    if (auth) {
-                        await auth.signOut();
-                    }
-                    setCurrentUser(null);
-                    setUserRole("pelawat");
-                    showToastMessage("Log keluar berjaya!", "success");
-                } catch (error) {
-                    showToastMessage("Ralat ketika log keluar: " + error.message, "error");
-                }
+            const handleLogout = () => {
+                localStorage.removeItem('sps_local_role');
+                setCurrentUser(null);
+                setUserRole("pelawat");
+                showToastMessage("Log keluar berjaya!", "success");
             };
-
-            const showToastMessage = (message, type = "success") => {
-                setToast({ show: true, message, type });
-                setTimeout(() => setToast({ show: false, message: "", type: "info" }), 4000);
-            };
-
-            useEffect(() => {
-                const localRole = localStorage.getItem('sps_local_role');
-                if (localRole && !currentUser) {
-                    setUserRole(localRole);
-                    setCurrentUser({
-                        displayName: localStorage.getItem('sps_local_name') || 'Pengguna Lokal',
-                        email: localStorage.getItem('sps_local_email') || 'lokal@sps.app',
-                        isAnonymous: false
-                    });
-                }
-            }, []);
-
-            useEffect(() => {
-                if (!currentUser) return;
-                const email = currentUser.email || "";
-                if (email === "sekolah-7608@moe-dl.edu.my") {
-                    setUserRole("admin");
-                } else if (adminList.some(admin => (admin.email || "").toLowerCase() === email.toLowerCase())) {
-                    setUserRole("admin");
-                } else if (email.endsWith("@moe-dl.edu.my") || email.endsWith("@moe.edu.my")) {
-                    setUserRole("guru");
-                } else if (!currentUser.isAnonymous && !localStorage.getItem('sps_local_role')) {
-                    setUserRole("pelawat");
-                }
-            }, [currentUser, adminList]);
-
-            useEffect(() => {
-                if (!isCloudAvailable || !auth) {
-                    setIsCloudActive(false);
-                    return;
-                }
-                const unsubscribe = auth.onAuthStateChanged((user) => {
-                    if (user) {
-                        setCurrentUser(user);
-                        setIsCloudActive(true);
-                    } else {
-                        const localRole = localStorage.getItem('sps_local_role');
-                        if (!localRole) {
-                            setCurrentUser(null);
-                            setUserRole("pelawat");
-                        }
-                    }
-                });
-                return () => unsubscribe();
-            }, []);
-
-            /* Firestore Sync Effect */
-            useEffect(() => {
-                if (!isCloudAvailable || !db) return;
-
-                const baseRef = db.collection('artifacts').doc(appId).collection('public').doc('data');
-
-                const unsubAthletes = baseRef.collection('athletes').onSnapshot(snapshot => {
-                    const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    if (data.length > 0) setAthletes(data);
-                }, err => console.log("Athletes sync:", err));
-
-                const unsubEvents = baseRef.collection('events').onSnapshot(snapshot => {
-                    const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    if (data.length > 0) setEvents(data);
-                }, err => console.log("Events sync:", err));
-
-                const unsubResults = baseRef.collection('results').onSnapshot(snapshot => {
-                    const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    setResults(data);
-                }, err => console.log("Results sync:", err));
-
-                const unsubHeats = baseRef.collection('heats').onSnapshot(snapshot => {
-                    const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    setHeats(data);
-                }, err => console.log("Heats sync:", err));
-
-                const unsubAnnouncements = baseRef.collection('announcements').onSnapshot(snapshot => {
-                    const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    if (data.length > 0) setAnnouncements(data.sort((a,b) => b.id.localeCompare(a.id)));
-                }, err => console.log("Announcements sync:", err));
-
-                const unsubLogs = baseRef.collection('logs').onSnapshot(snapshot => {
-                    const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    setLogs(data.sort((a,b) => b.id.localeCompare(a.id)));
-                }, err => console.log("Logs sync:", err));
-
-                return () => {
-                    unsubAthletes();
-                    unsubEvents();
-                    unsubResults();
-                    unsubHeats();
-                    unsubAnnouncements();
-                    unsubLogs();
-                };
-            }, [isCloudAvailable]);
 
             const housePointsTally = useMemo(() => {
                 const tally = {};
@@ -592,13 +317,10 @@
 
                 results.forEach(res => {
                     const athlete = athletes.find(a => a.id === res.athleteId);
-                    if (!athlete) return;
+                    if (!athlete || !tally[athlete.rumah]) return;
                     const house = athlete.rumah;
-                    if (!tally[house]) {
-                        tally[house] = { emas: 0, perak: 0, gangsa: 0, keempat: 0, bonus: 0, totalPoints: 0 };
-                    }
-
                     const pos = parseInt(res.kedudukan);
+
                     if (pos === 1) {
                         tally[house].emas += 1;
                         tally[house].totalPoints += pointsConfig.emas;
@@ -624,108 +346,40 @@
                     if (pB !== pA) return pB - pA;
                     if (housePointsTally[b].emas !== housePointsTally[a].emas) return housePointsTally[b].emas - housePointsTally[a].emas;
                     if (housePointsTally[b].perak !== housePointsTally[a].perak) return housePointsTally[b].perak - housePointsTally[a].perak;
-                    return housePointsTally[b].gangsa - housePointsTally[a].gangsa;
+                    if (housePointsTally[b].gangsa !== housePointsTally[a].gangsa) return housePointsTally[b].gangsa - housePointsTally[a].gangsa;
+                    return (housePointsTally[b].keempat || 0) - (housePointsTally[a].keempat || 0);
                 });
             }, [housePointsTally]);
 
-            const handleSaveAthlete = async (e) => {
+            const handleSaveAthlete = (e) => {
                 e.preventDefault();
                 if (!checkAuthority()) return;
-
-                if (regMode === "pukal") {
-                    const lines = tsvInput.split('\n').filter(l => l.trim().length > 0);
-                    let count = 0;
-                    const newAthletesList = [...athletes];
-
-                    for (let line of lines) {
-                        const parts = line.split('\t').map(p => p.trim());
-                        if (parts.length >= 3) {
-                            const [nama, kelas, rumah, jantina, kategori, customId] = parts;
-                            const id = customId || ("A_" + Math.random().toString(36).substr(2, 6).toUpperCase());
-                            const newAth = {
-                                id,
-                                nama: nama.toUpperCase(),
-                                kelas: kelas || "N/A",
-                                rumah: housesMetadata[rumah] ? rumah : "Merah",
-                                jantina: jantina || "Lelaki",
-                                kategori: kategori || "L12",
-                                acaraIds: []
-                            };
-                            newAthletesList.push(newAth);
-                            if (isCloudActive && db) {
-                                await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('athletes').doc(id).set(newAth);
-                            }
-                            count++;
-                        }
-                    }
-                    if (!isCloudActive) setAthletes(newAthletesList);
-                    showToastMessage(`Berjaya menambah ${count} atlet secara pukal!`);
-                    createLog("Tambah Atlet Pukal", `Menambah ${count} atlet dari TSV.`);
-                    setTsvInput("");
-                    setIsAddAthleteSidebarOpen(false);
-                    return;
-                }
-
                 if (!athleteForm.nama) {
                     showToastMessage("Sila masukkan nama atlet!", "error");
                     return;
                 }
 
                 const athId = athleteForm.id || ("A_" + Math.random().toString(36).substr(2, 6).toUpperCase());
-                const athData = {
-                    ...athleteForm,
-                    id: athId,
-                    nama: athleteForm.nama.toUpperCase(),
-                    acaraIds: athleteForm.acaraIds || []
-                };
+                const athData = { ...athleteForm, id: athId, nama: athleteForm.nama.toUpperCase(), acaraIds: athleteForm.acaraIds || [] };
 
-                try {
-                    if (isCloudActive && db) {
-                        await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('athletes').doc(athId).set(athData);
-                    } else {
-                        setAthletes(prev => {
-                            const index = prev.findIndex(a => a.id === athId);
-                            if (index >= 0) {
-                                const copy = [...prev];
-                                copy[index] = athData;
-                                return copy;
-                            }
-                            return [...prev, athData];
-                        });
+                setAthletes(prev => {
+                    const idx = prev.findIndex(a => a.id === athId);
+                    if (idx >= 0) {
+                        const copy = [...prev];
+                        copy[idx] = athData;
+                        return copy;
                     }
-                    showToastMessage(isEditingAthlete ? "Maklumat atlet dikemaskini!" : "Atlet berjaya didaftarkan!");
-                    createLog(isEditingAthlete ? "Kemaskini Atlet" : "Daftar Atlet", `Atlet ${athData.nama} (${athData.rumah})`);
-                    setIsAddAthleteSidebarOpen(false);
-                    setAthleteForm({ id: "", nama: "", kelas: "", rumah: "Merah", jantina: "Lelaki", kategori: "L12" });
-                    setIsEditingAthlete(false);
-                } catch (err) {
-                    showToastMessage("Gagal menyimpan atlet: " + err.message, "error");
-                }
-            };
-
-            const handleDeleteAthlete = (ath) => {
-                if (!checkAuthority()) return;
-                setConfirmModal({
-                    show: true,
-                    title: "Padam Atlet",
-                    message: `Adakah anda pasti mahu memadam atlet ${ath.nama}?`,
-                    onConfirm: async () => {
-                        try {
-                            if (isCloudActive && db) {
-                                await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('athletes').doc(ath.id).delete();
-                            } else {
-                                setAthletes(prev => prev.filter(a => a.id !== ath.id));
-                            }
-                            showToastMessage("Atlet berjaya dipadam.");
-                            createLog("Padam Atlet", `Memadam atlet ${ath.nama}`);
-                        } catch (err) {
-                            showToastMessage("Gagal memadam: " + err.message, "error");
-                        }
-                    }
+                    return [...prev, athData];
                 });
+
+                showToastMessage(isEditingAthlete ? "Maklumat atlet dikemaskini!" : "Atlet berjaya didaftarkan!");
+                createLog(isEditingAthlete ? "Kemaskini Atlet" : "Daftar Atlet", `Atlet ${athData.nama}`);
+                setIsAddAthleteSidebarOpen(false);
+                setAthleteForm({ id: "", nama: "", kelas: "", rumah: "Merah", jantina: "Lelaki", kategori: "L12" });
+                setIsEditingAthlete(false);
             };
 
-            const handleSaveEvent = async (e) => {
+            const handleSaveEvent = (e) => {
                 e.preventDefault();
                 if (!checkAuthority()) return;
                 if (!eventForm.nama) {
@@ -736,82 +390,24 @@
                 const evId = eventForm.id || ("E_" + Math.random().toString(36).substr(2, 6).toUpperCase());
                 const evData = { ...eventForm, id: evId };
 
-                try {
-                    if (isCloudActive && db) {
-                        await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('events').doc(evId).set(evData);
-                    } else {
-                        setEvents(prev => {
-                            const idx = prev.findIndex(e => e.id === evId);
-                            if (idx >= 0) {
-                                const copy = [...prev];
-                                copy[idx] = evData;
-                                return copy;
-                            }
-                            return [...prev, evData];
-                        });
+                setEvents(prev => {
+                    const idx = prev.findIndex(ev => ev.id === evId);
+                    if (idx >= 0) {
+                        const copy = [...prev];
+                        copy[idx] = evData;
+                        return copy;
                     }
-                    showToastMessage(isEditingEvent ? "Acara dikemaskini!" : "Acara ditambah!");
-                    createLog(isEditingEvent ? "Kemaskini Acara" : "Tambah Acara", `Acara ${evData.nama}`);
-                    setIsEventSidebarOpen(false);
-                    setEventForm({ id: "", nama: "", kategori: "L12", jenis: "Balapan", format: "Individu", tarikh: "", masa: "" });
-                    setIsEditingEvent(false);
-                } catch (err) {
-                    showToastMessage("Gagal menyimpan acara: " + err.message, "error");
-                }
+                    return [...prev, evData];
+                });
+
+                showToastMessage(isEditingEvent ? "Acara dikemaskini!" : "Acara ditambah!");
+                createLog(isEditingEvent ? "Kemaskini Acara" : "Tambah Acara", `Acara ${evData.nama}`);
+                setIsEventSidebarOpen(false);
+                setEventForm({ id: "", nama: "", kategori: "L12", jenis: "Balapan", format: "Individu", tarikh: "", masa: "" });
+                setIsEditingEvent(false);
             };
 
-            const handleAssignEventsToStudent = async () => {
-                if (!checkAuthority()) return;
-                if (!selectedStudentId) {
-                    showToastMessage("Sila pilih atlet!", "error");
-                    return;
-                }
-
-                const athlete = athletes.find(a => a.id === selectedStudentId);
-                if (!athlete) return;
-
-                const updatedAth = { ...athlete, acaraIds: selectedEventIds };
-
-                try {
-                    if (isCloudActive && db) {
-                        await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('athletes').doc(athlete.id).set(updatedAth);
-                    } else {
-                        setAthletes(prev => prev.map(a => a.id === athlete.id ? updatedAth : a));
-                    }
-                    showToastMessage(`Pendaftaran acara untuk ${athlete.nama} berjaya dikemaskini!`);
-                    createLog("Kemaskini Acara Atlet", `Mengemaskini acara bagi ${athlete.nama}`);
-                    setIsAssignEventSidebarOpen(false);
-                } catch (err) {
-                    showToastMessage("Gagal menetapkan acara: " + err.message, "error");
-                }
-            };
-
-            const handleSaveHeat = async (e) => {
-                e.preventDefault();
-                if (!checkAuthority()) return;
-                if (!heatForm.eventId || !heatForm.athleteId) {
-                    showToastMessage("Sila pilih acara dan atlet!", "error");
-                    return;
-                }
-
-                const heatId = "H_" + Date.now();
-                const heatData = { ...heatForm, id: heatId };
-
-                try {
-                    if (isCloudActive && db) {
-                        await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('heats').doc(heatId).set(heatData);
-                    } else {
-                        setHeats(prev => [...prev, heatData]);
-                    }
-                    showToastMessage("Keputusan Saringan disimpan!");
-                    createLog("Rekod Saringan", `Rekod saringan untuk acara ID ${heatForm.eventId}`);
-                    setHeatForm({ eventId: "", athleteId: "", saringanNo: "1", catatan: "" });
-                } catch (err) {
-                    showToastMessage("Gagal merekod saringan: " + err.message, "error");
-                }
-            };
-
-            const handleSaveResult = async (e) => {
+            const handleSaveResult = (e) => {
                 e.preventDefault();
                 if (!checkAuthority()) return;
                 if (!resultForm.eventId || !resultForm.athleteId) {
@@ -819,201 +415,40 @@
                     return;
                 }
 
-                const resId = "R_" + resultForm.eventId + "_" + resultForm.athleteId;
+                const resId = "R_" + Date.now();
                 const resData = { ...resultForm, id: resId };
 
-                try {
-                    if (isCloudActive && db) {
-                        await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('results').doc(resId).set(resData);
-                    } else {
-                        setResults(prev => {
-                            const idx = prev.findIndex(r => r.id === resId);
-                            if (idx >= 0) {
-                                const copy = [...prev];
-                                copy[idx] = resData;
-                                return copy;
-                            }
-                            return [...prev, resData];
-                        });
-                    }
-                    showToastMessage("Keputusan Akhir berjaya direkod!");
-                    createLog("Rekod Keputusan", `Keputusan akhir acara ${resultForm.eventId}`);
-                    setResultForm({ eventId: "", athleteId: "", kedudukan: "1", catatan: "" });
-                } catch (err) {
-                    showToastMessage("Gagal menyimpan keputusan: " + err.message, "error");
-                }
-            };
-
-            const handleDeleteResult = (res) => {
-                if (!checkAuthority()) return;
-                setConfirmModal({
-                    show: true,
-                    title: "Padam Keputusan",
-                    message: "Adakah anda pasti mahu memadam keputusan ini?",
-                    onConfirm: async () => {
-                        try {
-                            if (isCloudActive && db) {
-                                await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('results').doc(res.id).delete();
-                            } else {
-                                setResults(prev => prev.filter(r => r.id !== res.id));
-                            }
-                            showToastMessage("Keputusan dipadam.");
-                            createLog("Padam Keputusan", `Memadam keputusan ID ${res.id}`);
-                        } catch (err) {
-                            showToastMessage("Gagal memadam: " + err.message, "error");
-                        }
-                    }
-                });
-            };
-
-            const handleAddAnnouncement = async (e) => {
-                e.preventDefault();
-                if (!checkAuthority()) return;
-                if (!announceFormText.trim()) return;
-
-                const annId = "ann_" + Date.now();
-                const newAnn = {
-                    id: annId,
-                    text: announceFormText.trim(),
-                    date: new Date().toLocaleDateString('ms-MY'),
-                    author: currentUser ? (currentUser.displayName || "Urus Setia") : "Urus Setia Sukan"
-                };
-
-                try {
-                    if (isCloudActive && db) {
-                        await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('announcements').doc(annId).set(newAnn);
-                    } else {
-                        setAnnouncements(prev => [newAnn, ...prev]);
-                    }
-                    showToastMessage("Hebahan baharu diterbitkan!");
-                    createLog("Hebahan Baharu", newAnn.text);
-                    setAnnounceFormText("");
-                    setShowAnnounceForm(false);
-                } catch (err) {
-                    showToastMessage("Gagal menerbitkan hebahan: " + err.message, "error");
-                }
+                setResults(prev => [...prev, resData]);
+                showToastMessage("Keputusan Akhir berjaya direkod!");
+                createLog("Rekod Keputusan", `Kedudukan #${resultForm.kedudukan} untuk atlet ID ${resultForm.athleteId}`);
+                setResultForm({ eventId: "", athleteId: "", kedudukan: "1", catatan: "" });
             };
 
             const handleSaveSchoolSetup = (e) => {
                 e.preventDefault();
-                if (!checkAdminAuthority()) return;
-
                 localStorage.setItem('sps_school_name', setupSchoolName);
                 localStorage.setItem('sps_school_subtitle', setupSchoolSubtitle);
                 localStorage.setItem('sps_school_logo', setupSchoolLogo);
-                localStorage.setItem('sps_custom_gas_url', setupGasUrl);
 
                 setSchoolName(setupSchoolName);
                 setSchoolSubtitle(setupSchoolSubtitle);
                 setSchoolLogo(setupSchoolLogo);
 
-                if (setupFirebaseConfigRaw.trim()) {
-                    try {
-                        JSON.parse(setupFirebaseConfigRaw);
-                        localStorage.setItem('sps_custom_firebase_config', setupFirebaseConfigRaw);
-                    } catch (err) {
-                        showToastMessage("Format JSON Konfigurasi Firebase tidak sah!", "error");
-                        return;
-                    }
-                } else {
-                    localStorage.removeItem('sps_custom_firebase_config');
-                }
-
-                showToastMessage("Tetapan sekolah & logo berjaya dikemaskini!");
-                createLog("Tetapan Sekolah", "Mengemaskini logo dan maklumat sekolah.");
+                showToastMessage("Tetapan sekolah berjaya dikemaskini!");
+                createLog("Tetapan Sekolah", "Mengemaskini profil sekolah");
                 setShowSchoolSetupModal(false);
             };
 
-            const renderCertPreview = () => {
-                const filteredAthletes = athletes.filter(a => 
-                    a.nama.toLowerCase().includes(certSearchQuery.toLowerCase()) ||
-                    a.kelas.toLowerCase().includes(certSearchQuery.toLowerCase()) ||
-                    a.rumah.toLowerCase().includes(certSearchQuery.toLowerCase())
-                );
-
-                return (
-                    <div className="space-y-6">
-                        <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200 no-print">
-                            <input
-                                type="text"
-                                placeholder="Cari nama atlet untuk sijil..."
-                                value={certSearchQuery}
-                                onChange={(e) => setCertSearchQuery(e.target.value)}
-                                className="w-full md:w-80 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm"
-                            />
-                            <div className="flex gap-2">
-                                <button
-                                    onClick={() => window.print()}
-                                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-semibold text-sm shadow flex items-center gap-2"
-                                >
-                                    🖨️ Cetak / Simpan PDF
-                                </button>
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 gap-8">
-                            {filteredAthletes.slice(0, 5).map((ath) => {
-                                const athResults = results.filter(r => r.athleteId === ath.id);
-                                return (
-                                    <div key={ath.id} className="bg-white p-12 rounded-xl shadow-lg border-8 border-double border-slate-800 text-center relative overflow-hidden cert-border max-w-4xl mx-auto my-4">
-                                        <div className="flex justify-center mb-4">
-                                            <img src={schoolLogo || FALLBACK_LOGO} alt="Logo Sekolah" onError={handleImgError} className="h-20 w-20 object-contain" />
-                                        </div>
-                                        <h2 className="text-xl font-bold tracking-widest text-slate-600 uppercase">{schoolName}</h2>
-                                        <p className="text-sm text-slate-500 uppercase tracking-wider mb-6">{schoolSubtitle}</p>
-                                        <h3 className="text-2xl font-black text-slate-800 tracking-wide border-b-2 border-slate-300 pb-2 inline-block px-8 mb-4">
-                                            {ath.nama}
-                                        </h3>
-                                        <p className="text-slate-600 font-medium text-sm mb-6">
-                                            Kelas: <span className="font-bold text-slate-800">{ath.kelas}</span> | Rumah Sukan: <span className="font-bold text-slate-800">{ath.rumah}</span>
-                                        </p>
-
-                                        <p className="text-slate-700 max-w-xl mx-auto leading-relaxed text-sm mb-8">
-                                            Telah menyertai dan menunjukkan kecemerlangan yang tinggi dalam Kejohanan Sukan Tahunan Sekolah bagi tahun <span className="font-bold">{activeYear}</span>.
-                                        </p>
-
-                                        {athResults.length > 0 && (
-                                            <div className="bg-amber-50 p-4 rounded-lg border border-amber-200 inline-block mb-8 text-left text-xs text-amber-900">
-                                                <span className="font-bold block mb-1">Pencapaian Acara:</span>
-                                                {athResults.map(r => {
-                                                    const ev = events.find(e => e.id === r.eventId);
-                                                    return (
-                                                        <div key={r.id}>
-                                                            • {ev ? ev.nama : 'Acara'}: Kedudukan ke-{r.kedudukan}
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        )}
-
-                                        <div className="grid grid-cols-2 gap-12 mt-12 pt-8 border-t border-slate-200 text-xs text-slate-600">
-                                            <div>
-                                                <div className="h-12"></div>
-                                                <p className="font-bold text-slate-800 border-b border-slate-400 pb-1">{certSignatory1Name}</p>
-                                                <p>{certSignatory1Title}</p>
-                                            </div>
-                                            <div>
-                                                <div className="h-12"></div>
-                                                <p className="font-bold text-slate-800 border-b border-slate-400 pb-1">{certSignatory2Name}</p>
-                                                <p>{certSignatory2Title}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                );
-            };
+            const formattedLogo = useMemo(() => formatLogoUrl(schoolLogo), [schoolLogo]);
 
             return (
-                <div className="min-h-screen flex flex-col">
+                <div className="min-h-screen flex flex-col bg-slate-50">
                     {/* Header */}
                     <header className="bg-slate-900 text-white sticky top-0 z-40 shadow-md no-print">
                         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
                             <div className="flex items-center gap-3">
                                 <img 
-                                    src={schoolLogo || FALLBACK_LOGO} 
+                                    src={formattedLogo} 
                                     alt="Logo Sekolah" 
                                     onError={handleImgError}
                                     className="w-10 h-10 rounded-full object-cover border-2 border-amber-400 shadow bg-slate-800" 
@@ -1029,11 +464,6 @@
                             </div>
 
                             <div className="flex items-center gap-3">
-                                <div className="hidden sm:flex items-center bg-slate-800 px-3 py-1 rounded-full text-xs font-semibold border border-slate-700">
-                                    <span className={`w-2 h-2 rounded-full mr-2 ${isCloudActive ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span>
-                                    {isCloudActive ? 'Awan Aktif' : 'Mod Lokal'}
-                                </div>
-
                                 <button
                                     onClick={() => setLang(l => l === "BM" ? "EN" : "BM")}
                                     className="text-xs font-bold px-2.5 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition"
@@ -1044,7 +474,7 @@
                                 {currentUser ? (
                                     <div className="flex items-center gap-2">
                                         <span className="text-xs font-medium text-slate-300 hidden md:inline">
-                                            {currentUser.displayName || currentUser.email}
+                                            {currentUser.displayName}
                                             <span className="ml-1.5 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 uppercase">
                                                 {userRole}
                                             </span>
@@ -1069,7 +499,7 @@
                                     <button
                                         onClick={() => setShowSchoolSetupModal(true)}
                                         className="text-xs bg-slate-800 hover:bg-slate-700 p-2 rounded-lg text-slate-300 transition"
-                                        title="Tetapan Sistem & Sekolah"
+                                        title="Tetapan Sekolah"
                                     >
                                         ⚙️
                                     </button>
@@ -1087,7 +517,6 @@
                                     { id: "acara", label: t.acara, icon: "🎯" },
                                     { id: "keputusan", label: t.keputusan, icon: "🥇" },
                                     { id: "pasca_sukan", label: t.pasca_sukan, icon: "📜" },
-                                    { id: "announcement", label: t.announcement, icon: "📢" },
                                     { id: "logs", label: t.logs, icon: "📋" }
                                 ].map((tab) => (
                                     <button
@@ -1107,7 +536,7 @@
                         </nav>
                     </header>
 
-                    {/* Announcement Ticker Banner */}
+                    {/* Announcements Ticker Banner */}
                     {announcements.length > 0 && (
                         <div className="bg-amber-500 text-slate-950 px-4 py-2 text-xs font-semibold flex items-center gap-2 shadow-inner no-print">
                             <span className="bg-slate-900 text-amber-400 px-2 py-0.5 rounded text-[10px] font-black uppercase">HEBAHAN</span>
@@ -1120,23 +549,35 @@
                     {}
                     <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
                         
-                        {/* 1. DASHBOARD VIEW */}
+                        {/* Papan Pemuka / Dashboard */}
                         {activeTab === "dashboard" && (
                             <div className="space-y-6">
+                                <div className="flex justify-between items-center">
+                                    <h2 className="text-xl font-bold text-slate-800">Kedudukan Muka Rumah Sukan</h2>
+                                    {userRole === "admin" && (
+                                        <button 
+                                            onClick={() => setShowPointsModal(true)}
+                                            className="text-xs bg-indigo-50 text-indigo-700 hover:bg-indigo-100 font-bold px-3 py-1.5 rounded-lg border border-indigo-200 transition"
+                                        >
+                                            ⚙️ Tetapan Mata Pingat
+                                        </button>
+                                    )}
+                                </div>
+
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                                     {sortedHousesRanking.map((houseKey, index) => {
                                         const houseInfo = housesMetadata[houseKey] || {};
-                                        const colorObj = COLOR_PRESETS[houseKey] || COLOR_PRESETS.Ungu;
-                                        const tally = housePointsTally[houseKey] || { emas: 0, perak: 0, gangsa: 0, totalPoints: 0 };
+                                        const colorObj = COLOR_PRESETS[houseKey] || COLOR_PRESETS.Merah;
+                                        const tally = housePointsTally[houseKey] || { emas: 0, perak: 0, gangsa: 0, keempat: 0, totalPoints: 0 };
 
                                         return (
                                             <div
                                                 key={houseKey}
-                                                className={`bg-white rounded-2xl p-5 shadow-sm border border-slate-200 transition duration-300 relative overflow-hidden ${colorObj.glow}`}
+                                                className={`bg-white rounded-2xl p-5 shadow-sm border ${colorObj.border} transition duration-300 relative overflow-hidden ${colorObj.glow}`}
                                             >
                                                 <div className="flex justify-between items-start mb-3">
                                                     <div>
-                                                        <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Kedudukan #{index + 1}</span>
+                                                        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Kedudukan #{index + 1}</span>
                                                         <h3 className={`text-xl font-black ${colorObj.teks}`}>{houseKey}</h3>
                                                     </div>
                                                     <span className="text-2xl">{colorObj.emoji}</span>
@@ -1144,18 +585,27 @@
 
                                                 <p className="text-xs text-slate-500 italic mb-4 line-clamp-1">"{houseInfo.slogan || 'Sentiasa Berjuang'}"</p>
 
-                                                <div className="grid grid-cols-3 gap-2 text-center bg-slate-50 p-2.5 rounded-xl text-xs mb-3 font-semibold border border-slate-100">
-                                                    <div>
-                                                        <span className="text-amber-500 block text-base font-black">🥇 {tally.emas}</span>
-                                                        <span className="text-[10px] text-slate-400 uppercase">Emas</span>
+                                                {}
+                                                <div className="grid grid-cols-4 gap-1.5 text-center bg-slate-50 p-3 rounded-xl text-xs mb-3 font-semibold border border-slate-100 items-center">
+                                                    <div className="flex flex-col items-center">
+                                                        <span className="text-3xl sm:text-4xl mb-1 drop-shadow-sm select-none">🥇</span>
+                                                        <span className="text-amber-600 block text-base font-black">{tally.emas}</span>
+                                                        <span className="text-[10px] text-slate-400 uppercase font-bold">Emas</span>
                                                     </div>
-                                                    <div>
-                                                        <span className="text-slate-400 block text-base font-black">🥈 {tally.perak}</span>
-                                                        <span className="text-[10px] text-slate-400 uppercase">Perak</span>
+                                                    <div className="flex flex-col items-center">
+                                                        <span className="text-3xl sm:text-4xl mb-1 drop-shadow-sm select-none">🥈</span>
+                                                        <span className="text-slate-600 block text-base font-black">{tally.perak}</span>
+                                                        <span className="text-[10px] text-slate-400 uppercase font-bold">Perak</span>
                                                     </div>
-                                                    <div>
-                                                        <span className="text-amber-700 block text-base font-black">🥉 {tally.gangsa}</span>
-                                                        <span className="text-[10px] text-slate-400 uppercase">Gangsa</span>
+                                                    <div className="flex flex-col items-center">
+                                                        <span className="text-3xl sm:text-4xl mb-1 drop-shadow-sm select-none">🥉</span>
+                                                        <span className="text-amber-800 block text-base font-black">{tally.gangsa}</span>
+                                                        <span className="text-[10px] text-slate-400 uppercase font-bold">Gangsa</span>
+                                                    </div>
+                                                    <div className="flex flex-col items-center">
+                                                        <span className="text-3xl sm:text-4xl mb-1 drop-shadow-sm select-none">🏅</span>
+                                                        <span className="text-indigo-600 block text-base font-black">{tally.keempat || 0}</span>
+                                                        <span className="text-[10px] text-slate-400 uppercase font-bold">Ke-4</span>
                                                     </div>
                                                 </div>
 
@@ -1168,111 +618,110 @@
                                     })}
                                 </div>
 
-                                {/* Quick Summary Statistics */}
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                     <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex items-center gap-4">
-                                        <div className="p-4 bg-indigo-50 text-indigo-600 rounded-2xl text-2xl">🏃</div>
+                                        <div className="p-3 bg-amber-50 text-amber-600 rounded-2xl text-4xl select-none">🏅</div>
                                         <div>
-                                            <p className="text-xs font-medium text-slate-400 uppercase">Jumlah Atlet Berdaftar</p>
-                                            <h4 className="text-2xl font-black text-slate-800">{athletes.length}</h4>
-                                        </div>
-                                    </div>
-                                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex items-center gap-4">
-                                        <div className="p-4 bg-emerald-50 text-emerald-600 rounded-2xl text-2xl">🎯</div>
-                                        <div>
-                                            <p className="text-xs font-medium text-slate-400 uppercase">Jumlah Acara Dipertandingkan</p>
-                                            <h4 className="text-2xl font-black text-slate-800">{events.length}</h4>
-                                        </div>
-                                    </div>
-                                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex items-center gap-4">
-                                        <div className="p-4 bg-amber-50 text-amber-600 rounded-2xl text-2xl">🏅</div>
-                                        <div>
-                                            <p className="text-xs font-medium text-slate-400 uppercase">Keputusan Acara Direkod</p>
+                                            <p className="text-xs font-medium text-slate-400 uppercase">Keputusan Direkodkan</p>
                                             <h4 className="text-2xl font-black text-slate-800">{results.length}</h4>
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* Latest Results Stream */}
-                                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-                                    <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                                        <span>🏆</span> Keputusan Terkini Kejohanan
-                                    </h3>
-                                    {results.length === 0 ? (
-                                        <p className="text-sm text-slate-400 italic text-center py-8">Belum ada keputusan acara direkodkan.</p>
-                                    ) : (
-                                        <div className="divide-y divide-slate-100">
-                                            {results.slice(-5).reverse().map((res) => {
-                                                const ev = events.find(e => e.id === res.eventId);
-                                                const ath = athletes.find(a => a.id === res.athleteId);
-                                                return (
-                                                    <div key={res.id} className="py-3 flex justify-between items-center text-sm">
-                                                        <div>
-                                                            <p className="font-bold text-slate-800">{ev ? ev.nama : 'Acara'}</p>
-                                                            <p className="text-xs text-slate-500">
-                                                                {ath ? ath.nama : 'Atlet'} ({ath ? ath.rumah : '-'}) • {ath ? ath.kelas : ''}
-                                                            </p>
-                                                        </div>
-                                                        <div className="text-right">
-                                                            <span className={`px-2.5 py-1 rounded-full text-xs font-black ${
-                                                                res.kedudukan === "1" ? "bg-amber-100 text-amber-800" :
-                                                                res.kedudukan === "2" ? "bg-slate-100 text-slate-700" :
-                                                                res.kedudukan === "3" ? "bg-amber-900/10 text-amber-900" : "bg-slate-50 text-slate-500"
-                                                            }`}>
-                                                                Kedudukan #{res.kedudukan}
-                                                            </span>
-                                                            {res.catatan && <p className="text-[11px] text-slate-400 mt-1">{res.catatan}</p>}
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
+                                {/* Hebahan Semasa Kejohanan Section */}
+                                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                                    <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xl">📢</span>
+                                            <h3 className="text-base font-bold text-slate-800">Hebahan Semasa Kejohanan</h3>
+                                        </div>
+                                        {userRole !== "pelawat" && (
+                                            <button
+                                                onClick={() => setShowAnnounceForm(!showAnnounceForm)}
+                                                className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-3 py-1.5 rounded-xl text-xs shadow transition"
+                                            >
+                                                {showAnnounceForm ? "Batal" : "➕ Tambah Hebahan"}
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    {showAnnounceForm && (
+                                        <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                                            <textarea
+                                                value={announceFormText}
+                                                onChange={(e) => setAnnounceFormText(e.target.value)}
+                                                placeholder="Tulis hebahan baharu..."
+                                                className="w-full p-3 border rounded-xl text-xs mb-2 focus:ring-2 focus:ring-amber-400 outline-none"
+                                                rows="3"
+                                            />
+                                            <button
+                                                onClick={() => {
+                                                    if (announceFormText.trim()) {
+                                                        setAnnouncements(prev => [{ id: "ann_" + Date.now(), text: announceFormText.trim(), date: new Date().toLocaleDateString('ms-MY') }, ...prev]);
+                                                        setAnnounceFormText("");
+                                                        setShowAnnounceForm(false);
+                                                        showToastMessage("Hebahan baharu diterbitkan!");
+                                                    }
+                                                }}
+                                                className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-1.5 rounded-lg text-xs shadow transition"
+                                            >
+                                                Terbitkan
+                                            </button>
                                         </div>
                                     )}
+
+                                    <div className="space-y-3">
+                                        {announcements.length === 0 ? (
+                                            <p className="text-xs text-slate-400 italic">Tiada hebahan buat masa ini.</p>
+                                        ) : (
+                                            announcements.map(ann => (
+                                                <div key={ann.id} className="bg-slate-50 p-4 rounded-xl border border-slate-100 flex justify-between items-center hover:border-slate-200 transition">
+                                                    <p className="text-xs text-slate-800 font-medium leading-relaxed">{ann.text}</p>
+                                                    <span className="text-[10px] text-slate-400 font-semibold ml-4 whitespace-nowrap bg-white px-2 py-1 rounded border border-slate-200">{ann.date}</span>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         )}
 
-                        {}
+                        {/* Rumah Sukan */}
                         {activeTab === "rumah_sukan" && (
                             <div className="space-y-6">
-                                <div className="flex justify-between items-center">
-                                    <h2 className="text-xl font-bold text-slate-800">Senarai & Maklumat Rumah Sukan</h2>
-                                </div>
-
+                                <h2 className="text-xl font-bold text-slate-800">Senarai Rumah Sukan</h2>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    {Object.keys(housesMetadata).map((houseKey) => {
+                                    {Object.keys(housesMetadata).map(houseKey => {
                                         const house = housesMetadata[houseKey];
-                                        const colorObj = COLOR_PRESETS[houseKey] || COLOR_PRESETS.Ungu;
-                                        const memberCount = athletes.filter(a => a.rumah === houseKey).length;
+                                        const houseAthletes = athletes.filter(a => a.rumah === houseKey);
+                                        const color = COLOR_PRESETS[houseKey] || COLOR_PRESETS.Merah;
 
                                         return (
-                                            <div key={houseKey} className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
-                                                <div className="flex justify-between items-start">
-                                                    <div>
-                                                        <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold uppercase mb-2 ${colorObj.bg} ${colorObj.text}`}>
-                                                            Rumah {houseKey}
-                                                        </span>
-                                                        <h3 className="text-xl font-black text-slate-800">"{house.slogan}"</h3>
+                                            <div key={houseKey} className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+                                                <div className="flex justify-between items-center mb-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <span className="text-3xl">{color.emoji}</span>
+                                                        <div>
+                                                            <h3 className={`text-xl font-bold ${color.teks}`}>{houseKey}</h3>
+                                                            <p className="text-xs text-slate-500">Guru Penasihat: {house.guruPenasihat}</p>
+                                                        </div>
                                                     </div>
-                                                    <span className="text-3xl">{colorObj.emoji}</span>
+                                                    <span className="text-xs font-bold bg-slate-100 text-slate-700 px-3 py-1 rounded-full">
+                                                        {houseAthletes.length} Atlet
+                                                    </span>
                                                 </div>
 
-                                                <div className="text-xs text-slate-600 space-y-1">
-                                                    <p><span className="font-semibold text-slate-700">Guru Penasihat:</span> {house.guruPenasihat || 'Belum ditetapkan'}</p>
-                                                    <p><span className="font-semibold text-slate-700">Jumlah Ahli Atlet:</span> {memberCount} orang</p>
-                                                    <p><span className="font-semibold text-slate-700">Mata Bonus Tambahan:</span> {house.bonusPoints || 0} pts</p>
-                                                </div>
+                                                <p className="text-xs text-slate-600 bg-slate-50 p-3 rounded-xl italic mb-4">
+                                                    "{house.slogan}"
+                                                </p>
 
-                                                <div className="pt-2 flex gap-2">
-                                                    <button
-                                                        onClick={() => {
-                                                            setSelectedMembersHouse(houseKey);
-                                                            setShowMembersModal(true);
-                                                        }}
-                                                        className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-2 rounded-xl transition"
-                                                    >
-                                                        👥 Lihat Ahli Rumah
-                                                    </button>
+                                                <div className="divide-y divide-slate-100 max-h-48 overflow-y-auto pr-1">
+                                                    {houseAthletes.slice(0, 5).map(ath => (
+                                                        <div key={ath.id} className="py-2 text-xs flex justify-between text-slate-700">
+                                                            <span className="font-semibold">{ath.nama}</span>
+                                                            <span className="text-slate-400">{ath.kelas}</span>
+                                                        </div>
+                                                    ))}
                                                 </div>
                                             </div>
                                         );
@@ -1281,127 +730,75 @@
                             </div>
                         )}
 
-                        {}
+                        {/* Pengurusan Atlet */}
                         {activeTab === "atlit" && (
                             <div className="space-y-6">
                                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                                    <div>
-                                        <h2 className="text-xl font-bold text-slate-800">Pengurusan Atlet Sekolah</h2>
-                                        <p className="text-xs text-slate-500">Daftar, sunting dan tetapkan acara sukan atlet.</p>
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={() => {
-                                                if (!checkAuthority()) return;
-                                                setAthleteForm({ id: "", nama: "", kelas: "", rumah: "Merah", jantina: "Lelaki", kategori: "L12" });
-                                                setIsEditingAthlete(false);
-                                                setIsAddAthleteSidebarOpen(true);
-                                            }}
-                                            className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs shadow transition flex items-center gap-1.5"
-                                        >
-                                            ➕ Tambah Atlet
-                                        </button>
-                                    </div>
+                                    <h2 className="text-xl font-bold text-slate-800">Pengurusan Atlet Sekolah</h2>
+                                    <button
+                                        onClick={() => {
+                                            setIsEditingAthlete(false);
+                                            setAthleteForm({ id: "", nama: "", kelas: "", rumah: "Merah", jantina: "Lelaki", kategori: "L12" });
+                                            setIsAddAthleteSidebarOpen(true);
+                                        }}
+                                        className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs shadow transition flex items-center gap-2"
+                                    >
+                                        ➕ Tambah Atlet Baharu
+                                    </button>
                                 </div>
 
-                                {/* Filter Controls */}
-                                <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row gap-4 items-center justify-between">
-                                    <input
-                                        type="text"
-                                        placeholder="Cari nama atau kelas atlet..."
-                                        value={studentSearchQuery}
-                                        onChange={(e) => setStudentSearchQuery(e.target.value)}
-                                        className="w-full sm:w-72 px-4 py-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-amber-500"
-                                    />
-                                    <div className="flex gap-2 w-full sm:w-auto">
+                                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                                    <div className="p-4 border-b border-slate-100 flex gap-4">
                                         <select
                                             value={filterHouse}
                                             onChange={(e) => setFilterHouse(e.target.value)}
-                                            className="px-3 py-2 border border-slate-200 rounded-xl text-xs font-medium text-slate-700"
+                                            className="px-3 py-1.5 border rounded-lg text-xs font-medium focus:ring-2 focus:ring-amber-400"
                                         >
                                             <option value="Semua">Semua Rumah Sukan</option>
-                                            {Object.keys(housesMetadata).map(h => (
-                                                <option key={h} value={h}>Rumah {h}</option>
-                                            ))}
+                                            {Object.keys(housesMetadata).map(h => <option key={h} value={h}>{h}</option>)}
                                         </select>
                                     </div>
-                                </div>
 
-                                {/* Athletes Table */}
-                                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                                     <div className="overflow-x-auto">
-                                        <table className="w-full text-left border-collapse text-xs">
-                                            <thead>
-                                                <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider">
-                                                    <th className="p-4">ID</th>
-                                                    <th className="p-4">Nama Atlet</th>
-                                                    <th className="p-4">Kelas</th>
-                                                    <th className="p-4">Rumah</th>
-                                                    <th className="p-4">Kategori</th>
-                                                    <th className="p-4">Acara Dianggotai</th>
-                                                    <th className="p-4 text-right">Tindakan</th>
+                                        <table className="w-full text-left text-xs text-slate-600">
+                                            <thead className="bg-slate-50 text-slate-500 font-bold uppercase border-b border-slate-100">
+                                                <tr>
+                                                    <th className="p-3">Nama Atlet</th>
+                                                    <th className="p-3">Kelas</th>
+                                                    <th className="p-3">Rumah</th>
+                                                    <th className="p-3">Jantina</th>
+                                                    <th className="p-3">Kategori</th>
+                                                    <th className="p-3 text-right">Tindakan</th>
                                                 </tr>
                                             </thead>
-                                            <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+                                            <tbody className="divide-y divide-slate-100">
                                                 {athletes
                                                     .filter(a => filterHouse === "Semua" || a.rumah === filterHouse)
-                                                    .filter(a => a.nama.toLowerCase().includes(studentSearchQuery.toLowerCase()) || a.kelas.toLowerCase().includes(studentSearchQuery.toLowerCase()))
-                                                    .map((ath) => {
-                                                        const colorObj = COLOR_PRESETS[ath.rumah] || COLOR_PRESETS.Ungu;
-                                                        return (
-                                                            <tr key={ath.id} className="hover:bg-slate-50/80 transition">
-                                                                <td className="p-4 font-mono text-slate-400">{ath.id}</td>
-                                                                <td className="p-4 font-bold text-slate-800">{ath.nama}</td>
-                                                                <td className="p-4">{ath.kelas}</td>
-                                                                <td className="p-4">
-                                                                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${colorObj.bg} ${colorObj.text}`}>
-                                                                        {ath.rumah}
-                                                                    </span>
-                                                                </td>
-                                                                <td className="p-4">{ath.kategori}</td>
-                                                                <td className="p-4">
-                                                                    {(ath.acaraIds || []).length === 0 ? (
-                                                                        <span className="text-slate-400 italic">Tiada acara</span>
-                                                                    ) : (
-                                                                        <span className="px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded font-bold">
-                                                                            {ath.acaraIds.length} Acara
-                                                                        </span>
-                                                                    )}
-                                                                </td>
-                                                                <td className="p-4 text-right space-x-2">
-                                                                    <button
-                                                                        onClick={() => {
-                                                                            setSelectedStudentId(ath.id);
-                                                                            setSelectedEventIds(ath.acaraIds || []);
-                                                                            setIsAssignEventSidebarOpen(true);
-                                                                        }}
-                                                                        className="p-1.5 hover:bg-slate-100 rounded text-indigo-600"
-                                                                        title="Daftar Acara"
-                                                                    >
-                                                                        🎯
-                                                                    </button>
-                                                                    <button
-                                                                        onClick={() => {
-                                                                            setAthleteForm(ath);
-                                                                            setIsEditingAthlete(true);
-                                                                            setIsAddAthleteSidebarOpen(true);
-                                                                        }}
-                                                                        className="p-1.5 hover:bg-slate-100 rounded text-amber-600"
-                                                                        title="Sunting"
-                                                                    >
-                                                                        ✏️
-                                                                    </button>
-                                                                    <button
-                                                                        onClick={() => handleDeleteAthlete(ath)}
-                                                                        className="p-1.5 hover:bg-slate-100 rounded text-red-600"
-                                                                        title="Padam"
-                                                                    >
-                                                                        🗑️
-                                                                    </button>
-                                                                </td>
-                                                            </tr>
-                                                        );
-                                                    })}
+                                                    .map(ath => (
+                                                        <tr key={ath.id} className="hover:bg-slate-50">
+                                                            <td className="p-3 font-bold text-slate-800">{ath.nama}</td>
+                                                            <td className="p-3">{ath.kelas}</td>
+                                                            <td className="p-3">
+                                                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${COLOR_PRESETS[ath.rumah]?.bg || 'bg-slate-100'} ${COLOR_PRESETS[ath.rumah]?.text || 'text-slate-700'}`}>
+                                                                    {ath.rumah}
+                                                                </span>
+                                                            </td>
+                                                            <td className="p-3">{ath.jantina}</td>
+                                                            <td className="p-3">{ath.kategori}</td>
+                                                            <td className="p-3 text-right space-x-2">
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setAthleteForm(ath);
+                                                                        setIsEditingAthlete(true);
+                                                                        setIsAddAthleteSidebarOpen(true);
+                                                                    }}
+                                                                    className="text-indigo-600 hover:underline font-bold"
+                                                                >
+                                                                    Edit
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
                                             </tbody>
                                         </table>
                                     </div>
@@ -1409,154 +806,136 @@
                             </div>
                         )}
 
-                        {}
+                        {/* Pengurusan Acara */}
                         {activeTab === "acara" && (
                             <div className="space-y-6">
                                 <div className="flex justify-between items-center">
-                                    <div>
-                                        <h2 className="text-xl font-bold text-slate-800">Pengurusan Acara Sukan</h2>
-                                        <p className="text-xs text-slate-500">Atur acara balapan dan padang kejohanan.</p>
-                                    </div>
+                                    <h2 className="text-xl font-bold text-slate-800">Pengurusan Acara Kejohanan</h2>
                                     <button
                                         onClick={() => {
-                                            if (!checkAuthority()) return;
-                                            setEventForm({ id: "", nama: "", kategori: "L12", jenis: "Balapan", format: "Individu", tarikh: "", masa: "" });
                                             setIsEditingEvent(false);
+                                            setEventForm({ id: "", nama: "", kategori: "L12", jenis: "Balapan", format: "Individu", tarikh: "", masa: "" });
                                             setIsEventSidebarOpen(true);
                                         }}
-                                        className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs shadow transition flex items-center gap-1.5"
+                                        className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs shadow transition"
                                     >
                                         ➕ Tambah Acara
                                     </button>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    {events.map((ev) => {
-                                        const assignedAthletesCount = athletes.filter(a => (a.acaraIds || []).includes(ev.id)).length;
-                                        return (
-                                            <div key={ev.id} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-3">
-                                                <div className="flex justify-between items-start">
-                                                    <span className="text-[10px] font-bold px-2.5 py-1 bg-slate-100 text-slate-600 rounded-full uppercase">
-                                                        {ev.jenis} • {ev.format}
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    {events.map(ev => (
+                                        <div key={ev.id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                                            <div>
+                                                <div className="flex justify-between items-start mb-2">
+                                                    <span className="text-[10px] font-bold uppercase bg-slate-100 text-slate-600 px-2 py-0.5 rounded">
+                                                        {ev.jenis} • {ev.kategori}
                                                     </span>
-                                                    <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">
-                                                        {ev.kategori}
-                                                    </span>
+                                                    <span className="text-xs font-semibold text-slate-400">{ev.masa || 'TBA'}</span>
                                                 </div>
-
-                                                <h3 className="text-base font-bold text-slate-800">{ev.nama}</h3>
-                                                <p className="text-xs text-slate-500">
-                                                    📅 {formatDateToDMY(ev.tarikh) || 'Masa TBD'} | ⏰ {ev.masa || 'TBD'}
-                                                </p>
-
-                                                <div className="flex justify-between items-center pt-3 border-t border-slate-100 text-xs">
-                                                    <span className="text-slate-500">{assignedAthletesCount} Atlet Berdaftar</span>
-                                                    <div className="flex gap-1">
-                                                        <button
-                                                            onClick={() => {
-                                                                setEventForm(ev);
-                                                                setIsEditingEvent(true);
-                                                                setIsEventSidebarOpen(true);
-                                                            }}
-                                                            className="p-1.5 hover:bg-slate-100 rounded text-amber-600"
-                                                        >
-                                                            ✏️
-                                                        </button>
-                                                    </div>
-                                                </div>
+                                                <h3 className="font-bold text-slate-800 text-sm mb-1">{ev.nama}</h3>
+                                                <p className="text-xs text-slate-500">Format: {ev.format}</p>
                                             </div>
-                                        );
-                                    })}
+                                            <div className="mt-4 pt-3 border-t border-slate-100 flex justify-end gap-2">
+                                                <button
+                                                    onClick={() => {
+                                                        setEventForm(ev);
+                                                        setIsEditingEvent(true);
+                                                        setIsEventSidebarOpen(true);
+                                                    }}
+                                                    className="text-xs font-bold text-indigo-600 hover:underline"
+                                                >
+                                                    Sunting
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
                         )}
 
-                        {}
+                        {/* Keputusan Acara */}
                         {activeTab === "keputusan" && (
                             <div className="space-y-6">
-                                <div className="flex justify-between items-center">
-                                    <div>
-                                        <h2 className="text-xl font-bold text-slate-800">Keputusan & Pemenang Acara</h2>
-                                        <p className="text-xs text-slate-500">Merekod keputusan akhir dan kiraan mata automatik.</p>
+                                <h2 className="text-xl font-bold text-slate-800">Keputusan Acara & Pingat</h2>
+                                
+                                {userRole !== "pelawat" && (
+                                    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                                        <h3 className="font-bold text-sm text-slate-800 mb-4">Rekod Keputusan Baharu</h3>
+                                        <form onSubmit={handleSaveResult} className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                                            <div>
+                                                <label className="block text-xs font-semibold text-slate-600 mb-1">Acara</label>
+                                                <select
+                                                    value={resultForm.eventId}
+                                                    onChange={(e) => setResultForm({...resultForm, eventId: e.target.value})}
+                                                    className="w-full p-2 border rounded-xl text-xs"
+                                                    required
+                                                >
+                                                    <option value="">-- Pilih Acara --</option>
+                                                    {events.map(ev => <option key={ev.id} value={ev.id}>{ev.nama}</option>)}
+                                                </select>
+                                            </div>
+
+                                            <div>
+                                                <label className="block text-xs font-semibold text-slate-600 mb-1">Atlet</label>
+                                                <select
+                                                    value={resultForm.athleteId}
+                                                    onChange={(e) => setResultForm({...resultForm, athleteId: e.target.value})}
+                                                    className="w-full p-2 border rounded-xl text-xs"
+                                                    required
+                                                >
+                                                    <option value="">-- Pilih Atlet --</option>
+                                                    {athletes.map(ath => <option key={ath.id} value={ath.id}>{ath.nama} ({ath.rumah})</option>)}
+                                                </select>
+                                            </div>
+
+                                            <div>
+                                                <label className="block text-xs font-semibold text-slate-600 mb-1">Kedudukan</label>
+                                                <select
+                                                    value={resultForm.kedudukan}
+                                                    onChange={(e) => setResultForm({...resultForm, kedudukan: e.target.value})}
+                                                    className="w-full p-2 border rounded-xl text-xs"
+                                                >
+                                                    <option value="1">🥇 Tempat Pertama (Emas)</option>
+                                                    <option value="2">🥈 Tempat Kedua (Perak)</option>
+                                                    <option value="3">🥉 Tempat Ketiga (Gangsa)</option>
+                                                    <option value="4">🏅 Tempat Ke-4</option>
+                                                </select>
+                                            </div>
+
+                                            <div className="flex items-end">
+                                                <button type="submit" className="w-full bg-indigo-600 text-white font-bold py-2 rounded-xl text-xs hover:bg-indigo-700 shadow">
+                                                    Simpan Keputusan
+                                                </button>
+                                            </div>
+                                        </form>
                                     </div>
-                                </div>
+                                )}
 
-                                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
-                                    <h3 className="text-sm font-bold text-slate-800 uppercase">Rekod Keputusan Baru</h3>
-                                    <form onSubmit={handleSaveResult} className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-                                        <select
-                                            value={resultForm.eventId}
-                                            onChange={(e) => setResultForm({ ...resultForm, eventId: e.target.value })}
-                                            className="px-3 py-2 border border-slate-200 rounded-xl text-xs font-medium"
-                                        >
-                                            <option value="">-- Pilih Acara --</option>
-                                            {events.map(e => <option key={e.id} value={e.id}>{e.nama} ({e.kategori})</option>)}
-                                        </select>
-
-                                        <select
-                                            value={resultForm.athleteId}
-                                            onChange={(e) => setResultForm({ ...resultForm, athleteId: e.target.value })}
-                                            className="px-3 py-2 border border-slate-200 rounded-xl text-xs font-medium"
-                                        >
-                                            <option value="">-- Pilih Atlet --</option>
-                                            {athletes
-                                                .filter(a => !resultForm.eventId || (a.acaraIds || []).includes(resultForm.eventId))
-                                                .map(a => <option key={a.id} value={a.id}>{a.nama} ({a.rumah})</option>)}
-                                        </select>
-
-                                        <select
-                                            value={resultForm.kedudukan}
-                                            onChange={(e) => setResultForm({ ...resultForm, kedudukan: e.target.value })}
-                                            className="px-3 py-2 border border-slate-200 rounded-xl text-xs font-medium"
-                                        >
-                                            <option value="1">🥇 Kedudukan 1 (Emas)</option>
-                                            <option value="2">🥈 Kedudukan 2 (Perak)</option>
-                                            <option value="3">🥉 Kedudukan 3 (Gangsa)</option>
-                                            <option value="4">🏅 Kedudukan 4</option>
-                                        </select>
-
-                                        <button
-                                            type="submit"
-                                            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 px-4 rounded-xl text-xs shadow transition"
-                                        >
-                                            💾 Simpan Keputusan
-                                        </button>
-                                    </form>
-                                </div>
-
-                                {/* Results Table */}
                                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                                    <table className="w-full text-left text-xs">
-                                        <thead>
-                                            <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase">
-                                                <th className="p-4">Acara</th>
-                                                <th className="p-4">Nama Atlet</th>
-                                                <th className="p-4">Rumah Sukan</th>
-                                                <th className="p-4">Kedudukan</th>
-                                                <th className="p-4 text-right">Tindakan</th>
+                                    <table className="w-full text-left text-xs text-slate-600">
+                                        <thead className="bg-slate-50 text-slate-500 font-bold uppercase border-b border-slate-100">
+                                            <tr>
+                                                <th className="p-3">Acara</th>
+                                                <th className="p-3">Atlet</th>
+                                                <th className="p-3">Rumah Sukan</th>
+                                                <th className="p-3">Kedudukan</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100">
-                                            {results.map((res) => {
+                                            {results.map(res => {
                                                 const ev = events.find(e => e.id === res.eventId);
                                                 const ath = athletes.find(a => a.id === res.athleteId);
                                                 return (
-                                                    <tr key={res.id}>
-                                                        <td className="p-4 font-bold text-slate-800">{ev ? ev.nama : '-'}</td>
-                                                        <td className="p-4">{ath ? ath.nama : '-'}</td>
-                                                        <td className="p-4 font-semibold">{ath ? ath.rumah : '-'}</td>
-                                                        <td className="p-4">
-                                                            <span className="font-bold px-2.5 py-1 rounded-full bg-amber-50 text-amber-800">
-                                                                Kedudukan #{res.kedudukan}
-                                                            </span>
-                                                        </td>
-                                                        <td className="p-4 text-right">
-                                                            <button
-                                                                onClick={() => handleDeleteResult(res)}
-                                                                className="text-red-600 p-1 hover:bg-slate-100 rounded"
-                                                            >
-                                                                🗑️
-                                                            </button>
+                                                    <tr key={res.id} className="hover:bg-slate-50">
+                                                        <td className="p-3 font-bold text-slate-800">{ev?.nama || '-'}</td>
+                                                        <td className="p-3 font-medium">{ath?.nama || '-'}</td>
+                                                        <td className="p-3">{ath?.rumah || '-'}</td>
+                                                        <td className="p-3 font-bold">
+                                                            {res.kedudukan === "1" && <span className="inline-flex items-center gap-2"><span className="text-2xl">🥇</span> Emas</span>}
+                                                            {res.kedudukan === "2" && <span className="inline-flex items-center gap-2"><span className="text-2xl">🥈</span> Perak</span>}
+                                                            {res.kedudukan === "3" && <span className="inline-flex items-center gap-2"><span className="text-2xl">🥉</span> Gangsa</span>}
+                                                            {res.kedudukan === "4" && <span className="inline-flex items-center gap-2"><span className="text-2xl">🏅</span> Ke-4</span>}
                                                         </td>
                                                     </tr>
                                                 );
@@ -1567,207 +946,97 @@
                             </div>
                         )}
 
-                        {}
+                        {/* Pasca Sukan */}
                         {activeTab === "pasca_sukan" && (
                             <div className="space-y-6">
-                                <div className="flex justify-between items-center">
-                                    <div>
-                                        <h2 className="text-xl font-bold text-slate-800">Pasca Sukan & Sijil Penghargaan</h2>
-                                        <p className="text-xs text-slate-500">Cetak sijil pencapaian/penyertaan atlet.</p>
-                                    </div>
-                                </div>
-                                {renderCertPreview()}
-                            </div>
-                        )}
-
-                        {}
-                        {activeTab === "announcement" && (
-                            <div className="space-y-6">
-                                <div className="flex justify-between items-center">
-                                    <h2 className="text-xl font-bold text-slate-800">Hebahan Rasmi Kejohanan</h2>
+                                <div className="flex justify-between items-center no-print">
+                                    <h2 className="text-xl font-bold text-slate-800">Cetak Sijil Kejohanan</h2>
                                     <button
-                                        onClick={() => setShowAnnounceForm(true)}
-                                        className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs shadow"
+                                        onClick={() => window.print()}
+                                        className="bg-slate-800 hover:bg-slate-700 text-white font-bold px-4 py-2 rounded-xl text-xs shadow flex items-center gap-2"
                                     >
-                                        📢 Hebahan Baru
+                                        🖨️ Cetak / Simpan PDF
                                     </button>
                                 </div>
 
-                                {showAnnounceForm && (
-                                    <form onSubmit={handleAddAnnouncement} className="bg-white p-4 rounded-2xl border border-slate-200 space-y-3">
-                                        <textarea
-                                            placeholder="Tulis hebahan..."
-                                            value={announceFormText}
-                                            onChange={(e) => setAnnounceFormText(e.target.value)}
-                                            className="w-full p-3 border border-slate-200 rounded-xl text-xs"
-                                            rows={3}
-                                        />
-                                        <div className="flex justify-end gap-2">
-                                            <button type="button" onClick={() => setShowAnnounceForm(false)} className="px-3 py-1.5 text-xs text-slate-500">Batal</button>
-                                            <button type="submit" className="px-4 py-1.5 bg-slate-900 text-white rounded-xl text-xs font-bold">Terbit</button>
-                                        </div>
-                                    </form>
-                                )}
-
-                                <div className="space-y-3">
-                                    {announcements.map((ann) => (
-                                        <div key={ann.id} className="bg-white p-4 rounded-2xl border border-slate-200 text-xs">
-                                            <p className="text-slate-800 font-medium mb-2">{ann.text}</p>
-                                            <p className="text-slate-400 text-[10px]">Diterbitkan oleh: {ann.author} • {ann.date}</p>
+                                <div className="space-y-8">
+                                    {athletes.slice(0, 3).map(ath => (
+                                        <div key={ath.id} className="bg-white p-12 rounded-xl shadow-md border-8 border-double border-slate-800 text-center cert-border relative">
+                                            <div className="flex justify-center mb-4">
+                                                <img src={formattedLogo} alt="Logo" onError={handleImgError} className="h-20 w-20 object-contain" />
+                                            </div>
+                                            <h2 className="text-lg font-bold tracking-widest text-slate-600 uppercase">{schoolName}</h2>
+                                            <p className="text-xs text-slate-500 uppercase tracking-wider mb-6">{schoolSubtitle}</p>
+                                            <h3 className="text-2xl font-black text-slate-800 tracking-wide border-b-2 border-slate-300 pb-2 inline-block px-8 mb-4">
+                                                {ath.nama}
+                                            </h3>
+                                            <p className="text-slate-600 font-medium text-xs mb-6">
+                                                Kelas: <span className="font-bold">{ath.kelas}</span> | Rumah Sukan: <span className="font-bold">{ath.rumah}</span>
+                                            </p>
+                                            <p className="text-slate-600 max-w-lg mx-auto text-xs leading-relaxed mb-8">
+                                                Telah menyertai dan menunjukkan komitmen tinggi dalam Kejohanan Sukan Tahunan Sekolah bagi tahun <span className="font-bold">{activeYear}</span>.
+                                            </p>
                                         </div>
                                     ))}
                                 </div>
                             </div>
                         )}
 
-                        {}
+                        {/* Log Aktiviti */}
                         {activeTab === "logs" && (
                             <div className="space-y-6">
                                 <h2 className="text-xl font-bold text-slate-800">Log Aktiviti Sistem</h2>
-                                <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden text-xs">
-                                    <div className="divide-y divide-slate-100">
-                                        {logs.map((log) => (
-                                            <div key={log.id} className="p-4 flex justify-between items-center">
-                                                <div>
-                                                    <span className="font-bold text-slate-800">{log.action}</span>
-                                                    <p className="text-slate-500">{log.details}</p>
-                                                </div>
-                                                <span className="text-slate-400 text-[10px]">{log.timestamp}</span>
-                                            </div>
-                                        ))}
-                                    </div>
+                                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                                    <table className="w-full text-left text-xs text-slate-600">
+                                        <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-100">
+                                            <tr>
+                                                <th className="p-3">Masa</th>
+                                                <th className="p-3">Pengguna</th>
+                                                <th className="p-3">Tindakan</th>
+                                                <th className="p-3">Butiran</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100">
+                                            {logs.map(log => (
+                                                <tr key={log.id}>
+                                                    <td className="p-3 text-slate-400">{log.timestamp}</td>
+                                                    <td className="p-3 font-semibold">{log.userName}</td>
+                                                    <td className="p-3 font-bold text-indigo-600">{log.action}</td>
+                                                    <td className="p-3">{log.details}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
                         )}
-
                     </main>
 
                     {}
-                    
-                    {/* Add/Edit Athlete Drawer */}
-                    {isAddAthleteSidebarOpen && (
-                        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex justify-end">
-                            <div className="bg-white w-full max-w-md h-full p-6 space-y-6 overflow-y-auto">
-                                <div className="flex justify-between items-center pb-4 border-b">
-                                    <h3 className="font-bold text-lg">{isEditingAthlete ? "Sunting Atlet" : "Daftar Atlet Baharu"}</h3>
-                                    <button onClick={() => setIsAddAthleteSidebarOpen(false)} className="text-slate-400">✕</button>
-                                </div>
-
-                                <div className="flex gap-2 bg-slate-100 p-1 rounded-xl text-xs font-bold">
-                                    <button
-                                        type="button"
-                                        onClick={() => setRegMode("tunggal")}
-                                        className={`flex-1 py-1.5 rounded-lg ${regMode === "tunggal" ? "bg-white shadow text-slate-900" : "text-slate-500"}`}
-                                    >
-                                        Tunggal
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setRegMode("pukal")}
-                                        className={`flex-1 py-1.5 rounded-lg ${regMode === "pukal" ? "bg-white shadow text-slate-900" : "text-slate-500"}`}
-                                    >
-                                        Pukal TSV
-                                    </button>
-                                </div>
-
-                                {regMode === "tunggal" ? (
-                                    <form onSubmit={handleSaveAthlete} className="space-y-4 text-xs">
-                                        <div>
-                                            <label className="font-bold text-slate-700 block mb-1">Nama Penuh Atlet</label>
-                                            <input
-                                                type="text"
-                                                required
-                                                value={athleteForm.nama}
-                                                onChange={(e) => setAthleteForm({ ...athleteForm, nama: e.target.value })}
-                                                className="w-full px-3 py-2 border rounded-xl"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="font-bold text-slate-700 block mb-1">Kelas</label>
-                                            <input
-                                                type="text"
-                                                required
-                                                value={athleteForm.kelas}
-                                                onChange={(e) => setAthleteForm({ ...athleteForm, kelas: e.target.value })}
-                                                className="w-full px-3 py-2 border rounded-xl"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="font-bold text-slate-700 block mb-1">Rumah Sukan</label>
-                                            <select
-                                                value={athleteForm.rumah}
-                                                onChange={(e) => setAthleteForm({ ...athleteForm, rumah: e.target.value })}
-                                                className="w-full px-3 py-2 border rounded-xl font-medium"
-                                            >
-                                                {Object.keys(housesMetadata).map(h => <option key={h} value={h}>{h}</option>)}
-                                            </select>
-                                        </div>
-                                        <button type="submit" className="w-full py-2.5 bg-amber-500 text-slate-950 font-bold rounded-xl shadow">
-                                            Simpan Atlet
-                                        </button>
-                                    </form>
-                                ) : (
-                                    <form onSubmit={handleSaveAthlete} className="space-y-4 text-xs">
-                                        <div>
-                                            <label className="font-bold text-slate-700 block mb-1">Teks TSV (Nama [tab] Kelas [tab] Rumah)</label>
-                                            <textarea
-                                                rows={8}
-                                                value={tsvInput}
-                                                onChange={(e) => setTsvInput(e.target.value)}
-                                                className="w-full p-3 border rounded-xl font-mono text-[11px]"
-                                                placeholder="AHMAD DANISH	6 Cemerlang	Merah"
-                                            />
-                                        </div>
-                                        <button type="submit" className="w-full py-2.5 bg-amber-500 text-slate-950 font-bold rounded-xl shadow">
-                                            Proses Pukal
-                                        </button>
-                                    </form>
-                                )}
-                            </div>
-                        </div>
-                    )}
 
                     {/* Login Modal */}
                     {isLoginModalOpen && (
                         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                            <div className="bg-white rounded-2xl p-6 max-w-sm w-full space-y-4 shadow-xl text-center">
-                                <img 
-                                    src={schoolLogo || FALLBACK_LOGO} 
-                                    alt="Logo Sekolah" 
-                                    onError={handleImgError} 
-                                    className="w-14 h-14 mx-auto rounded-full object-cover border-2 border-amber-400 shadow bg-slate-800 mb-1" 
-                                />
-                                <h3 className="font-bold text-lg text-slate-800">{schoolName}</h3>
-                                <p className="text-xs text-slate-500 font-medium -mt-2">Log Masuk Pentadbir / Guru</p>
-                                
-                                <button
-                                    onClick={handleGoogleLogin}
-                                    className="w-full py-2.5 bg-slate-900 text-white rounded-xl text-xs font-bold shadow flex items-center justify-center gap-2"
-                                >
-                                    <span>🌐</span> Log Masuk dengan Google
-                                </button>
-
-                                <div className="relative text-center text-xs text-slate-400 my-2">
-                                    <span className="bg-white px-2 z-10 relative">atau Kunci Laluan</span>
-                                    <hr className="absolute top-1/2 w-full border-slate-200" />
+                            <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl relative">
+                                <button onClick={() => setIsLoginModalOpen(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 font-bold text-lg">✕</button>
+                                <div className="text-center mb-6">
+                                    <img src={formattedLogo} onError={handleImgError} className="w-16 h-16 rounded-full mx-auto mb-3 object-cover border-2 border-amber-400" />
+                                    <h3 className="font-bold text-slate-800 text-lg">Log Masuk Urus Setia</h3>
+                                    <p className="text-xs text-slate-500">Masukkan kunci laluan akses guru/admin</p>
                                 </div>
-
-                                <form onSubmit={handlePasscodeLogin} className="space-y-3">
+                                <form onSubmit={handlePasscodeLogin} className="space-y-4">
                                     <input
                                         type="password"
-                                        placeholder="Masukkan Kunci Laluan..."
+                                        placeholder="Kunci Laluan Access"
                                         value={passcodeInput}
                                         onChange={(e) => setPasscodeInput(e.target.value)}
-                                        className="w-full px-3 py-2 border rounded-xl text-xs text-center font-bold tracking-widest"
+                                        className="w-full px-4 py-2.5 border rounded-xl text-xs focus:ring-2 focus:ring-amber-400 outline-none"
+                                        required
                                     />
-                                    <button type="submit" className="w-full py-2 bg-amber-500 text-slate-950 rounded-xl text-xs font-bold">
+                                    <button type="submit" className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-2.5 rounded-xl text-xs shadow transition">
                                         Log Masuk
                                     </button>
                                 </form>
-
-                                <button onClick={() => setIsLoginModalOpen(false)} className="w-full text-center text-xs text-slate-400 mt-2">
-                                    Batal
-                                </button>
                             </div>
                         </div>
                     )}
@@ -1775,46 +1044,201 @@
                     {/* School Setup Modal */}
                     {showSchoolSetupModal && (
                         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                            <div className="bg-white rounded-2xl p-6 max-w-lg w-full space-y-4 shadow-xl max-h-[90vh] overflow-y-auto text-xs">
-                                <h3 className="font-bold text-lg text-slate-800">Tetapan Sekolah & Sistem</h3>
-                                
-                                <form onSubmit={handleSaveSchoolSetup} className="space-y-3">
+                            <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
+                                <button onClick={() => setShowSchoolSetupModal(false)} className="absolute top-4 right-4 text-slate-400 font-bold text-lg">✕</button>
+                                <h3 className="font-bold text-slate-800 text-base mb-4">⚙️ Tetapan Sekolah & Logo</h3>
+                                <form onSubmit={handleSaveSchoolSetup} className="space-y-4 text-xs">
                                     <div>
-                                        <label className="font-bold text-slate-700 block mb-1">Nama Sekolah</label>
+                                        <label className="block font-semibold text-slate-600 mb-1">Nama Sekolah</label>
                                         <input
                                             type="text"
                                             value={setupSchoolName}
                                             onChange={(e) => setSetupSchoolName(e.target.value)}
-                                            className="w-full px-3 py-2 border rounded-xl"
+                                            className="w-full p-2 border rounded-lg"
+                                            required
                                         />
                                     </div>
                                     <div>
-                                        <label className="font-bold text-slate-700 block mb-1">Sub-Tajuk Kejohanan</label>
+                                        <label className="block font-semibold text-slate-600 mb-1">Sub-Tajuk / Kejohanan</label>
                                         <input
                                             type="text"
                                             value={setupSchoolSubtitle}
                                             onChange={(e) => setSetupSchoolSubtitle(e.target.value)}
-                                            className="w-full px-3 py-2 border rounded-xl"
+                                            className="w-full p-2 border rounded-lg"
+                                            required
                                         />
                                     </div>
                                     <div>
-                                        <label className="font-bold text-slate-700 block mb-1">URL Logo Sekolah</label>
+                                        <label className="block font-semibold text-slate-600 mb-1">URL Logo Sekolah</label>
                                         <input
-                                            type="text"
+                                            type="url"
                                             value={setupSchoolLogo}
                                             onChange={(e) => setSetupSchoolLogo(e.target.value)}
-                                            className="w-full px-3 py-2 border rounded-xl"
+                                            className="w-full p-2 border rounded-lg"
+                                            required
                                         />
                                     </div>
+                                    <button 
+                                        type="submit"
+                                        className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-2.5 rounded-xl shadow transition"
+                                    >
+                                        Simpan Tetapan Sekolah
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    )}
 
-                                    <div className="flex justify-end gap-2 pt-4">
-                                        <button type="button" onClick={() => setShowSchoolSetupModal(false)} className="px-4 py-2 text-slate-500">
-                                            Batal
-                                        </button>
-                                        <button type="submit" className="px-4 py-2 bg-slate-900 text-white font-bold rounded-xl">
-                                            Simpan Perubahan
-                                        </button>
+                    {/* Points Configuration Modal */}
+                    {showPointsModal && (
+                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                            <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
+                                <button onClick={() => setShowPointsModal(false)} className="absolute top-4 right-4 text-slate-400 font-bold text-lg">✕</button>
+                                <h3 className="font-bold text-slate-800 text-base mb-4">⚙️ Tetapan Mata Pingat</h3>
+                                <div className="space-y-4 text-xs">
+                                    <div>
+                                        <label className="block font-semibold text-slate-600 mb-1">Mata Pingat Emas <span className="text-xl align-middle">🥇</span></label>
+                                        <input
+                                            type="number"
+                                            value={pointsConfig.emas}
+                                            onChange={(e) => setPointsConfig({...pointsConfig, emas: parseInt(e.target.value) || 0})}
+                                            className="w-full p-2 border rounded-lg"
+                                        />
                                     </div>
+                                    <div>
+                                        <label className="block font-semibold text-slate-600 mb-1">Mata Pingat Perak <span className="text-xl align-middle">🥈</span></label>
+                                        <input
+                                            type="number"
+                                            value={pointsConfig.perak}
+                                            onChange={(e) => setPointsConfig({...pointsConfig, perak: parseInt(e.target.value) || 0})}
+                                            className="w-full p-2 border rounded-lg"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block font-semibold text-slate-600 mb-1">Mata Pingat Gangsa <span className="text-xl align-middle">🥉</span></label>
+                                        <input
+                                            type="number"
+                                            value={pointsConfig.gangsa}
+                                            onChange={(e) => setPointsConfig({...pointsConfig, gangsa: parseInt(e.target.value) || 0})}
+                                            className="w-full p-2 border rounded-lg"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block font-semibold text-slate-600 mb-1">Mata Tempat Ke-4 <span className="text-xl align-middle">🏅</span></label>
+                                        <input
+                                            type="number"
+                                            value={pointsConfig.keempat}
+                                            onChange={(e) => setPointsConfig({...pointsConfig, keempat: parseInt(e.target.value) || 0})}
+                                            className="w-full p-2 border rounded-lg"
+                                        />
+                                    </div>
+                                    <button 
+                                        onClick={() => {
+                                            setShowPointsModal(false);
+                                            showToastMessage("Konfigurasi mata pingat disimpan!");
+                                        }} 
+                                        className="w-full bg-indigo-600 text-white font-bold py-2.5 rounded-xl hover:bg-indigo-700 transition"
+                                    >
+                                        Simpan Tetapan Mata
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Athlete Sidebar */}
+                    {isAddAthleteSidebarOpen && (
+                        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex justify-end">
+                            <div className="bg-white w-full max-w-md h-full p-6 shadow-2xl overflow-y-auto">
+                                <div className="flex justify-between items-center mb-6">
+                                    <h3 className="font-bold text-slate-800 text-base">{isEditingAthlete ? "Sunting Atlet" : "Pendaftaran Atlet Baharu"}</h3>
+                                    <button onClick={() => setIsAddAthleteSidebarOpen(false)} className="text-slate-400 font-bold">✕</button>
+                                </div>
+                                <form onSubmit={handleSaveAthlete} className="space-y-4 text-xs">
+                                    <div>
+                                        <label className="block font-semibold text-slate-600 mb-1">Nama Penuh</label>
+                                        <input
+                                            type="text"
+                                            value={athleteForm.nama}
+                                            onChange={(e) => setAthleteForm({...athleteForm, nama: e.target.value})}
+                                            className="w-full p-2.5 border rounded-xl"
+                                            required
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block font-semibold text-slate-600 mb-1">Kelas</label>
+                                        <input
+                                            type="text"
+                                            value={athleteForm.kelas}
+                                            onChange={(e) => setAthleteForm({...athleteForm, kelas: e.target.value})}
+                                            className="w-full p-2.5 border rounded-xl"
+                                            required
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block font-semibold text-slate-600 mb-1">Rumah Sukan</label>
+                                        <select
+                                            value={athleteForm.rumah}
+                                            onChange={(e) => setAthleteForm({...athleteForm, rumah: e.target.value})}
+                                            className="w-full p-2.5 border rounded-xl"
+                                        >
+                                            {Object.keys(housesMetadata).map(h => <option key={h} value={h}>{h}</option>)}
+                                        </select>
+                                    </div>
+                                    <button type="submit" className="w-full bg-amber-500 text-slate-950 font-bold py-2.5 rounded-xl shadow">
+                                        Simpan Maklumat Atlet
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Event Sidebar */}
+                    {isEventSidebarOpen && (
+                        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex justify-end">
+                            <div className="bg-white w-full max-w-md h-full p-6 shadow-2xl overflow-y-auto">
+                                <div className="flex justify-between items-center mb-6">
+                                    <h3 className="font-bold text-slate-800 text-base">{isEditingEvent ? "Sunting Acara" : "Tambah Acara Baharu"}</h3>
+                                    <button onClick={() => setIsEventSidebarOpen(false)} className="text-slate-400 font-bold">✕</button>
+                                </div>
+                                <form onSubmit={handleSaveEvent} className="space-y-4 text-xs">
+                                    <div>
+                                        <label className="block font-semibold text-slate-600 mb-1">Nama Acara</label>
+                                        <input
+                                            type="text"
+                                            value={eventForm.nama}
+                                            onChange={(e) => setEventForm({...eventForm, nama: e.target.value})}
+                                            className="w-full p-2.5 border rounded-xl"
+                                            required
+                                        />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div>
+                                            <label className="block font-semibold text-slate-600 mb-1">Jenis</label>
+                                            <select
+                                                value={eventForm.jenis}
+                                                onChange={(e) => setEventForm({...eventForm, jenis: e.target.value})}
+                                                className="w-full p-2.5 border rounded-xl"
+                                            >
+                                                <option value="Balapan">Balapan</option>
+                                                <option value="Padang">Padang</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block font-semibold text-slate-600 mb-1">Format</label>
+                                            <select
+                                                value={eventForm.format}
+                                                onChange={(e) => setEventForm({...eventForm, format: e.target.value})}
+                                                className="w-full p-2.5 border rounded-xl"
+                                            >
+                                                <option value="Individu">Individu</option>
+                                                <option value="Kumpulan">Kumpulan</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <button type="submit" className="w-full bg-indigo-600 text-white font-bold py-2.5 rounded-xl shadow">
+                                        Simpan Acara
+                                    </button>
                                 </form>
                             </div>
                         </div>
@@ -1822,18 +1246,10 @@
 
                     {/* Toast Notification */}
                     {toast.show && (
-                        <div className={`fixed bottom-4 right-4 z-50 px-4 py-3 rounded-xl shadow-lg text-xs font-bold flex items-center gap-2 ${
-                            toast.type === "error" ? "bg-red-600 text-white" : "bg-slate-900 text-amber-400"
-                        }`}>
-                            <span>{toast.type === "error" ? "⚠️" : "✅"}</span>
-                            <span>{toast.message}</span>
+                        <div className={`fixed bottom-5 right-5 px-4 py-3 rounded-xl shadow-lg z-50 text-xs font-bold text-white transition ${toast.type === "error" ? "bg-red-600" : "bg-emerald-600"}`}>
+                            {toast.message}
                         </div>
                     )}
-
-                    {/* Footer */}
-                    <footer className="bg-slate-900 border-t border-slate-800 text-slate-400 py-6 text-center text-xs no-print mt-auto">
-                        <p>© 2026 {activeSchoolName}. Hak Cipta Terpelihara SPS-SK.</p>
-                    </footer>
                 </div>
             );
         };

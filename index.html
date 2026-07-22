@@ -320,23 +320,6 @@
                 return translations[lang] || translations.BM;
             }, [lang]);
 
-            useEffect(() => {
-                const handleClickOutside = (event) => {
-                    // Tutup menu panel pentadbir jika dikesan klik dilakukan di luar sempadan bekas adminMenuRef
-                    if (adminMenuRef.current && !adminMenuRef.current.contains(event.target)) {
-                        setIsAdminMenuOpen(false);
-                    }
-                };
-                
-                // Daftarkan event listener pada dokumen
-                document.addEventListener("mousedown", handleClickOutside);
-                
-                // Bersihkan event listener apabila komponen dinyah-tampal (cleanup)
-                return () => {
-                    document.removeEventListener("mousedown", handleClickOutside);
-                };
-            }, []);
-
             const sortedCategories = useMemo(() => {
                 return [...categories].sort((a, b) => 
                     a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })

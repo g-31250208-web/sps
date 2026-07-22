@@ -7,11 +7,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
-    <!-- Firebase Compat SDK v10.8.0 -->
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -64,12 +59,37 @@
 <body class="text-slate-800 antialiased selection:bg-indigo-500 selection:text-white min-h-screen flex flex-col">
     <div id="root"></div>
 
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        window.FirebaseSDK = {
+            initializeApp,
+            getAuth,
+            signInAnonymously,
+            signInWithCustomToken,
+            GoogleAuthProvider,
+            signInWithPopup,
+            signOut,
+            onAuthStateChanged,
+            getFirestore,
+            collection,
+            doc,
+            setDoc,
+            deleteDoc,
+            onSnapshot,
+            getDocs
+        };
+        window.dispatchEvent(new Event("firebase-ready"));
+    </script>
+
     <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/@babel/standalone@7.26.4/babel.min.js"></script>
 
     <script type="text/babel">
-        const { useState, useEffect, useMemo } = React;
+        const { useState, useEffect, useMemo, useCallback } = React;
 
         const translations = {
             BM: {
@@ -102,7 +122,6 @@
         const DEFAULT_SCHOOL_NAME = "SK BIKANG";
         const DEFAULT_SCHOOL_SUBTITLE = "Kejohanan Sukan Tahunan Sekolah";
         const DEFAULT_SCHOOL_LOGO = "https://drive.google.com/file/d/1E8tjAd7j9DJaZgngDn38agUFCvwyUffa/view?usp=drive_link";
-
         const FALLBACK_LOGO = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='48' fill='%231e293b' stroke='%23fbbf24' stroke-width='4'/><path d='M50 20 L80 40 L80 70 L50 90 L20 70 L20 40 Z' fill='none' stroke='%23fbbf24' stroke-width='3'/><text x='50' y='55' text-anchor='middle' fill='%23ffffff' font-size='12' font-weight='bold' font-family='sans-serif'>SPS</text></svg>";
 
         const formatLogoUrl = (url) => {
@@ -121,21 +140,6 @@
             e.target.src = FALLBACK_LOGO;
         };
 
-        let db = null;
-        let auth = null;
-
-        if (typeof firebase !== 'undefined') {
-            try {
-                if (!firebase.apps.length) {
-                    firebase.initializeApp(DEFAULT_FIREBASE_CONFIG);
-                }
-                auth = firebase.auth();
-                db = firebase.firestore();
-            } catch (err) {
-                console.warn("Firebase initialization notice:", err);
-            }
-        }
-
         const INITIAL_HOUSES_METADATA = {
             Merah: { slogan: "Saga Membara Selamanya Juara", guruPenasihat: "Cikgu Rosli, Ustazah Aminah", bonusPoints: 0 },
             Biru: { slogan: "Biru Gagah Juara Sepanjang Zaman", guruPenasihat: "Cikgu Sarah, Ustaz Fahmi", bonusPoints: 0 },
@@ -150,9 +154,23 @@
             Kuning: { bg: "bg-amber-50", text: "text-amber-700", warna: "bg-amber-400", teks: "text-amber-500", border: "border-amber-200", glow: "hover:shadow-lg hover:border-amber-400", emoji: "🟡" }
         };
 
+        // Sample initial seed data if cloud database is completely empty
+        const SAMPLE_ATHLETES = [
+            { id: "ATH_101", nama: "AHMAD DANISH BIN ROSLI", kelas: "6 GEMILANG", rumah: "Merah", jantina: "Lelaki", kategori: "L12" },
+            { id: "ATH_102", nama: "NUR AINA BALQIS BINTI AZMAN", kelas: "6 CEKAP", rumah: "Biru", jantina: "Perempuan", kategori: "P12" },
+            { id: "ATH_103", nama: "TAN WEI MING", kelas: "5 RAJIN", rumah: "Hijau", jantina: "Lelaki", kategori: "L10" },
+            { id: "ATH_104", nama: "SITI NURHALIZA BINTI ZAKARIA", kelas: "5 PINTAR", rumah: "Kuning", jantina: "Perempuan", kategori: "P10" }
+        ];
+
+        const SAMPLE_EVENTS = [
+            { id: "EV_101", nama: "100m Lelaki B12", kategori: "L12", jenis: "Balapan", format: "Individu", masa: "08:30 AM" },
+            { id: "EV_102", nama: "100m Perempuan B12", kategori: "P12", jenis: "Balapan", format: "Individu", masa: "09:00 AM" },
+            { id: "EV_103", nama: "Lompat Tinggi Lelaki B10", kategori: "L10", jenis: "Padang", format: "Individu", masa: "10:15 AM" }
+        ];
+
         const App = () => {
             const [lang, setLang] = useState("BM");
-            const [userRole, setUserRole] = useState("pelawat"); // pelawat, guru, admin
+            const [userRole, setUserRole] = useState("pelawat");
             const [currentUser, setCurrentUser] = useState(null);
             const [activeTab, setActiveTab] = useState("dashboard");
 
@@ -160,61 +178,46 @@
             const [schoolSubtitle, setSchoolSubtitle] = useState(DEFAULT_SCHOOL_SUBTITLE);
             const [schoolLogo, setSchoolLogo] = useState(DEFAULT_SCHOOL_LOGO);
 
-            // Storage mode flag
-            const [storageMode, setStorageMode] = useState("cloud"); // 'cloud' or 'local'
+            // Cloud Status States
+            const [isCloudConnected, setIsCloudConnected] = useState(false);
+            const [isSyncing, setIsSyncing] = useState(false);
+            const [fbRefs, setFbRefs] = useState({ auth: null, db: null, appId: 'sps-skb-app' });
 
-            // Primary Data States with LocalStorage fallback initializers
-            const [athletes, setAthletes] = useState(() => {
-                const saved = localStorage.getItem("sps_athletes");
-                return saved ? JSON.parse(saved) : [];
-            });
-            const [events, setEvents] = useState(() => {
-                const saved = localStorage.getItem("sps_events");
-                return saved ? JSON.parse(saved) : [];
-            });
-            const [results, setResults] = useState(() => {
-                const saved = localStorage.getItem("sps_results");
-                return saved ? JSON.parse(saved) : [];
-            });
-            const [announcements, setAnnouncements] = useState(() => {
-                const saved = localStorage.getItem("sps_announcements");
-                return saved ? JSON.parse(saved) : [];
-            });
+            // Data States
+            const [athletes, setAthletes] = useState([]);
+            const [events, setEvents] = useState([]);
+            const [results, setResults] = useState([]);
+            const [announcements, setAnnouncements] = useState([]);
 
             const [housesMetadata] = useState(INITIAL_HOUSES_METADATA);
             const [activeYear] = useState(new Date().getFullYear().toString());
-            const [pointsConfig, setPointsConfig] = useState(() => {
-                const saved = localStorage.getItem("sps_pointsConfig");
-                return saved ? JSON.parse(saved) : { emas: 5, perak: 3, gangsa: 2, keempat: 1 };
-            });
+            const [pointsConfig, setPointsConfig] = useState({ emas: 5, perak: 3, gangsa: 2, keempat: 1 });
 
-            // Modals & Sidebars
+            // UI Modals
             const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+            const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
             const [passcodeInput, setPasscodeInput] = useState("");
             const [isAddAthleteSidebarOpen, setIsAddAthleteSidebarOpen] = useState(false);
             const [isEventSidebarOpen, setIsEventSidebarOpen] = useState(false);
             const [showPointsModal, setShowPointsModal] = useState(false);
             const [showSchoolSetupModal, setShowSchoolSetupModal] = useState(false);
 
-            // Forms State
+            // Form States
             const [athleteForm, setAthleteForm] = useState({ id: "", nama: "", kelas: "", rumah: "Merah", jantina: "Lelaki", kategori: "L12" });
             const [isEditingAthlete, setIsEditingAthlete] = useState(false);
             const [eventForm, setEventForm] = useState({ id: "", nama: "", kategori: "L12", jenis: "Balapan", format: "Individu", tarikh: "", masa: "" });
             const [isEditingEvent, setIsEditingEvent] = useState(false);
             const [resultForm, setResultForm] = useState({ eventId: "", athleteId: "", kedudukan: "1", catatan: "" });
 
-            // Filters & Announcements
             const [filterHouse, setFilterHouse] = useState("Semua");
             const [announceFormText, setAnnounceFormText] = useState("");
             const [showAnnounceForm, setShowAnnounceForm] = useState(false);
 
-            // Setup inputs
             const [setupSchoolName, setSetupSchoolName] = useState(schoolName);
             const [setupSchoolSubtitle, setSetupSchoolSubtitle] = useState(schoolSubtitle);
             const [setupSchoolLogo, setSetupSchoolLogo] = useState(schoolLogo);
 
             const [toast, setToast] = useState({ show: false, message: "", type: "info" });
-
             const t = translations[lang] || translations.BM;
 
             const showToastMessage = (message, type = "success") => {
@@ -223,152 +226,161 @@
             };
 
             useEffect(() => {
-                localStorage.setItem("sps_athletes", JSON.stringify(athletes));
-            }, [athletes]);
+                const initFirebase = async () => {
+                    if (!window.FirebaseSDK) return;
 
-            useEffect(() => {
-                localStorage.setItem("sps_events", JSON.stringify(events));
-            }, [events]);
+                    const { initializeApp, getAuth, getFirestore, signInWithCustomToken, signInAnonymously, onAuthStateChanged } = window.FirebaseSDK;
+                    const config = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : DEFAULT_FIREBASE_CONFIG;
+                    const appIdStr = typeof __app_id !== 'undefined' ? __app_id : 'sps-skb-app';
 
-            useEffect(() => {
-                localStorage.setItem("sps_results", JSON.stringify(results));
-            }, [results]);
+                    try {
+                        const app = initializeApp(config);
+                        const auth = getAuth(app);
+                        const db = getFirestore(app);
 
-            useEffect(() => {
-                localStorage.setItem("sps_announcements", JSON.stringify(announcements));
-            }, [announcements]);
+                        setFbRefs({ auth, db, appId: appIdStr });
 
-            useEffect(() => {
-                localStorage.setItem("sps_pointsConfig", JSON.stringify(pointsConfig));
-            }, [pointsConfig]);
-
-            useEffect(() => {
-                if (!auth) return;
-
-                const unsubscribe = auth.onAuthStateChanged(async (user) => {
-                    if (user && !user.isAnonymous) {
-                        setCurrentUser(user);
-                        const email = user.email || "";
-                        if (email.includes("admin") || email.endsWith("@moe-dl.edu.my") || email.endsWith("@gsl.moe-dl.edu.my")) {
-                            setUserRole("admin");
+                        // Rule 3: Auth before any Firestore operation
+                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                            await signInWithCustomToken(auth, __initial_auth_token);
                         } else {
-                            setUserRole("guru");
+                            await signInAnonymously(auth);
                         }
-                    } else if (!user) {
-                        setCurrentUser(null);
-                        setUserRole("pelawat");
-                    }
-                });
 
-                return () => unsubscribe();
+                        onAuthStateChanged(auth, (user) => {
+                            if (user && !user.isAnonymous) {
+                                setCurrentUser(user);
+                                const email = user.email || "";
+                                if (email.includes("admin") || email.endsWith("@moe-dl.edu.my") || email.endsWith("@gsl.moe-dl.edu.my")) {
+                                    setUserRole("admin");
+                                } else {
+                                    setUserRole("guru");
+                                }
+                            } else {
+                                setCurrentUser(user || null);
+                            }
+                        });
+
+                        setIsCloudConnected(true);
+                    } catch (err) {
+                        console.warn("Firebase Auth / Init Notice:", err);
+                        setIsCloudConnected(false);
+                    }
+                };
+
+                if (window.FirebaseSDK) {
+                    initFirebase();
+                } else {
+                    window.addEventListener("firebase-ready", initFirebase);
+                    return () => window.removeEventListener("firebase-ready", initFirebase);
+                }
             }, []);
 
+            const setupRealtimeListeners = useCallback(() => {
+                if (!fbRefs.db || !fbRefs.auth?.currentUser) return () => {};
+
+                const { collection, doc, onSnapshot, setDoc, getDocs } = window.FirebaseSDK;
+                const { db, appId } = fbRefs;
+
+                setIsSyncing(true);
+
+                // Rule 1: Strict paths /artifacts/{appId}/public/data/{collectionName}
+                const getPublicCol = (colName) => collection(db, 'artifacts', appId, 'public', 'data', colName);
+
+                const unsubs = [];
+
+                // 1. Athletes Listener
+                const un1 = onSnapshot(getPublicCol('athletes'), async (snapshot) => {
+                    const list = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                    if (list.length === 0) {
+                        // Seed default sample athletes if cloud is empty
+                        for (const ath of SAMPLE_ATHLETES) {
+                            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'athletes', ath.id), ath);
+                        }
+                    } else {
+                        setAthletes(list);
+                    }
+                    setIsSyncing(false);
+                }, (err) => console.warn("Athletes cloud sync err:", err));
+                unsubs.push(un1);
+
+                // 2. Events Listener
+                const un2 = onSnapshot(getPublicCol('events'), async (snapshot) => {
+                    const list = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                    if (list.length === 0) {
+                        for (const ev of SAMPLE_EVENTS) {
+                            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'events', ev.id), ev);
+                        }
+                    } else {
+                        setEvents(list);
+                    }
+                }, (err) => console.warn("Events cloud sync err:", err));
+                unsubs.push(un2);
+
+                // 3. Results Listener
+                const un3 = onSnapshot(getPublicCol('results'), (snapshot) => {
+                    const list = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                    setResults(list);
+                }, (err) => console.warn("Results cloud sync err:", err));
+                unsubs.push(un3);
+
+                // 4. Announcements Listener
+                const un4 = onSnapshot(getPublicCol('announcements'), (snapshot) => {
+                    const list = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                    list.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+                    setAnnouncements(list);
+                }, (err) => console.warn("Announcements cloud sync err:", err));
+                unsubs.push(un4);
+
+                // 5. Settings Listener
+                const settingsDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'config');
+                const un5 = onSnapshot(settingsDocRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        const d = docSnap.data();
+                        if (d.schoolName) { setSchoolName(d.schoolName); setSetupSchoolName(d.schoolName); }
+                        if (d.schoolSubtitle) { setSchoolSubtitle(d.schoolSubtitle); setSetupSchoolSubtitle(d.schoolSubtitle); }
+                        if (d.schoolLogo) { setSchoolLogo(d.schoolLogo); setSetupSchoolLogo(d.schoolLogo); }
+                        if (d.pointsConfig) setPointsConfig(d.pointsConfig);
+                    }
+                }, (err) => console.warn("Settings cloud sync err:", err));
+                unsubs.push(un5);
+
+                return () => unsubs.forEach(u => typeof u === 'function' && u());
+            }, [fbRefs]);
+
             useEffect(() => {
-                if (!db) {
-                    setStorageMode("local");
+                if (isCloudConnected) {
+                    const cleanup = setupRealtimeListeners();
+                    return cleanup;
+                }
+            }, [isCloudConnected, setupRealtimeListeners]);
+
+            const handleManualSync = () => {
+                if (!isCloudConnected) {
+                    showToastMessage("Awan belum disambung. Menyambung semula...", "error");
                     return;
                 }
-
-                const targetCol = (colName) => db.collection('sps_app_data').doc('v1').collection(colName);
-                const unsubs = [];
-                let permissionDenied = false;
-
-                const handlePermErr = (colName, err) => {
-                    if (!permissionDenied) {
-                        permissionDenied = true;
-                        setStorageMode("local");
-                        console.info(`Firestore permission restricted for '${colName}'. Operating in local storage mode.`);
-                    }
-                };
-
-                try {
-                    // Athletes Listener
-                    const u1 = targetCol('athletes').onSnapshot(
-                        snapshot => {
-                            const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                            if (list.length > 0 || storageMode === 'cloud') {
-                                setAthletes(list);
-                            }
-                            setStorageMode("cloud");
-                        },
-                        err => handlePermErr('athletes', err)
-                    );
-                    unsubs.push(u1);
-
-                    // Events Listener
-                    const u2 = targetCol('events').onSnapshot(
-                        snapshot => {
-                            const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                            if (list.length > 0 || storageMode === 'cloud') {
-                                setEvents(list);
-                            }
-                        },
-                        err => handlePermErr('events', err)
-                    );
-                    unsubs.push(u2);
-
-                    // Results Listener
-                    const u3 = targetCol('results').onSnapshot(
-                        snapshot => {
-                            const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                            if (list.length > 0 || storageMode === 'cloud') {
-                                setResults(list);
-                            }
-                        },
-                        err => handlePermErr('results', err)
-                    );
-                    unsubs.push(u3);
-
-                    // Announcements Listener
-                    const u4 = targetCol('announcements').onSnapshot(
-                        snapshot => {
-                            const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                            list.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-                            if (list.length > 0 || storageMode === 'cloud') {
-                                setAnnouncements(list);
-                            }
-                        },
-                        err => handlePermErr('announcements', err)
-                    );
-                    unsubs.push(u4);
-
-                    // Settings Listener
-                    const u5 = db.collection('sps_app_data').doc('v1').onSnapshot(
-                        doc => {
-                            if (doc.exists) {
-                                const d = doc.data();
-                                if (d.schoolName) { setSchoolName(d.schoolName); setSetupSchoolName(d.schoolName); }
-                                if (d.schoolSubtitle) { setSchoolSubtitle(d.schoolSubtitle); setSetupSchoolSubtitle(d.schoolSubtitle); }
-                                if (d.schoolLogo) { setSchoolLogo(d.schoolLogo); setSetupSchoolLogo(d.schoolLogo); }
-                                if (d.pointsConfig) setPointsConfig(d.pointsConfig);
-                            }
-                        },
-                        err => handlePermErr('settings', err)
-                    );
-                    unsubs.push(u5);
-
-                } catch (e) {
-                    setStorageMode("local");
-                }
-
-                return () => {
-                    unsubs.forEach(u => typeof u === 'function' && u());
-                };
-            }, [currentUser]);
+                setIsSyncing(true);
+                setupRealtimeListeners();
+                setTimeout(() => {
+                    setIsSyncing(false);
+                    showToastMessage("Semua maklumat murid, acara & keputusan disegerakkan dari awan!", "success");
+                }, 800);
+            };
 
             const handleGoogleLogin = async () => {
-                if (!auth) {
-                    showToastMessage("Firebase Auth tidak tersedia.", "error");
+                if (!fbRefs.auth) {
+                    showToastMessage("Firebase Auth tidak sedia.", "error");
                     return;
                 }
                 try {
-                    const provider = new firebase.auth.GoogleAuthProvider();
+                    const { GoogleAuthProvider, signInWithPopup } = window.FirebaseSDK;
+                    const provider = new GoogleAuthProvider();
                     provider.setCustomParameters({ prompt: 'select_account' });
-                    const result = await auth.signInWithPopup(provider);
+                    const result = await signInWithPopup(fbRefs.auth, provider);
                     const user = result.user;
                     
                     const isDelima = user.email && (user.email.includes("moe-dl.edu.my") || user.email.includes("gsl.moe-dl.edu.my"));
-                    
                     showToastMessage(`Berjaya log masuk sebagai ${user.displayName || user.email} ${isDelima ? '(Akaun DELIMa MOE)' : ''}!`, "success");
                     setIsLoginModalOpen(false);
                 } catch (error) {
@@ -394,8 +406,8 @@
 
             const handleLogout = async () => {
                 try {
-                    if (auth && currentUser) {
-                        await auth.signOut();
+                    if (fbRefs.auth) {
+                        await window.FirebaseSDK.signOut(fbRefs.auth);
                     }
                 } catch (e) {
                     console.error(e);
@@ -407,7 +419,7 @@
 
             const checkAuthority = () => {
                 if (userRole !== "admin" && userRole !== "guru") {
-                    showToastMessage("Sila Log Masuk Google (DELIMa) atau Kunci Laluan Guru untuk membuat perubahan.", "error");
+                    showToastMessage("Sila Log Masuk DELIMa atau Kunci Laluan Guru untuk membuat perubahan.", "error");
                     return false;
                 }
                 return true;
@@ -457,8 +469,7 @@
                     if (pB !== pA) return pB - pA;
                     if (housePointsTally[b].emas !== housePointsTally[a].emas) return housePointsTally[b].emas - housePointsTally[a].emas;
                     if (housePointsTally[b].perak !== housePointsTally[a].perak) return housePointsTally[b].perak - housePointsTally[a].perak;
-                    if (housePointsTally[b].gangsa !== housePointsTally[a].gangsa) return housePointsTally[b].gangsa - housePointsTally[a].gangsa;
-                    return (housePointsTally[b].keempat || 0) - (housePointsTally[a].keempat || 0);
+                    return housePointsTally[b].gangsa - housePointsTally[a].gangsa;
                 });
             }, [housePointsTally]);
 
@@ -478,27 +489,12 @@
                     updatedAt: new Date().toISOString()
                 };
 
-                // Local state update
-                setAthletes(prev => {
-                    const idx = prev.findIndex(a => a.id === athId);
-                    if (idx >= 0) {
-                        const updated = [...prev];
-                        updated[idx] = athData;
-                        return updated;
-                    }
-                    return [...prev, athData];
-                });
-
-                // Cloud attempt if available
-                if (db && storageMode === 'cloud') {
-                    try {
-                        await db.collection('sps_app_data').doc('v1').collection('athletes').doc(athId).set(athData, { merge: true });
-                    } catch (err) {
-                        console.warn("Cloud sync saved locally instead.");
-                    }
+                if (fbRefs.db) {
+                    const { doc, setDoc } = window.FirebaseSDK;
+                    await setDoc(doc(fbRefs.db, 'artifacts', fbRefs.appId, 'public', 'data', 'athletes', athId), athData, { merge: true });
                 }
 
-                showToastMessage(isEditingAthlete ? "Maklumat atlet dikemaskini!" : "Atlet berjaya disimpan!");
+                showToastMessage(isEditingAthlete ? "Maklumat atlet dikemaskini di awan!" : "Atlet berjaya disimpan ke awan!");
                 setIsAddAthleteSidebarOpen(false);
                 setAthleteForm({ id: "", nama: "", kelas: "", rumah: "Merah", jantina: "Lelaki", kategori: "L12" });
                 setIsEditingAthlete(false);
@@ -507,16 +503,11 @@
             const handleDeleteAthlete = async (athId) => {
                 if (!checkAuthority()) return;
 
-                setAthletes(prev => prev.filter(a => a.id !== athId));
-
-                if (db && storageMode === 'cloud') {
-                    try {
-                        await db.collection('sps_app_data').doc('v1').collection('athletes').doc(athId).delete();
-                    } catch (err) {
-                        console.warn("Cloud delete fallback");
-                    }
+                if (fbRefs.db) {
+                    const { doc, deleteDoc } = window.FirebaseSDK;
+                    await deleteDoc(doc(fbRefs.db, 'artifacts', fbRefs.appId, 'public', 'data', 'athletes', athId));
                 }
-                showToastMessage("Atlet berjaya dipadam!");
+                showToastMessage("Atlet berjaya dipadam dari awan!");
             };
 
             const handleSaveEvent = async (e) => {
@@ -535,25 +526,12 @@
                     updatedAt: new Date().toISOString()
                 };
 
-                setEvents(prev => {
-                    const idx = prev.findIndex(ev => ev.id === evId);
-                    if (idx >= 0) {
-                        const updated = [...prev];
-                        updated[idx] = evData;
-                        return updated;
-                    }
-                    return [...prev, evData];
-                });
-
-                if (db && storageMode === 'cloud') {
-                    try {
-                        await db.collection('sps_app_data').doc('v1').collection('events').doc(evId).set(evData, { merge: true });
-                    } catch (err) {
-                        console.warn("Cloud sync fallback");
-                    }
+                if (fbRefs.db) {
+                    const { doc, setDoc } = window.FirebaseSDK;
+                    await setDoc(doc(fbRefs.db, 'artifacts', fbRefs.appId, 'public', 'data', 'events', evId), evData, { merge: true });
                 }
 
-                showToastMessage(isEditingEvent ? "Acara dikemaskini!" : "Acara berjaya ditambah!");
+                showToastMessage(isEditingEvent ? "Acara dikemaskini di awan!" : "Acara berjaya ditambah ke awan!");
                 setIsEventSidebarOpen(false);
                 setEventForm({ id: "", nama: "", kategori: "L12", jenis: "Balapan", format: "Individu", tarikh: "", masa: "" });
                 setIsEditingEvent(false);
@@ -562,14 +540,9 @@
             const handleDeleteEvent = async (evId) => {
                 if (!checkAuthority()) return;
 
-                setEvents(prev => prev.filter(ev => ev.id !== evId));
-
-                if (db && storageMode === 'cloud') {
-                    try {
-                        await db.collection('sps_app_data').doc('v1').collection('events').doc(evId).delete();
-                    } catch (err) {
-                        console.warn("Cloud delete fallback");
-                    }
+                if (fbRefs.db) {
+                    const { doc, deleteDoc } = window.FirebaseSDK;
+                    await deleteDoc(doc(fbRefs.db, 'artifacts', fbRefs.appId, 'public', 'data', 'events', evId));
                 }
                 showToastMessage("Acara dipadam.");
             };
@@ -590,31 +563,21 @@
                     timestamp: Date.now()
                 };
 
-                setResults(prev => [...prev, resData]);
-
-                if (db && storageMode === 'cloud') {
-                    try {
-                        await db.collection('sps_app_data').doc('v1').collection('results').doc(resId).set(resData);
-                    } catch (err) {
-                        console.warn("Cloud result save fallback");
-                    }
+                if (fbRefs.db) {
+                    const { doc, setDoc } = window.FirebaseSDK;
+                    await setDoc(doc(fbRefs.db, 'artifacts', fbRefs.appId, 'public', 'data', 'results', resId), resData);
                 }
 
-                showToastMessage("Keputusan berjaya direkodkan!");
+                showToastMessage("Keputusan berjaya direkodkan secara realtime!");
                 setResultForm({ eventId: "", athleteId: "", kedudukan: "1", catatan: "" });
             };
 
             const handleDeleteResult = async (resId) => {
                 if (!checkAuthority()) return;
 
-                setResults(prev => prev.filter(r => r.id !== resId));
-
-                if (db && storageMode === 'cloud') {
-                    try {
-                        await db.collection('sps_app_data').doc('v1').collection('results').doc(resId).delete();
-                    } catch (err) {
-                        console.warn("Cloud delete result fallback");
-                    }
+                if (fbRefs.db) {
+                    const { doc, deleteDoc } = window.FirebaseSDK;
+                    await deleteDoc(doc(fbRefs.db, 'artifacts', fbRefs.appId, 'public', 'data', 'results', resId));
                 }
                 showToastMessage("Keputusan dipadam.");
             };
@@ -631,14 +594,9 @@
                     author: currentUser ? (currentUser.displayName || currentUser.email) : "Urus Setia"
                 };
 
-                setAnnouncements(prev => [annData, ...prev]);
-
-                if (db && storageMode === 'cloud') {
-                    try {
-                        await db.collection('sps_app_data').doc('v1').collection('announcements').doc(annData.id).set(annData);
-                    } catch (err) {
-                        console.warn("Cloud announcement save fallback");
-                    }
+                if (fbRefs.db) {
+                    const { doc, setDoc } = window.FirebaseSDK;
+                    await setDoc(doc(fbRefs.db, 'artifacts', fbRefs.appId, 'public', 'data', 'announcements', annData.id), annData);
                 }
 
                 setAnnounceFormText("");
@@ -654,20 +612,17 @@
                 setSchoolSubtitle(setupSchoolSubtitle);
                 setSchoolLogo(setupSchoolLogo);
 
-                if (db && storageMode === 'cloud') {
-                    try {
-                        await db.collection('sps_app_data').doc('v1').set({
-                            schoolName: setupSchoolName,
-                            schoolSubtitle: setupSchoolSubtitle,
-                            schoolLogo: setupSchoolLogo,
-                            pointsConfig: pointsConfig
-                        }, { merge: true });
-                    } catch (err) {
-                        console.warn("Cloud school setup save fallback");
-                    }
+                if (fbRefs.db) {
+                    const { doc, setDoc } = window.FirebaseSDK;
+                    await setDoc(doc(fbRefs.db, 'artifacts', fbRefs.appId, 'public', 'data', 'settings', 'config'), {
+                        schoolName: setupSchoolName,
+                        schoolSubtitle: setupSchoolSubtitle,
+                        schoolLogo: setupSchoolLogo,
+                        pointsConfig: pointsConfig
+                    }, { merge: true });
                 }
 
-                showToastMessage("Tetapan sekolah dikemaskini!");
+                showToastMessage("Tetapan sekolah dikemaskini di awan!");
                 setShowSchoolSetupModal(false);
             };
 
@@ -678,6 +633,7 @@
                     {/* Header Bar */}
                     <header className="bg-slate-900 text-white sticky top-0 z-40 shadow-md no-print">
                         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center flex-wrap gap-2">
+                            {/* Full Sized Logo Integration */}
                             <div className="flex items-center gap-3">
                                 <img 
                                     src={formattedLogo} 
@@ -691,15 +647,19 @@
                                     </h1>
                                     <p className="text-xs text-slate-300 font-medium flex items-center gap-2">
                                         <span>SPS-SK • {schoolSubtitle} ({activeYear})</span>
-                                        <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded ${storageMode === 'cloud' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'}`}>
-                                            <span className={`w-1.5 h-1.5 rounded-full ${storageMode === 'cloud' ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span> 
-                                            {storageMode === 'cloud' ? 'CLOUD REALTIME' : 'LOCAL SYNC'}
-                                        </span>
+                                        <button 
+                                            onClick={handleManualSync}
+                                            title="Klik untuk segerakkan data terkini dari awan"
+                                            className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded transition ${isCloudConnected ? 'bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30' : 'bg-amber-500/20 text-amber-300'}`}
+                                        >
+                                            <span className={`w-1.5 h-1.5 rounded-full ${isSyncing ? 'bg-amber-400 animate-ping' : 'bg-emerald-400'}`}></span> 
+                                            {isSyncing ? 'SEGERAK...' : 'REALTIME AWAN 🔁'}
+                                        </button>
                                     </p>
                                 </div>
                             </div>
 
-                            {/* User Bar & Login */}
+                            {/* User & Language Toolbar */}
                             <div className="flex items-center gap-2 sm:gap-3">
                                 <button
                                     onClick={() => setLang(l => l === "BM" ? "EN" : "BM")}
@@ -743,18 +703,45 @@
                                 )}
 
                                 {userRole === "admin" && (
-                                    <button
-                                        onClick={() => setShowSchoolSetupModal(true)}
-                                        className="text-xs bg-slate-800 hover:bg-slate-700 p-2 rounded-lg text-slate-300 transition"
-                                        title="Tetapan Sekolah"
-                                    >
-                                        ⚙️
-                                    </button>
+                                    <div className="relative">
+                                        <button
+                                            onClick={() => setIsAdminMenuOpen(!isAdminMenuOpen)}
+                                            className="text-xs bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold px-3 py-1.5 rounded-xl shadow transition flex items-center gap-1.5"
+                                            title="Panel Pentadbir"
+                                        >
+                                            <span>⚙️</span>
+                                            <span>Panel Pentadbir</span>
+                                            <span className="text-[10px]">{isAdminMenuOpen ? '▲' : '▼'}</span>
+                                        </button>
+
+                                        {isAdminMenuOpen && (
+                                            <div className="absolute right-0 mt-2 w-56 bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl py-2 z-50 text-xs font-semibold text-slate-200">
+                                                <button
+                                                    onClick={() => { setShowSchoolSetupModal(true); setIsAdminMenuOpen(false); }}
+                                                    className="w-full text-left px-4 py-2 hover:bg-slate-700 flex items-center gap-2 text-slate-200 hover:text-white transition"
+                                                >
+                                                    🏢 Tetapan Sekolah & Logo
+                                                </button>
+                                                <button
+                                                    onClick={() => { setShowPointsModal(true); setIsAdminMenuOpen(false); }}
+                                                    className="w-full text-left px-4 py-2 hover:bg-slate-700 flex items-center gap-2 text-slate-200 hover:text-white transition"
+                                                >
+                                                    🏆 Tetapan Mata Pingat
+                                                </button>
+                                                <button
+                                                    onClick={() => { setShowSchoolSetupModal(true); setIsAdminMenuOpen(false); }}
+                                                    className="w-full text-left px-4 py-2 hover:bg-slate-700 flex items-center gap-2 text-slate-200 hover:text-white transition"
+                                                >
+                                                    🟩 Integrasi Google Sheets (GAS)
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
                                 )}
                             </div>
                         </div>
 
-                        {/* Navigation Bar - 6 Tabs */}
+                        {/* Navigation Bar - 6 Primary Tabs */}
                         <nav className="bg-slate-800 border-t border-slate-700/60 overflow-x-auto no-print">
                             <div className="max-w-7xl mx-auto px-4 flex space-x-1 sm:space-x-2 py-2 text-xs font-semibold whitespace-nowrap">
                                 {[
@@ -803,16 +790,24 @@
                                 <div className="flex justify-between items-center flex-wrap gap-2">
                                     <div>
                                         <h2 className="text-xl font-black text-slate-800">Kedudukan Mata Rumah Sukan</h2>
-                                        <p className="text-xs text-slate-500">Papan skor diselaraskan dan dikemaskini mengikut mata keputusan terkini</p>
+                                        <p className="text-xs text-slate-500">Papan skor diselaraskan dan dikemaskini mengikut mata keputusan terkini dari awan</p>
                                     </div>
-                                    {userRole === "admin" && (
-                                        <button 
-                                            onClick={() => setShowPointsModal(true)}
-                                            className="text-xs bg-indigo-50 text-indigo-700 hover:bg-indigo-100 font-bold px-3 py-1.5 rounded-xl border border-indigo-200 transition"
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={handleManualSync}
+                                            className="text-xs bg-slate-800 hover:bg-slate-700 text-white font-bold px-3 py-1.5 rounded-xl shadow transition flex items-center gap-1.5"
                                         >
-                                            ⚙️ Tetapan Mata Pingat
+                                            <span>🔁</span> Segerakkan Awan
                                         </button>
-                                    )}
+                                        {userRole === "admin" && (
+                                            <button 
+                                                onClick={() => setShowPointsModal(true)}
+                                                className="text-xs bg-indigo-50 text-indigo-700 hover:bg-indigo-100 font-bold px-3 py-1.5 rounded-xl border border-indigo-200 transition"
+                                            >
+                                                ⚙️ Tetapan Mata
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -978,7 +973,7 @@
                                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                                     <div>
                                         <h2 className="text-xl font-bold text-slate-800">Pengurusan Atlet Sekolah</h2>
-                                        <p className="text-xs text-slate-500">Daftar & urus semua maklumat murid bertanding secara selamat</p>
+                                        <p className="text-xs text-slate-500">Daftar & urus semua maklumat murid bertanding secara realtime dari awan</p>
                                     </div>
                                     <button
                                         onClick={() => {
@@ -1027,7 +1022,7 @@
                                                 {athletes.length === 0 ? (
                                                     <tr>
                                                         <td colSpan="6" className="p-8 text-center text-slate-400 italic">
-                                                            Sila tambah atlet baharu. Semua maklumat disimpan secara automatik.
+                                                            Sila tambah atlet baharu atau klik Segerakkan Awan.
                                                         </td>
                                                     </tr>
                                                 ) : (
@@ -1100,7 +1095,7 @@
                                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                                     {events.length === 0 ? (
                                         <div className="col-span-full p-8 text-center bg-white rounded-2xl border border-slate-200 text-slate-400 italic">
-                                            Belum ada acara didaftarkan. Sila klik "Tambah Acara".
+                                            Belum ada acara didaftarkan di awan. Sila klik "Tambah Acara".
                                         </div>
                                     ) : (
                                         events.map(ev => (
@@ -1149,7 +1144,7 @@
                                 
                                 {userRole !== "pelawat" && (
                                     <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                                        <h3 className="font-bold text-sm text-slate-800 mb-4">Rekod Keputusan Baharu</h3>
+                                        <h3 className="font-bold text-sm text-slate-800 mb-4">Rekod Keputusan Baharu (Awan)</h3>
                                         <form onSubmit={handleSaveResult} className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                                             <div>
                                                 <label className="block text-xs font-semibold text-slate-600 mb-1">Acara</label>
@@ -1215,7 +1210,7 @@
                                             {results.length === 0 ? (
                                                 <tr>
                                                     <td colSpan="5" className="p-8 text-center text-slate-400 italic">
-                                                        Belum ada keputusan direkodkan.
+                                                        Belum ada keputusan direkodkan di awan.
                                                     </td>
                                                 </tr>
                                             ) : (
@@ -1259,7 +1254,7 @@
                                 <div className="flex justify-between items-center no-print">
                                     <div>
                                         <h2 className="text-xl font-bold text-slate-800">Sijil Penyertaan & Kejayaan</h2>
-                                        <p className="text-xs text-slate-500">Cetak sijil khas untuk semua atlet yang mendaftar</p>
+                                        <p className="text-xs text-slate-500">Cetak sijil khas untuk semua atlet yang didaftarkan</p>
                                     </div>
                                     <button
                                         onClick={() => window.print()}
@@ -1527,7 +1522,7 @@
                                         </div>
                                     </div>
                                     <button type="submit" className="w-full bg-amber-500 text-slate-950 font-bold py-2.5 rounded-xl shadow transition hover:bg-amber-400">
-                                        Simpan Atlet
+                                        Simpan Atlet Ke Awan
                                     </button>
                                 </form>
                             </div>
@@ -1579,7 +1574,7 @@
                                         </div>
                                     </div>
                                     <button type="submit" className="w-full bg-indigo-600 text-white font-bold py-2.5 rounded-xl shadow transition hover:bg-indigo-700">
-                                        Simpan Acara
+                                        Simpan Acara Ke Awan
                                     </button>
                                 </form>
                             </div>

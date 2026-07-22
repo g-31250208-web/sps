@@ -159,7 +159,11 @@
             { id: "ATH_101", nama: "AHMAD DANISH BIN ROSLI", kelas: "6 GEMILANG", rumah: "Merah", jantina: "Lelaki", kategori: "L12" },
             { id: "ATH_102", nama: "NUR AINA BALQIS BINTI AZMAN", kelas: "6 CEKAP", rumah: "Biru", jantina: "Perempuan", kategori: "P12" },
             { id: "ATH_103", nama: "TAN WEI MING", kelas: "5 RAJIN", rumah: "Hijau", jantina: "Lelaki", kategori: "L10" },
-            { id: "ATH_104", nama: "SITI NURHALIZA BINTI ZAKARIA", kelas: "5 PINTAR", rumah: "Kuning", jantina: "Perempuan", kategori: "P10" }
+            { id: "ATH_104", nama: "SITI NURHALIZA BINTI ZAKARIA", kelas: "5 PINTAR", rumah: "Kuning", jantina: "Perempuan", kategori: "P10" },
+            { id: "ATH_105", nama: "MUHAMMAD HARITH BIN ISMADI", kelas: "6 GEMILANG", rumah: "Merah", jantina: "Lelaki", kategori: "L12" },
+            { id: "ATH_106", nama: "SARAH NABIHAH BINTI ZULKIFLI", kelas: "5 RAJIN", rumah: "Biru", jantina: "Perempuan", kategori: "P10" },
+            { id: "ATH_107", nama: "LEE JIA WEI", kelas: "6 CEKAP", rumah: "Hijau", jantina: "Lelaki", kategori: "L12" },
+            { id: "ATH_108", nama: "NURUL IZZAH BINTI HASNAN", kelas: "4 TEKUN", rumah: "Kuning", jantina: "Perempuan", kategori: "P10" }
         ];
 
         const SAMPLE_EVENTS = [
@@ -184,8 +188,8 @@
             const [fbRefs, setFbRefs] = useState({ auth: null, db: null, appId: 'sps-skb-app' });
 
             // Data States
-            const [athletes, setAthletes] = useState([]);
-            const [events, setEvents] = useState([]);
+            const [athletes, setAthletes] = useState(SAMPLE_ATHLETES);
+            const [events, setEvents] = useState(SAMPLE_EVENTS);
             const [results, setResults] = useState([]);
             const [announcements, setAnnouncements] = useState([]);
 
@@ -279,7 +283,7 @@
             const setupRealtimeListeners = useCallback(() => {
                 if (!fbRefs.db || !fbRefs.auth?.currentUser) return () => {};
 
-                const { collection, doc, onSnapshot, setDoc, getDocs } = window.FirebaseSDK;
+                const { collection, doc, onSnapshot, setDoc } = window.FirebaseSDK;
                 const { db, appId } = fbRefs;
 
                 setIsSyncing(true);
@@ -293,23 +297,35 @@
                 const un1 = onSnapshot(getPublicCol('athletes'), async (snapshot) => {
                     const list = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
                     if (list.length === 0) {
-                        // Seed default sample athletes if cloud is empty
+                        setAthletes(SAMPLE_ATHLETES);
                         for (const ath of SAMPLE_ATHLETES) {
-                            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'athletes', ath.id), ath);
+                            try {
+                                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'athletes', ath.id), ath);
+                            } catch (err) {
+                                console.warn("Gagal simpan sampel atlet:", err);
+                            }
                         }
                     } else {
                         setAthletes(list);
                     }
                     setIsSyncing(false);
-                }, (err) => console.warn("Athletes cloud sync err:", err));
+                }, (err) => {
+                    console.warn("Athletes cloud sync err:", err);
+                    setIsSyncing(false);
+                });
                 unsubs.push(un1);
 
                 // 2. Events Listener
                 const un2 = onSnapshot(getPublicCol('events'), async (snapshot) => {
                     const list = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
                     if (list.length === 0) {
+                        setEvents(SAMPLE_EVENTS);
                         for (const ev of SAMPLE_EVENTS) {
-                            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'events', ev.id), ev);
+                            try {
+                                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'events', ev.id), ev);
+                            } catch (err) {
+                                console.warn("Gagal simpan sampel acara:", err);
+                            }
                         }
                     } else {
                         setEvents(list);
@@ -366,6 +382,21 @@
                     setIsSyncing(false);
                     showToastMessage("Semua maklumat murid, acara & keputusan disegerakkan dari awan!", "success");
                 }, 800);
+            };
+
+            const handleResetSampleAthletes = async () => {
+                setAthletes(SAMPLE_ATHLETES);
+                showToastMessage("Data sampel murid berjaya dimuatkan semula!", "success");
+                if (fbRefs.db) {
+                    const { doc, setDoc } = window.FirebaseSDK;
+                    for (const ath of SAMPLE_ATHLETES) {
+                        try {
+                            await setDoc(doc(fbRefs.db, 'artifacts', fbRefs.appId, 'public', 'data', 'athletes', ath.id), ath);
+                        } catch (e) {
+                            console.warn("Error seeding athlete:", e);
+                        }
+                    }
+                }
             };
 
             const handleGoogleLogin = async () => {
@@ -975,17 +1006,26 @@
                                         <h2 className="text-xl font-bold text-slate-800">Pengurusan Atlet Sekolah</h2>
                                         <p className="text-xs text-slate-500">Daftar & urus semua maklumat murid bertanding secara realtime dari awan</p>
                                     </div>
-                                    <button
-                                        onClick={() => {
-                                            if (!checkAuthority()) return;
-                                            setIsEditingAthlete(false);
-                                            setAthleteForm({ id: "", nama: "", kelas: "", rumah: "Merah", jantina: "Lelaki", kategori: "L12" });
-                                            setIsAddAthleteSidebarOpen(true);
-                                        }}
-                                        className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs shadow transition flex items-center gap-2"
-                                    >
-                                        ➕ Tambah Atlet Baharu
-                                    </button>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={handleResetSampleAthletes}
+                                            className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-3 py-2 rounded-xl text-xs transition border border-slate-300 flex items-center gap-1.5"
+                                            title="Muat semula senarai contoh data murid"
+                                        >
+                                            📥 Muat Sampel Murid
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                if (!checkAuthority()) return;
+                                                setIsEditingAthlete(false);
+                                                setAthleteForm({ id: "", nama: "", kelas: "", rumah: "Merah", jantina: "Lelaki", kategori: "L12" });
+                                                setIsAddAthleteSidebarOpen(true);
+                                            }}
+                                            className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs shadow transition flex items-center gap-2"
+                                        >
+                                            ➕ Tambah Atlet Baharu
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
@@ -1334,7 +1374,7 @@
                                     <form onSubmit={handlePasscodeLogin} className="space-y-3">
                                         <input
                                             type="password"
-                                            placeholder="Kunci Laluan Access (Contoh: GURU7608 / ADMIN7608)"
+                                            placeholder="Masukkan Kunci Laluan Kebenaran"
                                             value={passcodeInput}
                                             onChange={(e) => setPasscodeInput(e.target.value)}
                                             className="w-full px-4 py-2.5 border rounded-xl text-xs focus:ring-2 focus:ring-amber-400 outline-none"

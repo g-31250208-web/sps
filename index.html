@@ -1,75 +1,46 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Pengurusan Sukan SPS-SK</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet">
+    
+    <!-- Firebase Compat SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        /* Gulir Kustom */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased">
+    <div id="root"></div>
 
-Index · HTML
-This file is too large to fully render. Showing a simplified plain-text view.
-        
-        const INITIAL_EVENTS = [];
-        const INITIAL_RESULTS = [];
-        const INITIAL_HEATS = [];
-        const DEFAULT_ANNOUNCEMENTS = [
-            { id: "ann_1", text: "Selamat Datang ke Portal Sukan SPS-SK Bikang 2026! Kejohanan akan dirasmikan oleh Guru Besar pada pukul 8:00 pagi.", date: "17/06/2026", author: "Urus Setia Sukan" }
-        ];
-        const INITIAL_LOGS = [];
-
-        const INITIAL_HOUSES_METADATA = {
-            Merah: { slogan: "Saga Membara Selamanya Juara", guruPenasihat: "Cikgu Rosli, Ustazah Aminah", bonusPoints: 0, warnaLabel: "Merah" },
-            Biru: { slogan: "Biru Gagah Juara Sepanjang Zaman", guruPenasihat: "Cikgu Sarah, Ustaz Fahmi", bonusPoints: 0, warnaLabel: "Biru" },
-            Hijau: { slogan: "Hijau Perkasa Sentiasa Di Puncak", guruPenasihat: "Cikgu Lim, Cikgu Azhar", bonusPoints: 0, warnaLabel: "Hijau" },
-            Kuning: { slogan: "Kuning Diraja Mewarisi Kegemilangan", guruPenasihat: "Cikgu Tan, Ustazah Nor", bonusPoints: 0, warnaLabel: "Kuning" }
-        };
-
-        const COLOR_PRESETS = {
-            Merah: { bg: "bg-red-100", text: "text-red-700", warna: "bg-red-500", teks: "text-red-600", glow: "hover:shadow-[0_0_20px_rgba(239,68,68,0.4)] hover:border-red-300", emoji: "🏆" },
-            Biru: { bg: "bg-blue-100", text: "text-blue-700", warna: "bg-blue-500", teks: "text-blue-600", glow: "hover:shadow-[0_0_20px_rgba(59,130,246,0.4)] hover:border-blue-300", emoji: "🏆" },
-            Hijau: { bg: "bg-emerald-100", text: "text-emerald-700", warna: "bg-emerald-500", teks: "text-emerald-600", glow: "hover:shadow-[0_0_20px_rgba(16,185,129,0.4)] hover:border-emerald-300", emoji: "🏆" },
-            Kuning: { bg: "bg-amber-100", text: "text-amber-700", warna: "bg-amber-400", teks: "text-amber-500", glow: "hover:shadow-[0_0_20px_rgba(251,191,36,0.4)] hover:border-amber-300", emoji: "🏆" },
-            Ungu: { bg: "bg-purple-100", text: "text-purple-700", warna: "bg-purple-500", teks: "text-purple-600", glow: "hover:shadow-[0_0_20px_rgba(168,85,247,0.4)] hover:border-purple-300", emoji: "🏆" },
-            Oren: { bg: "bg-orange-100", text: "text-orange-700", warna: "bg-orange-500", teks: "text-orange-600", glow: "hover:shadow-[0_0_20px_rgba(249,115,22,0.4)] hover:border-orange-300", emoji: "🏆" }
-        };
-
-        const getFriendlyCategory = (cat) => {
-            if (!cat) return "";
-            return String(cat).trim().toUpperCase();
-        };
-
-        const parseTimeToSeconds = (str) => {
-            if (!str) return Infinity;
-            const cleaned = str.trim().toLowerCase();
-            if (cleaned.includes(':')) {
-                const parts = cleaned.split(':');
-                const minutes = parseFloat(parts[0]) || 0;
-                const seconds = parseFloat(parts[1]) || 0;
-                return (minutes * 60) + seconds;
-            }
-            const numericStr = cleaned.replace(/[^\d.]/g, '');
-            const seconds = parseFloat(numericStr);
-            return isNaN(seconds) ? Infinity : seconds;
-        };
-
-        const shuffleWithSeed = (array, seedString) => {
-            let seed = 0;
-            for (let i = 0; i < seedString.length; i++) {
-                seed += seedString.charCodeAt(i);
-            }
-            const random = () => {
-                const x = Math.sin(seed++) * 10000;
-                return x - Math.floor(x);
-            };
-            const arr = [...array];
-            for (let i = arr.length - 1; i > 0; i--) {
-                const j = Math.floor(random() * (i + 1));
-                [arr[i], arr[j]] = [arr[j], arr[i]];
-            }
-            return arr;
-        };
-
-        const formatDateToDMY = (dateStr) => {
-            if (!dateStr) return "N/A";
-            const parts = dateStr.split('-');
-            if (parts.length === 3) {
-                if (parts[0].length === 4) {
-                    return `${parts[2]}-${parts[1]}-${parts[0]}`;
-                }
-            }
-            return dateStr;
-
+    <!-- React and ReactDOM CDN -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <!-- Babel Standalone CDN Versi Stabil Terpin untuk Elak Whitescreen -->
+    <script src="https://unpkg.com/@babel/standalone@7.26.4/babel.min.js"></script>

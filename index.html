@@ -967,19 +967,20 @@
                 </h3>
                 <div class="space-y-4 text-sm">
                     <div>
-                        <label class="block text-xs font-bold text-slate-600 mb-1">Nama Penuh Atlet</label>
-                        <input v-model="athleteForm.name" type="text" placeholder="Nama Atlet" class="w-full p-2.5 border rounded-xl">
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Nama Penuh Atlet <span class="text-rose-500">*</span></label>
+                        <input v-model="athleteForm.name" type="text" placeholder="Nama Atlet" class="w-full p-2.5 border rounded-xl focus:ring-2 focus:ring-indigo-500">
                     </div>
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="block text-xs font-bold text-slate-600 mb-1">Rumah Sukan</label>
-                            <select v-model="athleteForm.houseId" class="w-full p-2.5 border rounded-xl">
+                            <select v-model="athleteForm.houseId" class="w-full p-2.5 border rounded-xl focus:ring-2 focus:ring-indigo-500">
+                                <option value="" disabled>-- Pilih Rumah --</option>
                                 <option v-for="h in houses" :key="h.id" :value="h.id">{{ h.name }}</option>
                             </select>
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-slate-600 mb-1">Kategori</label>
-                            <select v-model="athleteForm.category" class="w-full p-2.5 border rounded-xl">
+                            <select v-model="athleteForm.category" class="w-full p-2.5 border rounded-xl focus:ring-2 focus:ring-indigo-500">
                                 <option v-for="c in categories" :key="c" :value="c">{{ c }}</option>
                             </select>
                         </div>
@@ -999,7 +1000,7 @@
                 </div>
                 <div class="mt-6 flex justify-end gap-2">
                     <button @click="showAthleteModal = false" class="px-4 py-2 bg-slate-100 text-slate-700 text-xs font-semibold rounded-xl hover:bg-slate-200">Batal</button>
-                    <button @click="saveAthlete" class="px-4 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-xl hover:bg-indigo-700">Simpan</button>
+                    <button @click="saveAthlete" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl shadow transition">Simpan</button>
                 </div>
             </div>
         </div>
@@ -1513,11 +1514,13 @@
                         if (!this.athleteForm.events) this.athleteForm.events = [];
                     } else {
                         this.isEditingAthlete = false;
+                        const defaultHouse = (this.houses && this.houses.length > 0) ? this.houses[0].id : '';
+                        const defaultCat = (this.categories && this.categories.length > 0) ? this.categories[0] : 'L18';
                         this.athleteForm = { 
                             id: 'ath_' + Date.now(), 
                             name: '', 
-                            houseId: this.houses.length > 0 ? this.houses[0].id : '', 
-                            category: this.categories[0] || 'L18', 
+                            houseId: defaultHouse, 
+                            category: defaultCat, 
                             events: [],
                             gold: 0, silver: 0, bronze: 0 
                         };
@@ -1525,8 +1528,8 @@
                     this.showAthleteModal = true;
                 },
                 async saveAthlete() {
-                    if (!this.athleteForm.name) {
-                        alert('Sila masukkan nama atlet.');
+                    if (!this.athleteForm.name || !this.athleteForm.name.trim()) {
+                        this.showToast('Sila masukkan nama atlet!');
                         return;
                     }
 
@@ -1538,22 +1541,23 @@
                             await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'athletes', String(cleanAthlete.id)), cleanAthlete);
                         }
                         
-                        // Kemaskini state tempatan secara terus supaya responsif
                         const idx = this.athletes.findIndex(a => a.id === cleanAthlete.id);
                         if (idx !== -1) {
                             this.athletes[idx] = cleanAthlete;
                         } else {
                             this.athletes.push(cleanAthlete);
                         }
+                        // Kemaskini tatasusunan atlet secara mutlak untuk keterlihatan Vue 3
+                        this.athletes = [...this.athletes];
                         this.saveToStorage();
                         this.recalculateStandings();
-
+                        
+                        this.showAthleteModal = false;
+                        this.showToast('Pendaftaran atlet berjaya disimpan!');
                     } catch (err) {
                         console.error("Error saving athlete:", err);
+                        this.showToast('Ralat semasa menyimpan atlet.');
                     }
-
-                    this.showAthleteModal = false;
-                    this.showToast('Pendaftaran atlet disimpan!');
                 },
                 async deleteAthlete(id) {
                     try {

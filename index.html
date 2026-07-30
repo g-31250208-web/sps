@@ -510,10 +510,10 @@
                     </button>
                 </div>
 
-                <!-- Info Kategori TKB Tambahan -->
+                <!-- Info Kategori Umur Tambahan -->
                 <div class="bg-blue-50 border border-blue-200 p-3.5 rounded-xl text-xs text-blue-900 flex flex-wrap items-center gap-2">
                     <i class="fa-solid fa-circle-info text-blue-600 text-sm"></i>
-                    <span><strong>Nota Kategori TKB (Sekolah Rendah):</strong> <strong>L9TKB &amp; P9TKB</strong> (murid 7, 8, 9 tahun) serta <strong>L12TKB &amp; P12TKB</strong> (murid 10, 11, 12 tahun) membenarkan pendaftaran terbuka mengikut kategori umur tersebut.</span>
+                    <span><strong>Nota Kategori Umur (Sekolah Rendah):</strong> Termasuk kategori khas <strong>L7, P7, L8, P8, L9, P9</strong> (murid 7, 8, dan 9 tahun) serta gabungan <strong>L9TKB &amp; P9TKB</strong> dan <strong>L12TKB &amp; P12TKB</strong>.</span>
                 </div>
 
                 <!-- Penapis Atlet -->
@@ -1177,7 +1177,7 @@
             computed: {
                 categories() {
                     return this.schoolType === 'rendah' 
-                        ? ['Pra-L', 'Pra-P', 'L9TKB', 'P9TKB', 'L10', 'P10', 'L11', 'P11', 'L12', 'P12', 'L12TKB', 'P12TKB', 'Terbuka'] 
+                        ? ['Pra-L', 'Pra-P', 'L7', 'P7', 'L8', 'P8', 'L9', 'P9', 'L9TKB', 'P9TKB', 'L10', 'P10', 'L11', 'P11', 'L12', 'P12', 'L12TKB', 'P12TKB', 'Terbuka'] 
                         : ['L13', 'P13', 'L15', 'P15', 'L18', 'P18', 'Terbuka'];
                 },
                 sortedHouses() {
@@ -1212,12 +1212,12 @@
                     return this.events.find(e => e.id === this.selectedEventId) || null;
                 },
                 topMaleAthlete() {
-                    const maleCats = ['Pra-L', 'Pra L', 'Pra', 'L9TKB', 'L10', 'L11', 'L12', 'L12TKB', 'L13', 'L15', 'L18'];
+                    const maleCats = ['Pra-L', 'Pra L', 'Pra', 'L7', 'L8', 'L9', 'L9TKB', 'L10', 'L11', 'L12', 'L12TKB', 'L13', 'L15', 'L18'];
                     const maleAthletes = this.athletes.filter(a => maleCats.includes(a.category) && ((a.gold || 0) > 0 || (a.silver || 0) > 0 || (a.bronze || 0) > 0));
                     return [...maleAthletes].sort((a, b) => (b.gold || 0) - (a.gold || 0) || (b.silver || 0) - (a.silver || 0) || (b.bronze || 0) - (a.bronze || 0))[0] || null;
                 },
                 topFemaleAthlete() {
-                    const femaleCats = ['Pra-P', 'Pra P', 'Pra', 'P9TKB', 'P10', 'P11', 'P12', 'P12TKB', 'P13', 'P15', 'P18'];
+                    const femaleCats = ['Pra-P', 'Pra P', 'Pra', 'P7', 'P8', 'P9', 'P9TKB', 'P10', 'P11', 'P12', 'P12TKB', 'P13', 'P15', 'P18'];
                     const femaleAthletes = this.athletes.filter(a => femaleCats.includes(a.category) && ((a.gold || 0) > 0 || (a.silver || 0) > 0 || (a.bronze || 0) > 0));
                     return [...femaleAthletes].sort((a, b) => (b.gold || 0) - (a.gold || 0) || (b.silver || 0) - (a.silver || 0) || (b.bronze || 0) - (a.bronze || 0))[0] || null;
                 }
@@ -1792,7 +1792,7 @@
                         try {
                             const { db, appId, doc, deleteDoc } = window.FirebaseDB;
                             for (const h of housesToDelete) await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'houses', h.id));
-                            for (const e of eventsToDelete) await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'events', e.id));
+                            for (const e of eventsToDelete) await deleteDoc(doc(doc(db, 'artifacts', appId, 'public', 'data', 'events', e.id)));
                             for (const a of athletesToDelete) await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'athletes', a.id));
                             for (const ann of annToDelete) await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'announcements', ann.id));
                         } catch (err) {

@@ -82,9 +82,18 @@
             body {
                 background: #ffffff !important;
                 color: #000000 !important;
+                margin: 0 !important;
+                padding: 0 !important;
             }
             .page-break {
                 page-break-before: always;
+            }
+            .certificate-container {
+                border-width: 8px !important;
+                box-shadow: none !important;
+                max-width: 100% !important;
+                width: 100% !important;
+                padding: 2rem !important;
             }
         }
         .print-only {
@@ -322,7 +331,7 @@
                                 <h4 class="font-bold text-slate-900 text-lg">{{ topMaleAthlete.name }}</h4>
                                 <p class="text-xs text-slate-500 font-medium">Rumah {{ getHouseName(topMaleAthlete.houseId) }} (Kategori: {{ topMaleAthlete.category }})</p>
                                 <div class="text-xs font-semibold text-emerald-700 mt-1">
-                                    🥇 {{ topMaleAthlete.gold }} Emas | 🥈 {{ topMaleAthlete.silver }} Perak
+                                    🥇 {{ topMaleAthlete.gold }} Emas | 🥈 {{ topMaleAthlete.silver }} Perak | 🥉 {{ topMaleAthlete.bronze }} Gangsa
                                 </div>
                             </div>
                         </div>
@@ -342,7 +351,7 @@
                                 <h4 class="font-bold text-slate-900 text-lg">{{ topFemaleAthlete.name }}</h4>
                                 <p class="text-xs text-slate-500 font-medium">Rumah {{ getHouseName(topFemaleAthlete.houseId) }} (Kategori: {{ topFemaleAthlete.category }})</p>
                                 <div class="text-xs font-semibold text-emerald-700 mt-1">
-                                    🥇 {{ topFemaleAthlete.gold }} Emas | 🥈 {{ topFemaleAthlete.silver }} Perak
+                                    🥇 {{ topFemaleAthlete.gold }} Emas | 🥈 {{ topFemaleAthlete.silver }} Perak | 🥉 {{ topFemaleAthlete.bronze }} Gangsa
                                 </div>
                             </div>
                         </div>
@@ -499,6 +508,12 @@
                     <button @click="openAthleteModal()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-sm shadow transition flex items-center gap-2">
                         <i class="fa-solid fa-user-plus"></i> Daftar Atlet Baru
                     </button>
+                </div>
+
+                <!-- Info Kategori TKB Tambahan -->
+                <div class="bg-blue-50 border border-blue-200 p-3.5 rounded-xl text-xs text-blue-900 flex flex-wrap items-center gap-2">
+                    <i class="fa-solid fa-circle-info text-blue-600 text-sm"></i>
+                    <span><strong>Nota Kategori TKB (Sekolah Rendah):</strong> <strong>L9TKB &amp; P9TKB</strong> (murid 7, 8, 9 tahun) serta <strong>L12TKB &amp; P12TKB</strong> (murid 10, 11, 12 tahun) membenarkan pendaftaran terbuka mengikut kategori umur tersebut.</span>
                 </div>
 
                 <!-- Penapis Atlet -->
@@ -811,7 +826,7 @@
                             </div>
                             <div>
                                 <label class="block text-xs font-bold text-slate-500 mb-1">Acara / Kategori</label>
-                                <input v-model="certForm.event" type="text" placeholder="Cth: 100M L18" class="w-full p-2 text-sm border rounded-lg">
+                                <input v-model="certForm.event" type="text" placeholder="Cth: 100M L12TKB" class="w-full p-2 text-sm border rounded-lg">
                             </div>
                             <div>
                                 <label class="block text-xs font-bold text-slate-500 mb-1">Pencapaian / Kedudukan</label>
@@ -831,8 +846,8 @@
                     </div>
 
                     <!-- TEMPLATE REKA BENTUK SIJIL (Boleh Dicetak) -->
-                    <div class="bg-slate-200 p-4 sm:p-8 rounded-2xl flex justify-center">
-                        <div class="bg-white w-full max-w-3xl p-10 sm:p-14 border-[12px] border-double border-amber-600 shadow-2xl relative text-center font-serif text-slate-900 rounded-sm">
+                    <div class="bg-slate-200 p-4 sm:p-8 rounded-2xl flex justify-center print:bg-white print:p-0">
+                        <div class="certificate-container bg-white w-full max-w-3xl p-10 sm:p-14 border-[12px] border-double border-amber-600 shadow-2xl relative text-center font-serif text-slate-900 rounded-sm">
                             <!-- Bucu Emas Hiasan -->
                             <div class="absolute top-2 left-2 w-8 h-8 border-t-2 border-l-2 border-amber-600"></div>
                             <div class="absolute top-2 right-2 w-8 h-8 border-t-2 border-r-2 border-amber-600"></div>
@@ -1105,7 +1120,7 @@
                     adminEmail: 'sekolah-7608@moe-dl.edu.my',
 
                     // Status Jenis Sekolah (rendah / menengah)
-                    schoolType: 'menengah',
+                    schoolType: 'rendah',
 
                     // Status Log Masuk
                     isLoggedIn: true, // Lalai sebagai Pentadbir
@@ -1129,7 +1144,7 @@
                     showEventModal: false,
                     isEditingEvent: false,
                     eventCategoryFilter: 'Semua',
-                    eventForm: { id: null, code: '', name: '', category: 'L18', type: 'Balapan', completed: false },
+                    eventForm: { id: null, code: '', name: '', category: 'L12TKB', type: 'Balapan', completed: false },
 
                     // Data Atlet
                     athletes: [],
@@ -1138,7 +1153,7 @@
                     athleteSearch: '',
                     athleteHouseFilter: 'Semua',
                     athleteCategoryFilter: 'Semua',
-                    athleteForm: { id: null, name: '', houseId: '', category: 'L18', events: [], gold: 0, silver: 0, bronze: 0 },
+                    athleteForm: { id: null, name: '', houseId: '', category: 'L12TKB', events: [], gold: 0, silver: 0, bronze: 0 },
 
                     // Borang Kemasukan Keputusan
                     selectedEventId: '',
@@ -1153,7 +1168,7 @@
                     certForm: {
                         name: 'Ahmad Daniel Bin Rosli',
                         house: 'Merah (Temenggong)',
-                        event: 'Lari 100M (Kategori L18)',
+                        event: 'Lari 100M (Kategori L12TKB)',
                         position: 'JOHAN (TEMPAT PERTAMA)'
                     }
                 }
@@ -1162,7 +1177,7 @@
             computed: {
                 categories() {
                     return this.schoolType === 'rendah' 
-                        ? ['Pra-L', 'Pra-P', 'L10', 'P10', 'L11', 'P11', 'L12', 'P12', 'Terbuka'] 
+                        ? ['Pra-L', 'Pra-P', 'L9TKB', 'P9TKB', 'L10', 'P10', 'L11', 'P11', 'L12', 'P12', 'L12TKB', 'P12TKB', 'Terbuka'] 
                         : ['L13', 'P13', 'L15', 'P15', 'L18', 'P18', 'Terbuka'];
                 },
                 sortedHouses() {
@@ -1185,8 +1200,9 @@
                     return this.events.filter(e => e.category === this.eventCategoryFilter);
                 },
                 filteredAthletes() {
+                    const search = this.athleteSearch.trim().toLowerCase();
                     return this.athletes.filter(a => {
-                        const matchSearch = a.name ? a.name.toLowerCase().includes(this.athleteSearch.toLowerCase()) : false;
+                        const matchSearch = !search || (a.name && a.name.toLowerCase().includes(search));
                         const matchHouse = this.athleteHouseFilter === 'Semua' || a.houseId === this.athleteHouseFilter;
                         const matchCat = this.athleteCategoryFilter === 'Semua' || a.category === this.athleteCategoryFilter;
                         return matchSearch && matchHouse && matchCat;
@@ -1196,14 +1212,14 @@
                     return this.events.find(e => e.id === this.selectedEventId) || null;
                 },
                 topMaleAthlete() {
-                    const maleCats = ['Pra-L', 'Pra L', 'Pra', 'L10', 'L11', 'L12', 'L13', 'L15', 'L18'];
-                    const maleAthletes = this.athletes.filter(a => maleCats.includes(a.category) && (a.gold > 0 || a.silver > 0));
-                    return maleAthletes.sort((a, b) => b.gold - a.gold || b.silver - a.silver)[0] || null;
+                    const maleCats = ['Pra-L', 'Pra L', 'Pra', 'L9TKB', 'L10', 'L11', 'L12', 'L12TKB', 'L13', 'L15', 'L18'];
+                    const maleAthletes = this.athletes.filter(a => maleCats.includes(a.category) && ((a.gold || 0) > 0 || (a.silver || 0) > 0 || (a.bronze || 0) > 0));
+                    return [...maleAthletes].sort((a, b) => (b.gold || 0) - (a.gold || 0) || (b.silver || 0) - (a.silver || 0) || (b.bronze || 0) - (a.bronze || 0))[0] || null;
                 },
                 topFemaleAthlete() {
-                    const femaleCats = ['Pra-P', 'Pra P', 'Pra', 'P10', 'P11', 'P12', 'P13', 'P15', 'P18'];
-                    const femaleAthletes = this.athletes.filter(a => femaleCats.includes(a.category) && (a.gold > 0 || a.silver > 0));
-                    return femaleAthletes.sort((a, b) => b.gold - a.gold || b.silver - a.silver)[0] || null;
+                    const femaleCats = ['Pra-P', 'Pra P', 'Pra', 'P9TKB', 'P10', 'P11', 'P12', 'P12TKB', 'P13', 'P15', 'P18'];
+                    const femaleAthletes = this.athletes.filter(a => femaleCats.includes(a.category) && ((a.gold || 0) > 0 || (a.silver || 0) > 0 || (a.bronze || 0) > 0));
+                    return [...femaleAthletes].sort((a, b) => (b.gold || 0) - (a.gold || 0) || (b.silver || 0) - (a.silver || 0) || (b.bronze || 0) - (a.bronze || 0))[0] || null;
                 }
             },
 
@@ -1353,7 +1369,10 @@
                     this.showAnnouncementModal = true;
                 },
                 async saveAnnouncement() {
-                    if (!this.announcementForm.title || !this.announcementForm.message) return;
+                    if (!this.announcementForm.title.trim() || !this.announcementForm.message.trim()) {
+                        this.showToast('Sila lengkapkan tajuk dan kandungan hebahan!');
+                        return;
+                    }
                     const item = this.toPlainObject({ ...this.announcementForm, createdAt: Date.now() });
 
                     this.announcements.unshift(item);
@@ -1469,7 +1488,7 @@
                             id: 'evt_' + Date.now(), 
                             code: 'A' + (this.events.length + 101), 
                             name: '', 
-                            category: this.categories[0] || 'L18', 
+                            category: this.categories[0] || 'L12TKB', 
                             type: 'Balapan', 
                             completed: false 
                         };
@@ -1528,7 +1547,7 @@
                     } else {
                         this.isEditingAthlete = false;
                         const defaultHouse = (this.houses && this.houses.length > 0) ? this.houses[0].id : '';
-                        const defaultCat = (this.categories && this.categories.length > 0) ? this.categories[0] : 'L18';
+                        const defaultCat = (this.categories && this.categories.length > 0) ? this.categories[0] : 'L12TKB';
                         this.athleteForm = { 
                             id: 'ath_' + Date.now(), 
                             name: '', 
@@ -1657,27 +1676,27 @@
                             const h = this.houses.find(item => item.id === e.goldHouse);
                             if (h) { h.points += 7; h.gold += 1; }
                         }
-                        if (e.goldAthlete) {
-                            const ath = this.athletes.find(a => a.name && a.name.toLowerCase() === e.goldAthlete.toLowerCase());
-                            if (ath) ath.gold += 1;
+                        if (e.goldAthlete && e.goldAthlete.trim()) {
+                            const ath = this.athletes.find(a => a.name && a.name.trim().toLowerCase() === e.goldAthlete.trim().toLowerCase());
+                            if (ath) ath.gold = (ath.gold || 0) + 1;
                         }
 
                         if (e.silverHouse) {
                             const h = this.houses.find(item => item.id === e.silverHouse);
                             if (h) { h.points += 5; h.silver += 1; }
                         }
-                        if (e.silverAthlete) {
-                            const ath = this.athletes.find(a => a.name && a.name.toLowerCase() === e.silverAthlete.toLowerCase());
-                            if (ath) ath.silver += 1;
+                        if (e.silverAthlete && e.silverAthlete.trim()) {
+                            const ath = this.athletes.find(a => a.name && a.name.trim().toLowerCase() === e.silverAthlete.trim().toLowerCase());
+                            if (ath) ath.silver = (ath.silver || 0) + 1;
                         }
 
                         if (e.bronzeHouse) {
                             const h = this.houses.find(item => item.id === e.bronzeHouse);
                             if (h) { h.points += 3; h.bronze += 1; }
                         }
-                        if (e.bronzeAthlete) {
-                            const ath = this.athletes.find(a => a.name && a.name.toLowerCase() === e.bronzeAthlete.toLowerCase());
-                            if (ath) ath.bronze += 1;
+                        if (e.bronzeAthlete && e.bronzeAthlete.trim()) {
+                            const ath = this.athletes.find(a => a.name && a.name.trim().toLowerCase() === e.bronzeAthlete.trim().toLowerCase());
+                            if (ath) ath.bronze = (ath.bronze || 0) + 1;
                         }
 
                         if (e.fourthHouse) {
@@ -1710,8 +1729,8 @@
                 // Muat Data Demo
                 async loadDemoData() {
                     const demoAnnouncements = [
-                        { id: 'ann1', title: 'Pemanggilan Peserta Acara A103 (Lompat Jauh L18)', category: 'Penting', message: 'Semua peserta diminta melapor diri di khemah penyelia peserta dalam masa 10 minit.', time: '09:15 AM', createdAt: Date.now() },
-                        { id: 'ann2', title: 'Pertukaran Masa Acara Lontar Peluru P15', category: 'Jadual', message: 'Acara A104 diajak ke jam 10:30 pagi atas sebab faktor cuaca.', time: '08:45 AM', createdAt: Date.now() - 1000 }
+                        { id: 'ann1', title: 'Pemanggilan Peserta Acara A103 (Lompat Jauh L12TKB)', category: 'Penting', message: 'Semua peserta diminta melapor diri di khemah penyelia peserta dalam masa 10 minit.', time: '09:15 AM', createdAt: Date.now() },
+                        { id: 'ann2', title: 'Pertukaran Masa Acara Lontar Peluru P12TKB', category: 'Jadual', message: 'Acara A104 diajak ke jam 10:30 pagi atas sebab faktor cuaca.', time: '08:45 AM', createdAt: Date.now() - 1000 }
                     ];
 
                     const demoHouses = [
@@ -1722,17 +1741,17 @@
                     ];
 
                     const demoEvents = [
-                        { id: 'e1', code: 'A101', name: 'Lari 100M', category: 'L18', type: 'Balapan', completed: true, goldHouse: 'h1', goldAthlete: 'Muhammad Adam', silverHouse: 'h2', silverAthlete: 'Amirul Asyraf', bronzeHouse: 'h3', bronzeAthlete: 'Tan Wei Lun', fourthHouse: 'h4', fourthAthlete: 'Devan' },
-                        { id: 'e2', code: 'A102', name: 'Lari 100M', category: 'P18', type: 'Balapan', completed: true, goldHouse: 'h2', goldAthlete: 'Siti Nurhaliza', silverHouse: 'h1', silverAthlete: 'Nur Aina', bronzeHouse: 'h4', bronzeAthlete: 'Kavitha', fourthHouse: 'h3', fourthAthlete: 'Chong Mei Ling' },
-                        { id: 'e3', code: 'A103', name: 'Lompat Jauh', category: 'L18', type: 'Padang', completed: false },
-                        { id: 'e4', code: 'A104', name: 'Lontar Peluru', category: 'P15', type: 'Padang', completed: false }
+                        { id: 'e1', code: 'A101', name: 'Lari 100M', category: 'L12TKB', type: 'Balapan', completed: true, goldHouse: 'h1', goldAthlete: 'Muhammad Adam', silverHouse: 'h2', silverAthlete: 'Amirul Asyraf', bronzeHouse: 'h3', bronzeAthlete: 'Tan Wei Lun', fourthHouse: 'h4', fourthAthlete: 'Devan' },
+                        { id: 'e2', code: 'A102', name: 'Lari 100M', category: 'P12TKB', type: 'Balapan', completed: true, goldHouse: 'h2', goldAthlete: 'Siti Nurhaliza', silverHouse: 'h1', silverAthlete: 'Nur Aina', bronzeHouse: 'h4', bronzeAthlete: 'Kavitha', fourthHouse: 'h3', fourthAthlete: 'Chong Mei Ling' },
+                        { id: 'e3', code: 'A103', name: 'Lompat Jauh', category: 'L12TKB', type: 'Padang', completed: false },
+                        { id: 'e4', code: 'A104', name: 'Lontar Peluru', category: 'P12TKB', type: 'Padang', completed: false }
                     ];
 
                     const demoAthletes = [
-                        { id: 'a1', name: 'Muhammad Adam', houseId: 'h1', category: 'L18', events: ['e1', 'e3'], gold: 0, silver: 0, bronze: 0 },
-                        { id: 'a2', name: 'Amirul Asyraf', houseId: 'h2', category: 'L18', events: ['e1'], gold: 0, silver: 0, bronze: 0 },
-                        { id: 'a3', name: 'Siti Nurhaliza', houseId: 'h2', category: 'P18', events: ['e2'], gold: 0, silver: 0, bronze: 0 },
-                        { id: 'a4', name: 'Nur Aina', houseId: 'h1', category: 'P18', events: ['e2'], gold: 0, silver: 0, bronze: 0 }
+                        { id: 'a1', name: 'Muhammad Adam', houseId: 'h1', category: 'L12TKB', events: ['e1', 'e3'], gold: 0, silver: 0, bronze: 0 },
+                        { id: 'a2', name: 'Amirul Asyraf', houseId: 'h2', category: 'L12TKB', events: ['e1'], gold: 0, silver: 0, bronze: 0 },
+                        { id: 'a3', name: 'Siti Nurhaliza', houseId: 'h2', category: 'P12TKB', events: ['e2'], gold: 0, silver: 0, bronze: 0 },
+                        { id: 'a4', name: 'Nur Aina', houseId: 'h1', category: 'P12TKB', events: ['e2'], gold: 0, silver: 0, bronze: 0 }
                     ];
 
                     this.announcements = demoAnnouncements;

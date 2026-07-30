@@ -992,7 +992,7 @@
                                 <span>[{{ e.code }}] {{ e.name }}</span>
                             </label>
                             <div v-if="events.filter(ev => ev.category === athleteForm.category).length === 0" class="text-xs text-slate-400 italic">
-                                Sila pilih kategori yang sesuai untuk melihat senarai acara.
+                                Tiada acara untuk kategori {{ athleteForm.category }}. Sila daftarkan acara dalam tab 'Daftar Acara'.
                             </div>
                         </div>
                     </div>
@@ -1137,7 +1137,7 @@
                     athleteSearch: '',
                     athleteHouseFilter: 'Semua',
                     athleteCategoryFilter: 'Semua',
-                    athleteForm: { id: null, name: '', houseId: null, category: 'L18', events: [], gold: 0, silver: 0, bronze: 0 },
+                    athleteForm: { id: null, name: '', houseId: '', category: 'L18', events: [], gold: 0, silver: 0, bronze: 0 },
 
                     // Borang Kemasukan Keputusan
                     selectedEventId: '',
@@ -1215,6 +1215,11 @@
                 showToast(msg) {
                     this.toastMessage = msg;
                     setTimeout(() => { this.toastMessage = ''; }, 3000);
+                },
+
+                // Clean object converter for Firestore / Vue Proxy compatibility
+                toPlainObject(obj) {
+                    return JSON.parse(JSON.stringify(obj));
                 },
 
                 // Initialization & Realtime Firebase Sync
@@ -1304,8 +1309,12 @@
                     this.showToast(`Kategori ditukar kepada ${type === 'rendah' ? 'Sekolah Rendah' : 'Sekolah Menengah'}`);
 
                     if (this.isCloudConnected) {
-                        const { db, appId, doc, setDoc } = window.FirebaseDB;
-                        await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'config'), { schoolType: type }, { merge: true });
+                        try {
+                            const { db, appId, doc, setDoc } = window.FirebaseDB;
+                            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'config'), { schoolType: type }, { merge: true });
+                        } catch (e) {
+                            console.error("Error setting school type:", e);
+                        }
                     }
                 },
 
@@ -1343,25 +1352,33 @@
                 },
                 async saveAnnouncement() {
                     if (!this.announcementForm.title || !this.announcementForm.message) return;
-                    const item = { ...this.announcementForm, createdAt: Date.now() };
+                    const item = this.toPlainObject({ ...this.announcementForm, createdAt: Date.now() });
                     
-                    if (this.isCloudConnected) {
-                        const { db, appId, doc, setDoc } = window.FirebaseDB;
-                        await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'announcements', String(item.id)), item);
-                    } else {
-                        this.announcements.unshift(item);
-                        this.saveToStorage();
+                    try {
+                        if (this.isCloudConnected) {
+                            const { db, appId, doc, setDoc } = window.FirebaseDB;
+                            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'announcements', String(item.id)), item);
+                        } else {
+                            this.announcements.unshift(item);
+                            this.saveToStorage();
+                        }
+                    } catch (err) {
+                        console.error("Error saving announcement:", err);
                     }
                     this.showAnnouncementModal = false;
                     this.showToast('Hebahan berjaya disiarkan!');
                 },
                 async deleteAnnouncement(id) {
-                    if (this.isCloudConnected) {
-                        const { db, appId, doc, deleteDoc } = window.FirebaseDB;
-                        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'announcements', String(id)));
-                    } else {
-                        this.announcements = this.announcements.filter(item => item.id !== id);
-                        this.saveToStorage();
+                    try {
+                        if (this.isCloudConnected) {
+                            const { db, appId, doc, deleteDoc } = window.FirebaseDB;
+                            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'announcements', String(id)));
+                        } else {
+                            this.announcements = this.announcements.filter(item => item.id !== id);
+                            this.saveToStorage();
+                        }
+                    } catch (err) {
+                        console.error("Error deleting announcement:", err);
                     }
                     this.showToast('Hebahan dipadam.');
                 },
@@ -1387,7 +1404,7 @@
                 openHouseModal(house = null) {
                     if (house) {
                         this.isEditingHouse = true;
-                        this.houseForm = { ...house };
+                        this.houseForm = this.toPlainObject(house);
                     } else {
                         this.isEditingHouse = false;
                         this.houseForm = { id: 'h_' + Date.now(), name: '', color: '#ef4444', advisor: '', points: 0, gold: 0, silver: 0, bronze: 0 };
@@ -1396,28 +1413,38 @@
                 },
                 async saveHouse() {
                     if (!this.houseForm.name) return;
-                    if (this.isCloudConnected) {
-                        const { db, appId, doc, setDoc } = window.FirebaseDB;
-                        await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'houses', String(this.houseForm.id)), this.houseForm);
-                    } else {
-                        if (this.isEditingHouse) {
-                            const index = this.houses.findIndex(h => h.id === this.houseForm.id);
-                            if (index !== -1) this.houses[index] = { ...this.houseForm };
+                    const cleanHouse = this.toPlainObject(this.houseForm);
+
+                    try {
+                        if (this.isCloudConnected) {
+                            const { db, appId, doc, setDoc } = window.FirebaseDB;
+                            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'houses', String(cleanHouse.id)), cleanHouse);
                         } else {
-                            this.houses.push({ ...this.houseForm });
+                            if (this.isEditingHouse) {
+                                const index = this.houses.findIndex(h => h.id === cleanHouse.id);
+                                if (index !== -1) this.houses[index] = cleanHouse;
+                            } else {
+                                this.houses.push(cleanHouse);
+                            }
+                            this.saveToStorage();
                         }
-                        this.saveToStorage();
+                    } catch (err) {
+                        console.error("Error saving house:", err);
                     }
                     this.showHouseModal = false;
                     this.showToast('Maklumat Rumah Sukan disimpan!');
                 },
                 async deleteHouse(id) {
-                    if (this.isCloudConnected) {
-                        const { db, appId, doc, deleteDoc } = window.FirebaseDB;
-                        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'houses', String(id)));
-                    } else {
-                        this.houses = this.houses.filter(h => h.id !== id);
-                        this.saveToStorage();
+                    try {
+                        if (this.isCloudConnected) {
+                            const { db, appId, doc, deleteDoc } = window.FirebaseDB;
+                            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'houses', String(id)));
+                        } else {
+                            this.houses = this.houses.filter(h => h.id !== id);
+                            this.saveToStorage();
+                        }
+                    } catch (err) {
+                        console.error("Error deleting house:", err);
                     }
                     this.showToast('Rumah sukan dipadam.');
                 },
@@ -1426,14 +1453,14 @@
                 openEventModal(evt = null) {
                     if (evt) {
                         this.isEditingEvent = true;
-                        this.eventForm = { ...evt };
+                        this.eventForm = this.toPlainObject(evt);
                     } else {
                         this.isEditingEvent = false;
                         this.eventForm = { 
                             id: 'evt_' + Date.now(), 
                             code: 'A' + (this.events.length + 101), 
                             name: '', 
-                            category: this.categories[0], 
+                            category: this.categories[0] || 'L18', 
                             type: 'Balapan', 
                             completed: false 
                         };
@@ -1442,28 +1469,38 @@
                 },
                 async saveEvent() {
                     if (!this.eventForm.name) return;
-                    if (this.isCloudConnected) {
-                        const { db, appId, doc, setDoc } = window.FirebaseDB;
-                        await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'events', String(this.eventForm.id)), this.eventForm);
-                    } else {
-                        if (this.isEditingEvent) {
-                            const idx = this.events.findIndex(e => e.id === this.eventForm.id);
-                            if (idx !== -1) this.events[idx] = { ...this.eventForm };
+                    const cleanEvent = this.toPlainObject(this.eventForm);
+
+                    try {
+                        if (this.isCloudConnected) {
+                            const { db, appId, doc, setDoc } = window.FirebaseDB;
+                            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'events', String(cleanEvent.id)), cleanEvent);
                         } else {
-                            this.events.push({ ...this.eventForm });
+                            if (this.isEditingEvent) {
+                                const idx = this.events.findIndex(e => e.id === cleanEvent.id);
+                                if (idx !== -1) this.events[idx] = cleanEvent;
+                            } else {
+                                this.events.push(cleanEvent);
+                            }
+                            this.saveToStorage();
                         }
-                        this.saveToStorage();
+                    } catch (err) {
+                        console.error("Error saving event:", err);
                     }
                     this.showEventModal = false;
                     this.showToast('Acara berjaya didaftarkan!');
                 },
                 async deleteEvent(id) {
-                    if (this.isCloudConnected) {
-                        const { db, appId, doc, deleteDoc } = window.FirebaseDB;
-                        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'events', String(id)));
-                    } else {
-                        this.events = this.events.filter(e => e.id !== id);
-                        this.saveToStorage();
+                    try {
+                        if (this.isCloudConnected) {
+                            const { db, appId, doc, deleteDoc } = window.FirebaseDB;
+                            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'events', String(id)));
+                        } else {
+                            this.events = this.events.filter(e => e.id !== id);
+                            this.saveToStorage();
+                        }
+                    } catch (err) {
+                        console.error("Error deleting event:", err);
                     }
                     this.showToast('Acara dipadam.');
                 },
@@ -1472,14 +1509,15 @@
                 openAthleteModal(ath = null) {
                     if (ath) {
                         this.isEditingAthlete = true;
-                        this.athleteForm = { ...ath, events: [...(ath.events || [])] };
+                        this.athleteForm = this.toPlainObject(ath);
+                        if (!this.athleteForm.events) this.athleteForm.events = [];
                     } else {
                         this.isEditingAthlete = false;
                         this.athleteForm = { 
                             id: 'ath_' + Date.now(), 
                             name: '', 
-                            houseId: this.houses[0]?.id || null, 
-                            category: 'L18', 
+                            houseId: this.houses.length > 0 ? this.houses[0].id : '', 
+                            category: this.categories[0] || 'L18', 
                             events: [],
                             gold: 0, silver: 0, bronze: 0 
                         };
@@ -1487,29 +1525,46 @@
                     this.showAthleteModal = true;
                 },
                 async saveAthlete() {
-                    if (!this.athleteForm.name) return;
-                    if (this.isCloudConnected) {
-                        const { db, appId, doc, setDoc } = window.FirebaseDB;
-                        await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'athletes', String(this.athleteForm.id)), this.athleteForm);
-                    } else {
-                        if (this.isEditingAthlete) {
-                            const idx = this.athletes.findIndex(a => a.id === this.athleteForm.id);
-                            if (idx !== -1) this.athletes[idx] = { ...this.athleteForm };
+                    if (!this.athleteForm.name) {
+                        alert('Sila masukkan nama atlet.');
+                        return;
+                    }
+
+                    const cleanAthlete = this.toPlainObject(this.athleteForm);
+
+                    try {
+                        if (this.isCloudConnected) {
+                            const { db, appId, doc, setDoc } = window.FirebaseDB;
+                            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'athletes', String(cleanAthlete.id)), cleanAthlete);
+                        }
+                        
+                        // Kemaskini state tempatan secara terus supaya responsif
+                        const idx = this.athletes.findIndex(a => a.id === cleanAthlete.id);
+                        if (idx !== -1) {
+                            this.athletes[idx] = cleanAthlete;
                         } else {
-                            this.athletes.push({ ...this.athleteForm });
+                            this.athletes.push(cleanAthlete);
                         }
                         this.saveToStorage();
+                        this.recalculateStandings();
+
+                    } catch (err) {
+                        console.error("Error saving athlete:", err);
                     }
+
                     this.showAthleteModal = false;
                     this.showToast('Pendaftaran atlet disimpan!');
                 },
                 async deleteAthlete(id) {
-                    if (this.isCloudConnected) {
-                        const { db, appId, doc, deleteDoc } = window.FirebaseDB;
-                        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'athletes', String(id)));
-                    } else {
+                    try {
+                        if (this.isCloudConnected) {
+                            const { db, appId, doc, deleteDoc } = window.FirebaseDB;
+                            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'athletes', String(id)));
+                        }
                         this.athletes = this.athletes.filter(a => a.id !== id);
                         this.saveToStorage();
+                    } catch (err) {
+                        console.error("Error deleting athlete:", err);
                     }
                     this.showToast('Atlet dipadam.');
                 },
@@ -1535,19 +1590,22 @@
                     const eventIndex = this.events.findIndex(e => e.id === this.selectedEventId);
                     if (eventIndex === -1) return;
 
-                    const updatedEvent = {
+                    const updatedEvent = this.toPlainObject({
                         ...this.events[eventIndex],
                         completed: true,
                         ...this.resultForm
-                    };
+                    });
 
-                    if (this.isCloudConnected) {
-                        const { db, appId, doc, setDoc } = window.FirebaseDB;
-                        await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'events', String(this.selectedEventId)), updatedEvent);
-                    } else {
+                    try {
+                        if (this.isCloudConnected) {
+                            const { db, appId, doc, setDoc } = window.FirebaseDB;
+                            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'events', String(this.selectedEventId)), updatedEvent);
+                        }
                         this.events[eventIndex] = updatedEvent;
                         this.recalculateStandings();
                         this.saveToStorage();
+                    } catch (err) {
+                        console.error("Error saving result:", err);
                     }
 
                     this.showToast('Keputusan acara berjaya disimpan!');
@@ -1656,31 +1714,39 @@
                         { id: 'a4', name: 'Nur Aina', houseId: 'h1', category: 'P18', events: ['e2'], gold: 0, silver: 0, bronze: 0 }
                     ];
 
-                    if (this.isCloudConnected) {
-                        const { db, appId, doc, setDoc } = window.FirebaseDB;
-                        for (const h of demoHouses) await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'houses', h.id), h);
-                        for (const e of demoEvents) await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'events', e.id), e);
-                        for (const a of demoAthletes) await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'athletes', a.id), a);
-                        for (const ann of demoAnnouncements) await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'announcements', ann.id), ann);
-                    } else {
-                        this.announcements = demoAnnouncements;
-                        this.houses = demoHouses;
-                        this.events = demoEvents;
-                        this.athletes = demoAthletes;
-                        this.recalculateStandings();
-                        this.saveToStorage();
+                    try {
+                        if (this.isCloudConnected) {
+                            const { db, appId, doc, setDoc } = window.FirebaseDB;
+                            for (const h of demoHouses) await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'houses', h.id), this.toPlainObject(h));
+                            for (const e of demoEvents) await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'events', e.id), this.toPlainObject(e));
+                            for (const a of demoAthletes) await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'athletes', a.id), this.toPlainObject(a));
+                            for (const ann of demoAnnouncements) await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'announcements', ann.id), this.toPlainObject(ann));
+                        }
+                    } catch (err) {
+                        console.error("Error loading demo data:", err);
                     }
+
+                    this.announcements = demoAnnouncements;
+                    this.houses = demoHouses;
+                    this.events = demoEvents;
+                    this.athletes = demoAthletes;
+                    this.recalculateStandings();
+                    this.saveToStorage();
 
                     this.showToast('Data contoh berjaya dimuatkan!');
                 },
 
                 async resetData() {
-                    if (this.isCloudConnected) {
-                        const { db, appId, doc, deleteDoc } = window.FirebaseDB;
-                        for (const h of this.houses) await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'houses', h.id));
-                        for (const e of this.events) await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'events', e.id));
-                        for (const a of this.athletes) await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'athletes', a.id));
-                        for (const ann of this.announcements) await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'announcements', ann.id));
+                    try {
+                        if (this.isCloudConnected) {
+                            const { db, appId, doc, deleteDoc } = window.FirebaseDB;
+                            for (const h of this.houses) await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'houses', h.id));
+                            for (const e of this.events) await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'events', e.id));
+                            for (const a of this.athletes) await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'athletes', a.id));
+                            for (const ann of this.announcements) await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'announcements', ann.id));
+                        }
+                    } catch (err) {
+                        console.error("Error resetting data:", err);
                     }
                     this.houses = [];
                     this.events = [];

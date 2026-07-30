@@ -122,7 +122,7 @@
                         </div>
                         <div>
                             <h1 class="font-extrabold text-xl sm:text-2xl tracking-tight leading-tight">SPSn Online</h1>
-                            <p class="text-xs text-blue-200 font-medium">Sistem Pengurusan Kejohanan Sukan Tahunan Sekolah</p>
+                            <p class="text-xs text-blue-200 font-medium">Pentadbir: <span class="text-amber-300 font-mono">{{ adminEmail }}</span></p>
                         </div>
                     </div>
 
@@ -145,13 +145,13 @@
                         <!-- Butang Log Masuk / Status Pengguna -->
                         <template v-if="!isLoggedIn">
                             <button @click="showLoginModal = true" class="px-3.5 py-1.5 bg-amber-400 hover:bg-amber-300 text-blue-950 font-bold text-xs rounded-lg transition shadow-md flex items-center gap-1.5 border border-amber-300">
-                                <i class="fa-solid fa-right-to-bracket"></i> Log Masuk
+                                <i class="fa-solid fa-user-gear"></i> Log Masuk Pentadbir
                             </button>
                         </template>
                         <template v-else>
                             <div class="flex items-center gap-2">
-                                <span class="hidden sm:inline-block text-xs font-semibold bg-emerald-800/60 text-emerald-200 px-2.5 py-1 rounded-lg border border-emerald-600/50">
-                                    <i class="fa-solid fa-user-check mr-1"></i> {{ currentUser }}
+                                <span class="hidden sm:inline-flex items-center gap-1 text-xs font-semibold bg-emerald-800/80 text-emerald-100 px-3 py-1 rounded-lg border border-emerald-500/50 shadow-sm">
+                                    <i class="fa-solid fa-user-shield text-amber-300"></i> Pentadbir: <span class="font-mono text-[11px]">{{ currentUser }}</span>
                                 </span>
                                 <button @click="handleLogout" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs rounded-lg transition border border-slate-600 flex items-center gap-1.5">
                                     <i class="fa-solid fa-right-from-bracket"></i> Log Keluar
@@ -726,7 +726,8 @@
                     <div class="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm print:shadow-none print:border-none print:p-0">
                         <div class="text-center mb-6 pb-6 border-b border-slate-200">
                             <h2 class="text-2xl font-black uppercase text-slate-900 tracking-wider">Laporan Rasmi Kejohanan Sukan Tahunan</h2>
-                            <p class="text-sm text-slate-600 font-semibold mt-1">Sekolah Kebangsaan / Menengah Seri Malaysia</p>
+                            <p class="text-sm text-slate-600 font-semibold mt-1">Sistem Pengurusan Sukan Sekolah</p>
+                            <p class="text-xs text-slate-500 font-mono mt-1">ID Pentadbir Kebangsaan / MOE: {{ adminEmail }}</p>
                             <p class="text-xs text-slate-400 mt-0.5">Tarikh Laporan: {{ new Date().toLocaleDateString('ms-MY') }}</p>
                         </div>
 
@@ -883,7 +884,7 @@
                                         (Tandatangan)
                                     </div>
                                     <p class="font-bold text-slate-800 border-t border-slate-400 pt-1">Pengetua / Guru Besar</p>
-                                    <p class="text-slate-500">SK / SMK Seri Malaysia</p>
+                                    <p class="text-slate-500 font-mono text-[10px]">ID Pengesahan: {{ adminEmail }}</p>
                                 </div>
                             </div>
                         </div>
@@ -1003,12 +1004,12 @@
             </div>
         </div>
 
-        <!-- MODAL 4: LOG MASUK -->
+        <!-- MODAL 4: LOG MASUK PENTADBIR -->
         <div v-if="showLoginModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-100">
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
-                        <i class="fa-solid fa-user-lock text-indigo-600"></i> Log Masuk Urus Setia
+                        <i class="fa-solid fa-user-shield text-indigo-600"></i> Log Masuk Pentadbir
                     </h3>
                     <button @click="showLoginModal = false" class="text-slate-400 hover:text-slate-600">
                         <i class="fa-solid fa-xmark text-lg"></i>
@@ -1016,20 +1017,25 @@
                 </div>
                 <form @submit.prevent="handleLogin" class="space-y-4 text-sm">
                     <div>
-                        <label class="block text-xs font-bold text-slate-600 mb-1">Nama Pengguna</label>
-                        <input v-model="loginForm.username" type="text" placeholder="Masukkan nama pengguna" required class="w-full p-2.5 border rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm">
+                        <label class="block text-xs font-bold text-slate-600 mb-1">ID / E-mel Pentadbir MOE</label>
+                        <input v-model="loginForm.username" type="text" placeholder="sekolah-7608@moe-dl.edu.my" required class="w-full p-2.5 border rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm font-mono">
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-slate-600 mb-1">Kata Laluan</label>
                         <input v-model="loginForm.password" type="password" placeholder="Masukkan kata laluan" required class="w-full p-2.5 border rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm">
                     </div>
                     <div class="p-3 bg-indigo-50 rounded-xl text-xs text-indigo-800 border border-indigo-100">
-                        <p><i class="fa-solid fa-circle-info mr-1"></i> <strong>Akses Percubaan:</strong></p>
-                        <p class="mt-0.5">Nama Pengguna: <code class="bg-indigo-100 px-1 py-0.5 rounded font-mono">admin</code> | Kata Laluan: <code class="bg-indigo-100 px-1 py-0.5 rounded font-mono">1234</code></p>
+                        <p class="font-bold flex items-center gap-1">
+                            <i class="fa-solid fa-circle-info"></i> ID Pentadbir Rasmi Disetkan:
+                        </p>
+                        <p class="mt-1 font-mono bg-indigo-100/70 p-1 rounded text-[11px] border border-indigo-200">
+                            sekolah-7608@moe-dl.edu.my
+                        </p>
+                        <p class="mt-1 text-[11px] text-indigo-700">Kata laluan: <code class="bg-white px-1 py-0.5 rounded font-mono font-bold">1234</code></p>
                     </div>
                     <div class="pt-2 flex justify-end gap-2">
                         <button type="button" @click="showLoginModal = false" class="px-4 py-2 bg-slate-100 text-slate-700 text-xs font-semibold rounded-xl hover:bg-slate-200">Batal</button>
-                        <button type="submit" class="px-4 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-xl hover:bg-indigo-700">Log Masuk</button>
+                        <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl shadow transition">Log Masuk</button>
                     </div>
                 </form>
             </div>
@@ -1079,7 +1085,7 @@
 
         <!-- Footer -->
         <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500 no-print mt-auto">
-            © 2026 Sistem Pengurusan Sukan Tahunan Sekolah (SPSn) • Hak Cipta Terelihara.
+            © 2026 Sistem Pengurusan Sukan Tahunan Sekolah (SPSn) • Pentadbir Rasmi: <span class="font-mono text-slate-700">{{ adminEmail }}</span>
         </footer>
     </div>
 
@@ -1094,14 +1100,17 @@
                     toastMessage: '',
                     isCloudConnected: false,
 
+                    // ID Pentadbir Utama
+                    adminEmail: 'sekolah-7608@moe-dl.edu.my',
+
                     // Status Jenis Sekolah (rendah / menengah)
                     schoolType: 'menengah',
 
                     // Status Log Masuk
-                    isLoggedIn: false,
-                    currentUser: '',
+                    isLoggedIn: true, // Lalai sebagai Pentadbir
+                    currentUser: 'sekolah-7608@moe-dl.edu.my',
                     showLoginModal: false,
-                    loginForm: { username: '', password: '' },
+                    loginForm: { username: 'sekolah-7608@moe-dl.edu.my', password: '' },
 
                     // Data Hebahan
                     announcements: [],
@@ -1610,8 +1619,7 @@
                         this.isLoggedIn = true;
                         this.currentUser = this.loginForm.username;
                         this.showLoginModal = false;
-                        this.loginForm = { username: '', password: '' };
-                        this.showToast('Log masuk berjaya!');
+                        this.showToast(`Log masuk berjaya sebagai ${this.currentUser}`);
                     }
                 },
                 handleLogout() {

@@ -163,21 +163,17 @@
         const formatDateToDMY = (dateStr) => {
             if (!dateStr) return "N/A";
             const parts = dateStr.split('-');
-            if (parts.length === 3) {
-                if (parts[0].length === 4) {
-                    return `${parts[2]}-${parts[1]}-${parts[0]}`;
-                }
+            if (parts.length === 3 && parts[0].length === 4) {
+                return `${parts[2]}-${parts[1]}-${parts[0]}`;
             }
             return dateStr;
         };
 
-        // Smart Category Parser: Tafsiran Kod Kategori Pintar (L12TKB, P9, etc)
         const categoriesMatch = (athCat, evCat) => {
             if (!athCat || !evCat) return false;
             const a = athCat.trim().toUpperCase().replace(/\s+/g, '');
             const e = evCat.trim().toUpperCase().replace(/\s+/g, '');
-            if (a === e) return true;
-            if (e === "TERBUKA") return true; 
+            if (a === e || e === "TERBUKA") return true; 
 
             const parseCat = (code) => {
                 let gender = null;
@@ -185,7 +181,7 @@
                 else if (code.startsWith('P')) gender = 'P';
                 
                 const ageMatch = code.match(/\d+/);
-                const age = ageMatch ? parseInt(ageMatch[0]) : 99; // 99 jika tiada had umur (Terbuka)
+                const age = ageMatch ? parseInt(ageMatch[0]) : 99;
                 return { gender, age };
             };
 
@@ -257,7 +253,6 @@
             const [houseForm, setHouseForm] = useState({ nama: "", slogan: "", guruPenasihat: "", bonusPoints: 0, warnaLabel: "Ungu" });
             const [isEditingHouse, setIsEditingHouse] = useState(false);
             const [originalHouseKey, setOriginalHouseKey] = useState("");
-            const [newAdvisorText, setNewAdvisorText] = useState({});
 
             const [announceFormText, setAnnounceFormText] = useState("");
             const [showAnnounceForm, setShowAnnounceForm] = useState(false);
@@ -291,14 +286,12 @@
 
             const [showMembersModal, setShowMembersModal] = useState(false);
             const [selectedMembersHouse, setSelectedMembersHouse] = useState("");
-            const [membersSortType, setMembersSortType] = useState("nama"); 
 
             const [previewContent, setPreviewContent] = useState("");
             const [toast, setToast] = useState({ show: false, message: "", type: "info" });
             const [confirmModal, setConfirmModal] = useState({ show: false, title: "", message: "", onConfirm: null });
 
             const adminMenuRef = useRef(null);
-            const fileInputRef = useRef(null);
 
             useEffect(() => {
                 const handleClickOutside = (event) => {
@@ -313,14 +306,6 @@
             }, [adminMenuRef]);
 
             const t = useMemo(() => translations[lang] || translations.BM, [lang]);
-
-            const sortedCategories = useMemo(() => {
-                return [...categories].sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
-            }, [categories]);
-
-            const uniqueEventDates = useMemo(() => {
-                return Array.from(new Set((events || []).map(e => e.tarikh).filter(Boolean))).sort();
-            }, [events]);
 
             const logoUrl = activeSchoolLogo;
 
@@ -346,34 +331,22 @@
                 }
             };
 
-            const checkAuthority = () => {
-                if (userRole !== "admin" && userRole !== "guru") {
-                    showToastMessage("Akses Dihalang: Sila log masuk dengan ID DELIMa KPM Guru atau Admin.", "error");
-                    return false;
-                }
-                return true;
-            };
-
-            const checkAdminAuthority = () => {
-                if (userRole !== "admin") {
-                    showToastMessage("Akses Dihalang: Hanya Pentadbir Utama sahaja dibenarkan.", "error");
-                    return false;
-                }
-                return true;
-            };
-
             const showToastMessage = (message, type = "success") => {
                 setToast({ show: true, message, type });
                 setTimeout(() => setToast({ show: false, message: "", type: "info" }), 4000);
             };
 
             const handleGoogleLogin = async () => {
-                if (!auth) return;
+                if (!auth) {
+                    showToastMessage("Firebase Auth tidak tersedia. Gunakan Kunci Laluan.", "error");
+                    return;
+                }
                 const provider = new firebase.auth.GoogleAuthProvider();
                 try {
                     await auth.signInWithPopup(provider);
                     setIsLoginModalOpen(false);
                     setIsAdminMenuOpen(false);
+                    showToastMessage("Log Masuk Google / DELIMa Berjaya!", "success");
                 } catch (error) {
                     showToastMessage("Log masuk Google gagal: " + error.message, "error");
                 }
@@ -423,12 +396,12 @@
 
             useEffect(() => {
                 if (!currentUser) return;
-                const email = currentUser.email || "";
+                const email = (currentUser.email || "").toLowerCase();
                 if (email === "sekolah-7608@moe-dl.edu.my") {
                     setUserRole("admin");
-                } else if (adminList.some(admin => (admin.email || "").toLowerCase() === email.toLowerCase())) {
+                } else if (adminList.some(admin => (admin.email || "").toLowerCase() === email)) {
                     setUserRole("admin");
-                } else if (email.endsWith("@moe-dl.edu.my") || email.endsWith("@moe.edu.my")) {
+                } else if (email.endsWith("@moe-dl.edu.my") || email.endsWith("@moe.edu.my") || email.endsWith("@g-acc.moe-dl.edu.my")) {
                     setUserRole("guru");
                 } else if (!currentUser.isAnonymous) {
                     setUserRole("pelawat");
@@ -470,6 +443,8 @@
                 const pathResults = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('results');
                 const pathHeats = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('heats');
                 const pathMeta = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('metadata');
+                const pathAnnouncements = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('announcements');
+                const pathLogs = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('logs');
 
                 const unsubAthletes = pathAthletes.onSnapshot((snapshot) => {
                     const data = [];
@@ -499,12 +474,16 @@
                     if (doc.exists) setHousesMetadata(doc.data() || INITIAL_HOUSES_METADATA);
                 });
 
-                const unsubConfig = pathMeta.doc('config').onSnapshot((doc) => {
-                    if (doc.exists) {
-                        const data = doc.data();
-                        if (data.activeYear) setActiveYear(data.activeYear);
-                        if (data.categories !== undefined) setCategories(data.categories);
-                    }
+                const unsubAnnounce = pathAnnouncements.onSnapshot((snapshot) => {
+                    const data = [];
+                    snapshot.forEach(doc => data.push({ id: doc.id, ...doc.data() }));
+                    setAnnouncements(data.length > 0 ? data : DEFAULT_ANNOUNCEMENTS);
+                });
+
+                const unsubLogs = pathLogs.onSnapshot((snapshot) => {
+                    const data = [];
+                    snapshot.forEach(doc => data.push({ id: doc.id, ...doc.data() }));
+                    setLogs(data);
                 });
 
                 return () => {
@@ -513,7 +492,8 @@
                     unsubResults();
                     unsubHeats();
                     unsubMeta();
-                    unsubConfig();
+                    unsubAnnounce();
+                    unsubLogs();
                 };
             }, [isCloudActive]);
 
@@ -572,42 +552,44 @@
                 return (events || []).map(ev => ({ ...ev, kodAcara: eventCodeMap[ev.id] || "101" }));
             }, [events]);
 
-            const displayedEvents = useMemo(() => {
-                if (selectedEventDate === "Semua") return eventsWithCode;
-                return eventsWithCode.filter(e => e.tarikh === selectedEventDate);
-            }, [eventsWithCode, selectedEventDate]);
+            const handleAddAnnouncement = async (e) => {
+                e.preventDefault();
+                if (!announceFormText.trim()) return;
 
-            const handleAddCategory = async () => {
-                if (!checkAdminAuthority()) return;
-                const cat = newCategoryInput.trim().toUpperCase();
-                if (!cat) return;
-                if (categories.includes(cat)) {
-                    showToastMessage("Kategori ini sudah wujud!", "error");
-                    return;
-                }
-                const updatedCats = [...categories, cat];
-                setCategories(updatedCats);
-                setNewCategoryInput("");
+                const annId = "ann_" + Date.now();
+                const newAnn = {
+                    id: annId,
+                    text: announceFormText.trim(),
+                    date: new Date().toLocaleDateString('ms-MY'),
+                    author: currentUser?.displayName || "Urus Setia Sukan"
+                };
 
                 try {
                     if (isCloudActive && db) {
-                        await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('metadata').doc('config').set({ categories: updatedCats }, { merge: true });
+                        await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('announcements').doc(annId).set(newAnn);
+                    } else {
+                        setAnnouncements(prev => [newAnn, ...prev]);
                     }
-                    showToastMessage(`Kategori baharu ${cat} ditambah!`);
-                } catch (e) {
-                    console.error(e);
+                    setAnnounceFormText("");
+                    setShowAnnounceForm(false);
+                    showToastMessage("Hebahan baharu diterbitkan!", "success");
+                    createLog("Hebahan Baru", announceFormText.slice(0, 30) + "...");
+                } catch (err) {
+                    showToastMessage("Gagal menerbitkan hebahan.", "error");
                 }
             };
 
-            const handleSaveSignatories = (e) => {
-                e.preventDefault();
-                if (!checkAdminAuthority()) return;
-                localStorage.setItem('sps_sig1_name', certSignatory1Name);
-                localStorage.setItem('sps_sig1_title', certSignatory1Title);
-                localStorage.setItem('sps_sig2_name', certSignatory2Name);
-                localStorage.setItem('sps_sig2_title', certSignatory2Title);
-                setShowSignatoryModal(false);
-                showToastMessage("Maklumat Penandatangan Sijil Berjaya Dikemaskini!", "success");
+            const handleDeleteAnnouncement = async (annId) => {
+                try {
+                    if (isCloudActive && db) {
+                        await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('announcements').doc(annId).delete();
+                    } else {
+                        setAnnouncements(prev => prev.filter(a => a.id !== annId));
+                    }
+                    showToastMessage("Hebahan dipadam.", "info");
+                } catch (err) {
+                    showToastMessage("Gagal memadam.", "error");
+                }
             };
 
             const executeBypassPrint = (mode, targetData = null) => {
@@ -725,46 +707,8 @@
                 setIsPreviewModalOpen(true);
             };
 
-            const handleSaveSchoolSetup = (e) => {
-                e.preventDefault();
-                if (!checkAdminAuthority()) return;
-                
-                if (setupFirebaseConfigRaw.trim()) {
-                    try {
-                        JSON.parse(setupFirebaseConfigRaw.trim());
-                    } catch (err) {
-                        showToastMessage("Ralat: Format Konfigurasi Firebase JSON tidak sah.", "error");
-                        return;
-                    }
-                }
-
-                localStorage.setItem('sps_school_name', setupSchoolName.trim() || DEFAULT_SCHOOL_NAME);
-                localStorage.setItem('sps_school_subtitle', setupSchoolSubtitle.trim() || DEFAULT_SCHOOL_SUBTITLE);
-                localStorage.setItem('sps_school_logo', setupSchoolLogo.trim() || DEFAULT_SCHOOL_LOGO);
-                localStorage.setItem('sps_school_code', setupSchoolCode.trim() || DEFAULT_SCHOOL_CODE);
-                localStorage.setItem('sps_school_district', setupSchoolDistrict.trim() || DEFAULT_SCHOOL_DISTRICT);
-                localStorage.setItem('sps_school_state', setupSchoolState.trim() || DEFAULT_SCHOOL_STATE);
-
-                if (setupFirebaseConfigRaw.trim()) {
-                    localStorage.setItem('sps_custom_firebase_config', setupFirebaseConfigRaw.trim());
-                } else {
-                    localStorage.removeItem('sps_custom_firebase_config');
-                }
-
-                if (setupGasUrl.trim()) {
-                    localStorage.setItem('sps_custom_gas_url', setupGasUrl.trim());
-                } else {
-                    localStorage.removeItem('sps_custom_gas_url');
-                }
-
-                showToastMessage("Tetapan Sekolah Baharu Berjaya Disimpan! Memuat semula portal...", "success");
-                setTimeout(() => { window.location.reload(); }, 1500);
-            };
-
             return (
                 <div className="min-h-screen flex flex-col bg-slate-50 print:hidden">
-                    <input type="file" ref={fileInputRef} accept=".json" className="hidden" />
-                    
                     <header className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white shadow-md relative z-50">
                         <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
                             <div className="flex items-center gap-4">
@@ -828,11 +772,10 @@
                         </div>
                     </div>
 
-                    {}
                     <main className="max-w-7xl mx-auto px-4 py-6 flex-grow w-full">
-                        {/* TAB 1: Dashboard */}
                         {activeTab === "dashboard" && (
                             <div className="space-y-6">
+                                {/* House Standings */}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                                     {houseStandings.map((h, idx) => (
                                         <div key={h.nama} className={`rounded-2xl p-5 border bg-white relative overflow-hidden shadow-sm ${h.glow}`}>
@@ -853,10 +796,73 @@
                                         </div>
                                     ))}
                                 </div>
+
+                                {/* Main Dashboard Grid: Announcements & Activity Logs */}
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                    <div className="lg:col-span-2 bg-white rounded-2xl p-6 border shadow-sm space-y-4">
+                                        <div className="flex justify-between items-center border-b pb-3">
+                                            <h3 className="text-sm font-bold text-slate-900 uppercase">📢 {t.announcement}</h3>
+                                            {userRole !== "pelawat" && (
+                                                <button onClick={() => setShowAnnounceForm(!showAnnounceForm)} className="text-xs bg-indigo-50 text-indigo-600 font-bold px-3 py-1.5 rounded-xl hover:bg-indigo-100 transition">
+                                                    {showAnnounceForm ? "✕ Batal" : "+ Tambah Hebahan"}
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        {showAnnounceForm && userRole !== "pelawat" && (
+                                            <form onSubmit={handleAddAnnouncement} className="bg-slate-50 p-4 rounded-xl border space-y-3">
+                                                <textarea rows="3" required value={announceFormText} onChange={(e) => setAnnounceFormText(e.target.value)} placeholder="Tulis hebahan rasmi kejohanan di sini..." className="w-full p-3 rounded-xl border text-xs font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+                                                <div className="flex justify-end">
+                                                    <button type="submit" className="bg-indigo-600 text-white font-bold px-4 py-2 rounded-xl text-xs hover:bg-indigo-700 transition">Terbitkan Hebahan</button>
+                                                </div>
+                                            </form>
+                                        )}
+
+                                        <div className="space-y-3">
+                                            {(announcements || []).length === 0 ? (
+                                                <p className="text-xs text-slate-400 italic text-center py-6">Tiada hebahan rasmi terbaharu.</p>
+                                            ) : (
+                                                announcements.map(ann => (
+                                                    <div key={ann.id} className="bg-amber-50/60 border border-amber-200/60 rounded-xl p-4 flex justify-between items-start gap-4">
+                                                        <div className="space-y-1">
+                                                            <p className="text-xs text-slate-800 font-semibold leading-relaxed">{ann.text}</p>
+                                                            <p className="text-[10px] text-slate-400 font-bold">✍️ {ann.author} • 📅 {ann.date}</p>
+                                                        </div>
+                                                        {userRole !== "pelawat" && (
+                                                            <button onClick={() => handleDeleteAnnouncement(ann.id)} className="text-red-400 hover:text-red-600 text-xs font-bold">✕</button>
+                                                        )}
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-white rounded-2xl p-6 border shadow-sm flex flex-col h-[420px]">
+                                        <div className="border-b pb-3 mb-4 flex justify-between items-center">
+                                            <h3 className="text-sm font-bold text-slate-900 uppercase">📈 Log Aktiviti</h3>
+                                            <input type="text" placeholder="Cari log..." value={filterLogQuery} onChange={(e) => setFilterLogQuery(e.target.value)} className="p-1.5 border rounded-xl text-xs font-medium w-28" />
+                                        </div>
+                                        <div className="space-y-3 overflow-y-auto flex-grow pr-1 text-xs">
+                                            {(logs || []).filter(log => !filterLogQuery || log.action.toLowerCase().includes(filterLogQuery.toLowerCase()) || log.details.toLowerCase().includes(filterLogQuery.toLowerCase())).length === 0 ? (
+                                                <p className="text-slate-400 italic text-center py-12">Tiada rekod log aktiviti.</p>
+                                            ) : (
+                                                logs.filter(log => !filterLogQuery || log.action.toLowerCase().includes(filterLogQuery.toLowerCase()) || log.details.toLowerCase().includes(filterLogQuery.toLowerCase())).map(log => (
+                                                    <div key={log.id} className="p-2.5 rounded-xl bg-slate-50 border space-y-0.5">
+                                                        <div className="flex justify-between text-[9px] text-slate-400 font-bold">
+                                                            <span>👤 {log.userName}</span>
+                                                            <span>⏱️ {log.timestamp}</span>
+                                                        </div>
+                                                        <p className="font-extrabold text-slate-800 text-xs">{log.action}</p>
+                                                        <p className="text-slate-500 text-[11px] leading-snug">{log.details}</p>
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         )}
 
-                        {/* TAB 2: Sports Houses */}
                         {activeTab === "rumah_sukan" && (
                             <div className="space-y-6">
                                 <div className="bg-white p-5 rounded-2xl border shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -914,7 +920,6 @@
                             </div>
                         )}
 
-                        {/* TAB 3: Athlete Management */}
                         {activeTab === "atlit" && (
                             <div className="space-y-6">
                                 <div className="bg-white p-5 rounded-2xl border shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -976,7 +981,6 @@
                             </div>
                         )}
 
-                        {/* TAB 4: Events Management */}
                         {activeTab === "acara" && (
                             <div className="space-y-6">
                                 <div className="bg-white p-5 rounded-2xl border shadow-sm flex flex-wrap justify-between items-center gap-4">
@@ -984,28 +988,18 @@
                                         <h3 className="font-extrabold text-slate-900 text-base">📋 Pengurusan Acara & Kategori</h3>
                                         <p className="text-xs text-slate-500">Konfigurasi senarai acara kejohanan dan kategori had umur.</p>
                                     </div>
-                                    {userRole === "admin" && (
-                                        <div className="flex gap-2 items-center flex-wrap">
-                                            <input type="text" placeholder="Kod Kategori (cth: L12TKB)" value={newCategoryInput} onChange={(e) => setNewCategoryInput(e.target.value)} className="p-2 border rounded-xl text-xs font-bold uppercase" />
-                                            <button onClick={handleAddCategory} className="bg-emerald-600 text-white text-xs font-bold px-3.5 py-2 rounded-xl hover:bg-emerald-700 transition">+ Tambah Kategori</button>
-                                        </div>
-                                    )}
                                 </div>
-
                                 <div className="bg-white p-5 rounded-2xl border shadow-sm">
-                                    <h4 className="text-xs font-extrabold uppercase text-slate-400 mb-3">Senarai Kategori Aktif:</h4>
+                                    <h4 className="text-xs font-extrabold uppercase text-slate-400 mb-3">Kategori Berdaftar:</h4>
                                     <div className="flex flex-wrap gap-2">
                                         {categories.map(cat => (
-                                            <span key={cat} className="bg-indigo-50 border border-indigo-200 text-indigo-700 font-extrabold text-xs px-3 py-1.5 rounded-xl">
-                                                {cat}
-                                            </span>
+                                            <span key={cat} className="bg-indigo-50 border border-indigo-200 text-indigo-700 font-extrabold text-xs px-3 py-1.5 rounded-xl">{cat}</span>
                                         ))}
                                     </div>
                                 </div>
                             </div>
                         )}
 
-                        {/* TAB 5: Event Results */}
                         {activeTab === "keputusan" && (
                             <div className="space-y-6">
                                 <div className="bg-white p-5 rounded-2xl border shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -1029,7 +1023,6 @@
                             </div>
                         )}
 
-                        {/* TAB 6: Post-Sports Documentation & Certificates */}
                         {activeTab === "pasca_sukan" && (
                             <div className="space-y-6">
                                 <div className="bg-white p-6 rounded-2xl border shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -1052,83 +1045,32 @@
                         )}
                     </main>
 
-                    {}
-                    {/* Modal Multi-School Setup */}
-                    {showSchoolSetupModal && (
-                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
-                            <form onSubmit={handleSaveSchoolSetup} className="bg-white rounded-3xl p-6 max-w-lg w-full text-xs font-semibold space-y-4 max-h-[90vh] overflow-y-auto">
-                                <div className="flex justify-between items-center border-b pb-3">
-                                    <h3 className="text-sm font-extrabold text-slate-900 uppercase">🏫 Tetapan Sekolah Baharu (Multi-School Config)</h3>
-                                    <button type="button" onClick={() => setShowSchoolSetupModal(false)} className="text-slate-400">✕</button>
+                    {isLoginModalOpen && (
+                        <div className="fixed inset-0 bg-slate-900/75 backdrop-blur-sm z-[10000] flex items-center justify-center p-4">
+                            <div className="bg-white rounded-3xl shadow-2xl border max-w-md w-full overflow-hidden">
+                                <div className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white px-6 py-5 flex justify-between items-center">
+                                    <h3 className="text-xs font-black uppercase">🔒 Log Masuk Pentadbiran / Guru</h3>
+                                    <button onClick={() => setIsLoginModalOpen(false)} className="text-slate-400 hover:text-white">✕</button>
                                 </div>
-                                <div className="space-y-3">
-                                    <div className="grid grid-cols-2 gap-2">
-                                        <div>
-                                            <label className="block mb-1 font-bold">Nama Sekolah</label>
-                                            <input type="text" required value={setupSchoolName} onChange={(e) => setSetupSchoolName(e.target.value)} className="w-full p-2 border rounded-xl" />
-                                        </div>
-                                        <div>
-                                            <label className="block mb-1 font-bold">Kod Sekolah</label>
-                                            <input type="text" required value={setupSchoolCode} onChange={(e) => setSetupSchoolCode(e.target.value)} className="w-full p-2 border rounded-xl" />
-                                        </div>
+                                <div className="p-6 space-y-6 text-xs font-semibold">
+                                    <button onClick={handleGoogleLogin} className="w-full bg-white hover:bg-slate-50 text-slate-800 border py-3 rounded-2xl flex items-center justify-center gap-2.5 shadow-sm font-bold border-slate-300">
+                                        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" />
+                                        <span>Log Masuk Google / DELIMa KPM</span>
+                                    </button>
+                                    <div className="relative flex py-1 items-center">
+                                        <div className="flex-grow border-t"></div>
+                                        <span className="flex-shrink mx-4 text-slate-400 text-[10px]">ATAU KUNCI LALUAN</span>
+                                        <div className="flex-grow border-t"></div>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-2">
-                                        <div>
-                                            <label className="block mb-1 font-bold">Daerah</label>
-                                            <input type="text" required value={setupSchoolDistrict} onChange={(e) => setSetupSchoolDistrict(e.target.value)} className="w-full p-2 border rounded-xl" />
-                                        </div>
-                                        <div>
-                                            <label className="block mb-1 font-bold">Negeri</label>
-                                            <input type="text" required value={setupSchoolState} onChange={(e) => setSetupSchoolState(e.target.value)} className="w-full p-2 border rounded-xl" />
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label className="block mb-1 font-bold">Pautan URL Logo Sekolah</label>
-                                        <input type="text" required value={setupSchoolLogo} onChange={(e) => setSetupSchoolLogo(e.target.value)} className="w-full p-2 border rounded-xl" />
-                                    </div>
-                                    <div>
-                                        <label className="block mb-1 font-bold">Google Apps Script Web App URL</label>
-                                        <input type="text" value={setupGasUrl} onChange={(e) => setSetupGasUrl(e.target.value)} className="w-full p-2 border rounded-xl font-mono text-[10px]" placeholder="https://script.google.com/..." />
-                                    </div>
-                                    <div>
-                                        <label className="block mb-1 font-bold">Konfigurasi Firebase JSON Sekolah</label>
-                                        <textarea rows="5" value={setupFirebaseConfigRaw} onChange={(e) => setSetupFirebaseConfigRaw(e.target.value)} className="w-full p-2 border rounded-xl font-mono text-[10px]" placeholder='{"apiKey": "...", "projectId": "..."}' />
-                                    </div>
+                                    <form onSubmit={handlePasscodeLogin} className="space-y-3">
+                                        <input type="password" required value={passcodeInput} onChange={(e) => setPasscodeInput(e.target.value)} placeholder="Kunci Laluan..." className="w-full p-3 rounded-xl border text-center tracking-widest bg-slate-50 font-mono text-sm" />
+                                        <button type="submit" className="w-full bg-indigo-600 text-white py-3 rounded-2xl font-extrabold hover:bg-indigo-700 transition">Log Masuk</button>
+                                    </form>
                                 </div>
-                                <div className="flex justify-end gap-2 pt-3 border-t">
-                                    <button type="button" onClick={() => setShowSchoolSetupModal(false)} className="px-4 py-2 bg-slate-100 rounded-xl">Batal</button>
-                                    <button type="submit" className="px-5 py-2 bg-indigo-600 text-white rounded-xl font-bold">Simpan & Aktifkan</button>
-                                </div>
-                            </form>
+                            </div>
                         </div>
                     )}
 
-                    {/* Modal Penandatangan Sijil */}
-                    {showSignatoryModal && (
-                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
-                            <form onSubmit={handleSaveSignatories} className="bg-white rounded-3xl p-6 max-w-md w-full text-xs font-semibold space-y-4">
-                                <h3 className="text-sm font-extrabold text-slate-900 uppercase border-b pb-2">✍️ Tetapan Penandatangan Sijil</h3>
-                                <div className="space-y-3">
-                                    <div className="bg-slate-50 p-3 rounded-xl border space-y-2">
-                                        <p className="font-extrabold text-indigo-700">Penandatangan 1 (Kiri)</p>
-                                        <input type="text" required value={certSignatory1Name} onChange={(e) => setCertSignatory1Name(e.target.value)} placeholder="Nama Pegawai" className="w-full p-2 border rounded-lg" />
-                                        <input type="text" required value={certSignatory1Title} onChange={(e) => setCertSignatory1Title(e.target.value)} placeholder="Jawatan" className="w-full p-2 border rounded-lg" />
-                                    </div>
-                                    <div className="bg-slate-50 p-3 rounded-xl border space-y-2">
-                                        <p className="font-extrabold text-indigo-700">Penandatangan 2 (Kanan)</p>
-                                        <input type="text" required value={certSignatory2Name} onChange={(e) => setCertSignatory2Name(e.target.value)} placeholder="Nama Pegawai" className="w-full p-2 border rounded-lg" />
-                                        <input type="text" required value={certSignatory2Title} onChange={(e) => setCertSignatory2Title(e.target.value)} placeholder="Jawatan" className="w-full p-2 border rounded-lg" />
-                                    </div>
-                                </div>
-                                <div className="flex justify-end gap-2 pt-2">
-                                    <button type="button" onClick={() => setShowSignatoryModal(false)} className="px-4 py-2 bg-slate-100 rounded-xl">Batal</button>
-                                    <button type="submit" className="px-5 py-2 bg-indigo-600 text-white rounded-xl font-bold">Simpan</button>
-                                </div>
-                            </form>
-                        </div>
-                    )}
-
-                    {/* Modal Pratinjau Dokumen */}
                     {isPreviewModalOpen && (
                         <div className="fixed inset-0 bg-slate-900/80 z-[10000] flex flex-col items-center justify-center p-4">
                             <div className="bg-white rounded-2xl w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden">
@@ -1147,7 +1089,6 @@
                         </div>
                     )}
 
-                    {/* Notification Toast */}
                     {toast.show && (
                         <div className="fixed bottom-5 right-5 z-[10000] max-w-sm p-4 rounded-xl shadow-2xl bg-slate-900 text-white text-xs font-bold">
                             <p>{toast.message}</p>

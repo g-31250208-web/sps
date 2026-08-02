@@ -83,7 +83,23 @@
             Hijau: { slogan: "Hijau Perkasa", guruPenasihat: "Cikgu C", bonusPoints: 0, warnaLabel: "Hijau" },
             Kuning: { slogan: "Kuning Diraja", guruPenasihat: "Cikgu D", bonusPoints: 0, warnaLabel: "Kuning" }
         };
-
+        const unsubLog = base.collection('logs').onSnapshot(snap => {
+                    const l = snap.docs.map(d => ({id: d.id, ...d.data()}));
+                    l.sort((x,y) => y.id.localeCompare(x.id)); setLogs(l);
+                });
+                const unsubMeta = base.collection('metadata').doc('houses').onSnapshot(doc => { 
+                    if (doc.exists) {
+                        const fetchedData = doc.data();
+                        // Gabungkan rumah lalai (jika belum wujud di awan) dengan data dari awan
+                        const mergedHouses = { ...INITIAL_HOUSES };
+                        Object.keys(fetchedData).forEach(key => { mergedHouses[key] = fetchedData[key]; });
+                        setHousesMetadata(mergedHouses);
+                    } else {
+                        setHousesMetadata(INITIAL_HOUSES);
+                    }
+                });
+                const unsubConf = base.collection('metadata').doc('config').onSnapshot(doc => {
+                    if (doc.exists) {
         const getFriendlyCategory = (cat) => cat ? String(cat).trim().toUpperCase() : "";
         const formatDateToDMY = (dateStr) => {
             if (!dateStr) return "N/A";

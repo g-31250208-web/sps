@@ -136,6 +136,8 @@
             const [showPointsModal, setShowPointsModal] = useState(false);
             const [showGasModal, setShowGasModal] = useState(false);
             const [showSchoolSetupModal, setShowSchoolSetupModal] = useState(false);
+            const [showDiagModal, setShowDiagModal] = useState(false);
+            const [schoolSetupTab, setSchoolSetupTab] = useState("config");
             const [gasModalTab, setGasModalTab] = useState("config");
             const [showSignatoryModal, setShowSignatoryModal] = useState(false);
             const [certSignatory1Name, setCertSignatory1Name] = useState(() => localStorage.getItem('sps_sig1_name') || "Cikgu Adnan Bin Haji Abdul Rahman");
@@ -185,6 +187,7 @@
             const [confirmModal, setConfirmModal] = useState({ show: false, title: "", message: "", onConfirm: null });
 
             const adminMenuRef = useRef(null);
+            const fileInputRef = useRef(null);
             const t = useMemo(() => translations[lang] || translations.BM, [lang]);
             
             const activeSchoolName = localStorage.getItem('sps_school_name') || DEFAULT_SCHOOL_NAME;
@@ -298,6 +301,76 @@
 
             const sortedCategories = [...categories].sort();
             const uniqueEventDates = Array.from(new Set(events.map(e => e.tarikh).filter(Boolean))).sort();
+
+            const handleBackup = () => {
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ athletes, events: eventsWithCode, results, heats, housesMetadata }));
+                const downloadAnchor = document.createElement('a');
+                downloadAnchor.setAttribute("href", dataStr);
+                downloadAnchor.setAttribute("download", `Sandaran_SiPS_${new Date().toISOString().slice(0,10)}.json`);
+                document.body.appendChild(downloadAnchor);
+                downloadAnchor.click();
+                downloadAnchor.remove();
+                createLog("Eksport Sandaran", "Membuat sandaran data kejohanan.");
+                showToastMessage("Fail sandaran dimuat turun!");
+            };
+
+            const handleRestoreClick = () => {
+                if (fileInputRef.current) fileInputRef.current.click();
+            };
+
+            const handleRestoreBackup = async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = async (event) => {
+                    try {
+                        const data = JSON.parse(event.target.result);
+                        if (data.athletes) setAthletes(data.athletes);
+                        if (data.events) setEvents(data.events);
+                        if (data.results) setResults(data.results);
+                        if (data.heats) setHeats(data.heats);
+                        if (data.housesMetadata) setHousesMetadata(data.housesMetadata);
+
+                        if (isCloudActive && db) {
+                            if (data.athletes) for (const ath of data.athletes) await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('athletes').doc(ath.id).set(ath);
+                            if (data.events) for (const ev of data.events) await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('events').doc(ev.id).set(ev);
+                        }
+                        createLog("Import Sandaran", `Mengembalikan data daripada fail ${file.name}`);
+                        showToastMessage("Pangkalan data berjaya dipulihkan!", "success");
+                    } catch (err) {
+                        showToastMessage("Ralat membaca fail.", "error");
+                    }
+                };
+                reader.readAsText(file);
+                if (fileInputRef.current) fileInputRef.current.value = '';
+            };
+
+            const handleResetDatabase = () => {
+                setConfirmModal({
+                    show: true,
+                    title: "Kosongkan Pangkalan Data?",
+                    message: "Tindakan ini akan memadamkan SEMUA rekod murid, keputusan, saringan, dan acara.",
+                    onConfirm: async () => {
+                        try {
+                            if (isCloudActive && db) {
+                                const athSnap = await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('athletes').get();
+                                await Promise.all(athSnap.docs.map(doc => doc.ref.delete()));
+                                const evSnap = await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('events').get();
+                                await Promise.all(evSnap.docs.map(doc => doc.ref.delete()));
+                                const resSnap = await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('results').get();
+                                await Promise.all(resSnap.docs.map(doc => doc.ref.delete()));
+                            } else {
+                                setAthletes([]); setEvents([]); setResults([]); setHeats([]);
+                            }
+                            createLog("Semula DB", "Menetapkan semula pangkalan data.");
+                            setConfirmModal({ show: false, title: "", message: "", onConfirm: null });
+                            showToastMessage("Pangkalan data dikosongkan.");
+                        } catch (e) {
+                            showToastMessage("Gagal.", "error");
+                        }
+                    }
+                });
+            };
 
             const executeBypassPrint = (mode, targetData = null) => {
                 let printContent = "";
@@ -464,6 +537,7 @@
 
             return (
                 <div className="min-h-screen flex flex-col bg-slate-50">
+                    <input type="file" ref={fileInputRef} onChange={handleRestoreBackup} accept=".json" className="hidden" />
                     {/* Header */}
                     <header className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white shadow-md relative z-50">
                         <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
@@ -480,8 +554,12 @@
                                         <button onClick={() => setIsAdminMenuOpen(!isAdminMenuOpen)} className="bg-yellow-500 hover:bg-yellow-600 text-slate-950 font-black px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5">🛠️ PANEL PENTADBIR</button>
                                         {isAdminMenuOpen && (
                                             <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-2xl border py-2 text-slate-800 z-[9999]">
+                                                <button onClick={() => { setShowDiagModal(true); setIsAdminMenuOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-semibold">ℹ️ Info Diag</button>
                                                 <button onClick={() => { setShowPointsModal(true); setIsAdminMenuOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-semibold">⚙️ Tetapan Kategori & Mata</button>
                                                 <button onClick={() => { setShowSchoolSetupModal(true); setIsAdminMenuOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-semibold">🏫 Tetapan Sekolah Baharu</button>
+                                                <button onClick={() => { handleBackup(); setIsAdminMenuOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-emerald-50 text-xs font-semibold text-emerald-700">📥 Sandaran Data (JSON)</button>
+                                                <button onClick={() => { handleRestoreClick(); setIsAdminMenuOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-amber-50 text-xs font-semibold text-amber-700">📤 Muat Naik Sandaran</button>
+                                                <button onClick={() => { handleResetDatabase(); setIsAdminMenuOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-red-50 text-xs font-semibold text-red-600">🔄 Kosongkan DB</button>
                                             </div>
                                         )}
                                     </div>
@@ -1044,7 +1122,15 @@
                                         }} className="bg-emerald-600 text-white px-3 py-2 rounded-xl font-bold">Tambah</button>
                                     </div>
                                     <div className="flex flex-wrap gap-1 mt-2">
-                                        {categories.map(c=><span key={c} className="bg-white border px-2 py-1 rounded text-[10px]">{c}</span>)}
+                                        {categories.map(c=>(
+                                            <span key={c} className="bg-white border px-2 py-1 rounded text-[10px] flex items-center gap-1">
+                                                {c}
+                                                <button onClick={() => {
+                                                    setCategories(categories.filter(cat => cat !== c));
+                                                    showToastMessage(`Kategori ${c} dipadam. Sila Simpan Global.`);
+                                                }} className="text-red-500 hover:text-red-700 font-bold ml-1">✕</button>
+                                            </span>
+                                        ))}
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-2 border-t pt-4">
@@ -1076,33 +1162,119 @@
                     {/* Modal Multi-School Setup */}
                     {showSchoolSetupModal && (
                         <div className="fixed inset-0 bg-slate-900/60 z-[9999] flex items-center justify-center p-4">
-                            <form onSubmit={e => {
-                                e.preventDefault(); const form = e.target;
-                                localStorage.setItem('sps_school_name', form.sName.value.trim() || DEFAULT_SCHOOL_NAME);
-                                localStorage.setItem('sps_school_subtitle', form.sSub.value.trim() || DEFAULT_SCHOOL_SUBTITLE);
-                                localStorage.setItem('sps_school_logo', form.sLogo.value.trim() || DEFAULT_SCHOOL_LOGO);
-                                const fRaw = form.fConfig.value.trim();
-                                if (fRaw) { try { JSON.parse(fRaw); localStorage.setItem('sps_custom_firebase_config', fRaw); } catch(err) { showToastMessage("Ralat JSON Firebase", "error"); return; } }
-                                else { localStorage.removeItem('sps_custom_firebase_config'); }
-                                showToastMessage("Tetapan Portal Disimpan! Memuat Semula..."); setTimeout(()=>window.location.reload(), 1500);
-                            }} className="bg-white rounded-2xl p-6 w-full max-w-md text-xs font-semibold space-y-4 max-h-[90vh] overflow-y-auto">
-                                <h3 className="font-black text-sm uppercase">🏫 Tetapan Sekolah Baharu</h3>
-                                <p className="text-[10px] text-slate-500">Konfigurasi nama sekolah dan Firebase/Google Apps Script (Multi-School Configurable).</p>
-                                <div><label className="block mb-1">Nama Singkatan Sekolah</label><input name="sName" type="text" defaultValue={activeSchoolName} className="w-full border p-2 rounded-xl uppercase" /></div>
-                                <div><label className="block mb-1">Tajuk / Kod Sekolah</label><input name="sSub" type="text" defaultValue={activeSchoolSubtitle} className="w-full border p-2 rounded-xl" /></div>
-                                <div><label className="block mb-1">URL Logo (Pilihan)</label><input name="sLogo" type="text" defaultValue={logoUrl} className="w-full border p-2 rounded-xl" /></div>
-                                <div className="border-t pt-3">
-                                    <label className="block mb-1">Konfigurasi Firebase JSON (Khusus Sekolah Ini)</label>
-                                    <textarea name="fConfig" rows="5" defaultValue={cachedConfigRaw||""} placeholder={`{\n  "apiKey": "AIzaSy...",\n  "authDomain": "sps-sekolah.firebaseapp.com",\n  "projectId": "sps-sekolah",\n  ... \n}`} className="w-full border p-2 rounded-xl font-mono text-[10px]"></textarea>
-                                </div>
-                                <div className="flex justify-between pt-2">
-                                    <button type="button" onClick={()=>{localStorage.clear(); window.location.reload();}} className="text-red-500">Kosongkan/Reset</button>
-                                    <div className="flex gap-2">
-                                        <button type="button" onClick={()=>setShowSchoolSetupModal(false)} className="px-4 py-2 bg-slate-200 rounded-xl">Batal</button>
-                                        <button type="submit" className="px-4 py-2 bg-indigo-600 text-white rounded-xl">Simpan & Restart</button>
+                            <div className="bg-white rounded-2xl w-full max-w-xl text-xs font-semibold space-y-4 max-h-[90vh] flex flex-col">
+                                <div className="p-6 pb-2 border-b">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h3 className="font-black text-sm uppercase">🏫 Tetapan Sekolah Baharu</h3>
+                                        <button onClick={() => setShowSchoolSetupModal(false)} className="text-slate-400 hover:text-slate-700">✕</button>
+                                    </div>
+                                    <div className="flex text-[11px]">
+                                        <button onClick={() => setSchoolSetupTab("config")} className={`flex-1 pb-2 text-center border-b-2 font-bold transition ${schoolSetupTab === "config" ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-400 hover:text-slate-600"}`}>⚙️ Konfigurasi Portal</button>
+                                        <button onClick={() => setSchoolSetupTab("rules")} className={`flex-1 pb-2 text-center border-b-2 font-bold transition ${schoolSetupTab === "rules" ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-400 hover:text-slate-600"}`}>🔒 Rules Firestore</button>
+                                        <button onClick={() => setSchoolSetupTab("script")} className={`flex-1 pb-2 text-center border-b-2 font-bold transition ${schoolSetupTab === "script" ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-400 hover:text-slate-600"}`}>📄 Apps Script</button>
                                     </div>
                                 </div>
-                            </form>
+                                
+                                <div className="p-6 pt-2 flex-1 overflow-y-auto">
+                                    {schoolSetupTab === "config" && (
+                                        <form id="school-setup-form" onSubmit={e => {
+                                            e.preventDefault(); const form = e.target;
+                                            localStorage.setItem('sps_school_name', form.sName.value.trim() || DEFAULT_SCHOOL_NAME);
+                                            localStorage.setItem('sps_school_subtitle', form.sSub.value.trim() || DEFAULT_SCHOOL_SUBTITLE);
+                                            localStorage.setItem('sps_school_logo', form.sLogo.value.trim() || DEFAULT_SCHOOL_LOGO);
+                                            const fRaw = form.fConfig.value.trim();
+                                            if (fRaw) { try { JSON.parse(fRaw); localStorage.setItem('sps_custom_firebase_config', fRaw); } catch(err) { showToastMessage("Ralat JSON Firebase", "error"); return; } }
+                                            else { localStorage.removeItem('sps_custom_firebase_config'); }
+                                            localStorage.setItem('sps_custom_gas_url', form.gUrl.value.trim());
+                                            showToastMessage("Tetapan Portal Disimpan! Memuat Semula..."); setTimeout(()=>window.location.reload(), 1500);
+                                        }} className="space-y-4">
+                                            <p className="text-[10px] text-slate-500 mb-2">Konfigurasi nama sekolah dan integrasi pangkalan data.</p>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div><label className="block mb-1">Singkatan Sekolah</label><input name="sName" type="text" defaultValue={activeSchoolName} className="w-full border p-2 rounded-xl uppercase" /></div>
+                                                <div><label className="block mb-1">Tajuk / Kod</label><input name="sSub" type="text" defaultValue={activeSchoolSubtitle} className="w-full border p-2 rounded-xl" /></div>
+                                            </div>
+                                            <div><label className="block mb-1">URL Logo Sekolah</label><input name="sLogo" type="text" defaultValue={logoUrl} className="w-full border p-2 rounded-xl" /></div>
+                                            <div><label className="block mb-1">Google Apps Script (GAS URL)</label><input name="gUrl" type="text" defaultValue={gasUrl} className="w-full border p-2 rounded-xl" placeholder="https://script.google.com/macros/s/..." /></div>
+                                            <div className="border-t pt-3">
+                                                <label className="block mb-1">Konfigurasi Firebase JSON (Pilihan)</label>
+                                                <textarea name="fConfig" rows="5" defaultValue={cachedConfigRaw||""} placeholder={'{\n  "apiKey": "AIza...",\n  "authDomain": "sps-...",\n  "projectId": "sps-..."\n}'} className="w-full border p-2 rounded-xl font-mono text-[10px]"></textarea>
+                                            </div>
+                                        </form>
+                                    )}
+
+                                    {schoolSetupTab === "rules" && (
+                                        <div className="space-y-3">
+                                            <p className="text-slate-500 text-[11px] leading-relaxed">
+                                                Salin kod di bawah dan tampalkan ke dalam ruangan <strong>Rules</strong> pada Cloud Firestore Console sekolah anda bagi membolehkan sistem berfungsi dengan sempurna.
+                                            </p>
+                                            <div className="relative">
+                                                <textarea readOnly rows="10" defaultValue={"rules_version = '2';\nservice cloud.firestore {\n  match /databases/{database}/documents {\n    match /artifacts/{appId}/public/data/{collectionName}/{docId} {\n      allow read: if true;\n      allow write: if true;\n    }\n    match /artifacts/{appId}/public/data/logs/{logId} {\n      allow read: if true;\n      allow write: if true;\n    }\n  }\n}"} className="w-full p-2.5 border rounded-xl font-mono text-[10px] bg-slate-50" id="firestore-rules-txt" />
+                                                <button type="button" onClick={() => {
+                                                    const txt = document.getElementById('firestore-rules-txt');
+                                                    if (txt) { txt.select(); document.execCommand('copy'); showToastMessage("Rules disalin!"); }
+                                                }} className="absolute top-2 right-2 bg-slate-800 text-white px-2 py-1 rounded text-[10px]">Salin</button>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {schoolSetupTab === "script" && (
+                                        <div className="space-y-3">
+                                            <p className="text-slate-500 text-[11px] leading-relaxed">
+                                                Salin kod Google Apps Script (GAS) ini dan <i>Deploy as Web App</i> di Google Sheets anda untuk membenarkan pengekstrakan data laporan.
+                                            </p>
+                                            <div className="relative">
+                                                <textarea readOnly rows="10" defaultValue={"function doPost(e) {\n  try {\n    var p = JSON.parse(e.postData.contents);\n    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Atlet') || SpreadsheetApp.getActiveSpreadsheet().insertSheet('Atlet');\n    if(p.action==='sync'){\n      sheet.clearContents();\n      sheet.appendRow(['ID', 'Nama', 'Kelas', 'Rumah', 'Jantina', 'Kategori']);\n      p.data.forEach(function(d){ sheet.appendRow([d.id, d.nama, d.kelas, d.rumah, d.jantina, d.kategori]); });\n      return ContentService.createTextOutput(JSON.stringify({s:'ok'})).setMimeType(ContentService.MimeType.JSON);\n    }\n  } catch(err) { return ContentService.createTextOutput(JSON.stringify({s:'err',m:err.toString()})).setMimeType(ContentService.MimeType.JSON); }\n}"} className="w-full p-2.5 border rounded-xl font-mono text-[10px] bg-slate-50" id="gas-script-txt" />
+                                                <button type="button" onClick={() => {
+                                                    const txt = document.getElementById('gas-script-txt');
+                                                    if (txt) { txt.select(); document.execCommand('copy'); showToastMessage("Kod GAS disalin!"); }
+                                                }} className="absolute top-2 right-2 bg-slate-800 text-white px-2 py-1 rounded text-[10px]">Salin</button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="p-6 pt-3 border-t flex justify-between items-center bg-slate-50">
+                                    {schoolSetupTab === "config" ? (
+                                        <>
+                                            <button type="button" onClick={()=>{localStorage.clear(); window.location.reload();}} className="text-red-500 hover:underline">Kosongkan (Lalai)</button>
+                                            <div className="flex gap-2">
+                                                <button type="button" onClick={()=>setShowSchoolSetupModal(false)} className="px-4 py-2 bg-slate-200 rounded-xl">Batal</button>
+                                                <button type="submit" form="school-setup-form" className="px-4 py-2 bg-indigo-600 text-white rounded-xl shadow-md">Simpan & Restart</button>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div className="w-full flex justify-end">
+                                            <button type="button" onClick={()=>setShowSchoolSetupModal(false)} className="px-5 py-2 bg-slate-200 rounded-xl">Tutup</button>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Modal Diagnostik Info */}
+                    {showDiagModal && (
+                        <div className="fixed inset-0 bg-slate-900/60 z-[9999] flex items-center justify-center p-4">
+                            <div className="bg-white rounded-2xl p-6 max-w-md w-full text-xs font-semibold space-y-3">
+                                <h3 className="text-sm font-extrabold text-slate-900 uppercase">ℹ️ Maklumat Diagnostik Sistem</h3>
+                                <div className="space-y-2 font-mono text-[10px] bg-slate-50 p-4 rounded-xl border leading-relaxed">
+                                    <p className="font-bold border-b pb-1 mb-2">Maklumat Aplikasi & Awan</p>
+                                    <p>App ID: {appId}</p>
+                                    <p>Firebase Active: <span className={isCloudActive ? "text-emerald-600" : "text-amber-600"}>{isCloudActive ? "CONNECTED" : "OFFLINE/LOCAL"}</span></p>
+                                    <p>Project ID: {activeFirebaseConfig.projectId}</p>
+                                    
+                                    <p className="font-bold border-b pb-1 mb-2 mt-4">Statistik Pangkalan Data</p>
+                                    <p>Jumlah Atlet: {athletes.length}</p>
+                                    <p>Jumlah Acara: {events.length}</p>
+                                    <p>Pingat Dikunci: {results.length}</p>
+                                    
+                                    <p className="font-bold border-b pb-1 mb-2 mt-4">Integrasi</p>
+                                    <p>GAS API (Google Sheets): {gasUrl ? "AKTIF" : "TIADA"}</p>
+                                </div>
+                                <div className="flex justify-end pt-2">
+                                    <button onClick={() => setShowDiagModal(false)} className="px-5 py-2 bg-slate-200 rounded-xl font-bold shadow-sm hover:bg-slate-300">Tutup Info</button>
+                                </div>
+                            </div>
                         </div>
                     )}
 

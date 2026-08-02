@@ -1,34 +1,12 @@
 <!DOCTYPE html>
 <html lang="ms">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SiPS Online</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet">
-    
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-
-    <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #f1f5f9; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    <meta charset="background: #cbd5e1; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
 </head>
 <body class="text-slate-800 antialiased">
-    <div id="root"></div>
-
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-    <script src="https://unpkg.com/@babel/standalone@7.26.4/babel.min.js"></script>
-
-    <script type="text/babel">
-        const { useState, useEffect, useMemo, useRef } = React;
-
+    <div id="root">
         const translations = {
             BM: {
                 dashboard: "Papan Pemuka", rumah_sukan: "Rumah Sukan", acara: "Pengurusan Acara", atlit: "Pengurusan Atlet", 
@@ -278,8 +256,9 @@
                     const meta = housesMetadata[name]; const preset = COLOR_PRESETS[meta.warnaLabel] || COLOR_PRESETS.Merah;
                     houses[name] = { emas: 0, perak: 0, gangsa: 0, keempat: 0, mata: parseInt(meta.bonusPoints)||0, warna: preset.warna, teks: preset.teks, glow: preset.glow, slogan: meta.slogan };
                 });
-                results.forEach(res => {
-                    const ath = athletes.find(a => a.id === res.athleteId);
+                
+                (results || []).forEach(res => {
+                    const ath = (athletes || []).find(a => a.id === res.athleteId);
                     if (ath && houses[ath.rumah]) {
                         const h = houses[ath.rumah];
                         if (res.kedudukan === "1") { h.emas++; h.mata += pointsConfig.emas; }
@@ -288,7 +267,14 @@
                         else if (res.kedudukan === "4") { h.keempat++; h.mata += pointsConfig.keempat; }
                     }
                 });
-                return Object.entries(houses).map(([nama, data]) => ({ nama, ...data })).sort((a, b) => b.mata - a.mata);
+
+                return Object.entries(houses).map(([nama, data]) => ({ nama, ...data })).sort((a, b) => {
+                    if (b.emas !== a.emas) return b.emas - a.emas;
+                    if (b.perak !== a.perak) return b.perak - a.perak;
+                    if (b.gangsa !== a.gangsa) return b.gangsa - a.gangsa;
+                    if (b.keempat !== a.keempat) return b.keempat - a.keempat;
+                    return b.mata - a.mata;
+                });
             }, [results, athletes, pointsConfig, housesMetadata]);
 
             const eventsWithCode = useMemo(() => {
@@ -459,6 +445,171 @@
                             </table>
                         </div>
                     `;
+                } else if (mode === 'kehadiran_rumah') {
+                    const houseAthletes = athletes.filter(a => a.rumah === targetData.houseName).sort((a,b) => a.nama.localeCompare(b.nama));
+                    const rows = houseAthletes.map((ath, i) => `
+                        <tr>
+                            <td style="border: 1px solid #cbd5e1; padding: 6px; text-align: center;">${i+1}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 6px; text-transform: uppercase;">${ath.nama}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 6px; text-align: center;">${ath.kelas}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 6px; text-align: center;">${ath.jantina === 'Lelaki' ? 'L' : 'P'}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 6px;"></td>
+                            <td style="border: 1px solid #cbd5e1; padding: 6px;"></td>
+                            <td style="border: 1px solid #cbd5e1; padding: 6px;"></td>
+                            <td style="border: 1px solid #cbd5e1; padding: 6px;"></td>
+                            <td style="border: 1px solid #cbd5e1; padding: 6px;"></td>
+                        </tr>
+                    `).join('');
+                    printContent = `
+                        <div style="font-family: sans-serif; padding: 20px;">
+                            ${headerHtml}
+                            <h2 style="text-align: center; margin-bottom: 20px;">Borang Kehadiran Ahli: Rumah ${targetData.houseName}</h2>
+                            <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                                <thead style="background: #f1f5f9;">
+                                    <tr>
+                                        <th style="border: 1px solid #cbd5e1; padding: 8px;">No</th>
+                                        <th style="border: 1px solid #cbd5e1; padding: 8px;">Nama Ahli</th>
+                                        <th style="border: 1px solid #cbd5e1; padding: 8px;">Kelas</th>
+                                        <th style="border: 1px solid #cbd5e1; padding: 8px;">Jantina</th>
+                                        <th style="border: 1px solid #cbd5e1; padding: 8px;">Perjumpaan 1<br><span style="font-size:10px;font-weight:normal;">Tarikh:___</span></th>
+                                        <th style="border: 1px solid #cbd5e1; padding: 8px;">Perjumpaan 2<br><span style="font-size:10px;font-weight:normal;">Tarikh:___</span></th>
+                                        <th style="border: 1px solid #cbd5e1; padding: 8px;">Perjumpaan 3<br><span style="font-size:10px;font-weight:normal;">Tarikh:___</span></th>
+                                        <th style="border: 1px solid #cbd5e1; padding: 8px;">Perjumpaan 4<br><span style="font-size:10px;font-weight:normal;">Tarikh:___</span></th>
+                                        <th style="border: 1px solid #cbd5e1; padding: 8px;">Catatan</th>
+                                    </tr>
+                                </thead>
+                                <tbody>${rows}</tbody>
+                            </table>
+                        </div>
+                    `;
+                } else if (mode === 'marshall') {
+                    const evAthletes = athletes.filter(a => a.acaraIds && a.acaraIds.includes(targetData.id)).sort((a,b) => a.nama.localeCompare(b.nama));
+                    const isBalapan = targetData.jenis === "Balapan";
+                    const rows = evAthletes.map((ath, i) => `
+                        <tr>
+                            <td style="border: 1px solid #cbd5e1; padding: 6px; text-align: center;">${i+1}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 6px; text-align: center;">${isBalapan ? 'Lorong' : 'Giliran'} ${i+1}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 6px; text-transform: uppercase;">${ath.nama}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 6px; text-align: center;">${ath.kelas}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 6px; text-align: center;">Rumah ${ath.rumah}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 6px;"></td>
+                        </tr>
+                    `).join('');
+                    printContent = `
+                        <div style="font-family: sans-serif; padding: 20px;">
+                            ${headerHtml}
+                            <div style="margin-bottom: 20px; padding: 10px; background: #f8fafc; border: 1px solid #cbd5e1;">
+                                <h2 style="margin:0 0 5px 0;">Borang Marshall (Panggilan Peserta)</h2>
+                                <p style="margin:0;"><strong>Acara:</strong> [${targetData.kodAcara}] ${targetData.nama} (${targetData.kategori}) - ${targetData.jenis}</p>
+                                <p style="margin:0;"><strong>Tarikh/Masa:</strong> ${formatDateToDMY(targetData.tarikh)} ${targetData.masa || 'N/A'}</p>
+                            </div>
+                            <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                                <thead style="background: #f1f5f9;">
+                                    <tr>
+                                        <th style="border: 1px solid #cbd5e1; padding: 8px;">No</th>
+                                        <th style="border: 1px solid #cbd5e1; padding: 8px;">${isBalapan ? 'Lorong' : 'Giliran'}</th>
+                                        <th style="border: 1px solid #cbd5e1; padding: 8px;">Nama Peserta</th>
+                                        <th style="border: 1px solid #cbd5e1; padding: 8px;">Kelas</th>
+                                        <th style="border: 1px solid #cbd5e1; padding: 8px;">Rumah</th>
+                                        <th style="border: 1px solid #cbd5e1; padding: 8px; width: 100px;">Kehadiran / Tanda</th>
+                                    </tr>
+                                </thead>
+                                <tbody>${rows || '<tr><td colspan="6" style="text-align:center; padding:10px;">Tiada peserta didaftarkan.</td></tr>'}</tbody>
+                            </table>
+                        </div>
+                    `;
+                } else if (mode === 'hakim_penamat') {
+                    const evAthletes = athletes.filter(a => a.acaraIds && a.acaraIds.includes(targetData.id)).sort((a,b) => a.nama.localeCompare(b.nama));
+                    const referenceRows = evAthletes.map((ath, i) => `<tr><td style="border: 1px solid #cbd5e1; padding: 4px; text-align: center;">Lorong ${i+1}</td><td style="border: 1px solid #cbd5e1; padding: 4px;">${ath.nama} (R.${ath.rumah})</td></tr>`).join('');
+                    const resultsRows = Array.from({length: 8}, (_, i) => `
+                        <tr>
+                            <td style="border: 1px solid #cbd5e1; padding: 10px; text-align: center; font-weight: bold;">Kedudukan ${i+1}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 10px;"></td>
+                            <td style="border: 1px solid #cbd5e1; padding: 10px;"></td>
+                            <td style="border: 1px solid #cbd5e1; padding: 10px;"></td>
+                        </tr>
+                    `).join('');
+
+                    printContent = `
+                        <div style="font-family: sans-serif; padding: 20px;">
+                            ${headerHtml}
+                            <div style="margin-bottom: 20px; padding: 10px; background: #fff1f2; border: 1px solid #fecdd3;">
+                                <h2 style="margin:0 0 5px 0; color: #be123c;">Borang Hakim Penamat (Balapan)</h2>
+                                <p style="margin:0;"><strong>Acara:</strong> [${targetData.kodAcara}] ${targetData.nama} (${targetData.kategori})</p>
+                            </div>
+                            
+                            <div style="display: flex; gap: 20px; margin-bottom: 20px;">
+                                <div style="flex: 1;">
+                                    <h4 style="margin: 0 0 10px 0;">Keputusan Rasmi</h4>
+                                    <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                                        <thead style="background: #f1f5f9;">
+                                            <tr>
+                                                <th style="border: 1px solid #cbd5e1; padding: 8px;">Kedudukan</th>
+                                                <th style="border: 1px solid #cbd5e1; padding: 8px;">Lorong / Nama</th>
+                                                <th style="border: 1px solid #cbd5e1; padding: 8px;">Catatan Masa</th>
+                                                <th style="border: 1px solid #cbd5e1; padding: 8px;">Tandatangan Hakim</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>${resultsRows}</tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <h4 style="margin: 0 0 10px 0;">Rujukan Peserta Didaftar (Ikut Lorong)</h4>
+                                <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
+                                    <thead style="background: #f8fafc;">
+                                        <tr>
+                                            <th style="border: 1px solid #cbd5e1; padding: 4px;">Lorong</th>
+                                            <th style="border: 1px solid #cbd5e1; padding: 4px;">Nama (Rumah)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>${referenceRows || '<tr><td colspan="2" style="text-align:center; padding:10px;">Tiada peserta didaftarkan.</td></tr>'}</tbody>
+                                </table>
+                            </div>
+                        </div>
+                    `;
+                } else if (mode === 'hakim_padang') {
+                    const evAthletes = athletes.filter(a => a.acaraIds && a.acaraIds.includes(targetData.id)).sort((a,b) => a.nama.localeCompare(b.nama));
+                    const rows = evAthletes.map((ath, i) => `
+                        <tr>
+                            <td style="border: 1px solid #cbd5e1; padding: 6px; text-align: center;">${i+1}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 6px; text-transform: uppercase;">${ath.nama}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 6px; text-align: center;">Rumah ${ath.rumah}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 6px;"></td>
+                            <td style="border: 1px solid #cbd5e1; padding: 6px;"></td>
+                            <td style="border: 1px solid #cbd5e1; padding: 6px;"></td>
+                            <td style="border: 1px solid #cbd5e1; padding: 6px; background: #f8fafc; font-weight: bold;"></td>
+                            <td style="border: 1px solid #cbd5e1; padding: 6px; background: #f1f5f9; font-weight: bold;"></td>
+                        </tr>
+                    `).join('');
+                    printContent = `
+                        <div style="font-family: sans-serif; padding: 20px;">
+                            ${headerHtml}
+                            <div style="margin-bottom: 20px; padding: 10px; background: #ecfdf5; border: 1px solid #a7f3d0;">
+                                <h2 style="margin:0 0 5px 0; color: #047857;">Borang Hakim Padang</h2>
+                                <p style="margin:0;"><strong>Acara:</strong> [${targetData.kodAcara}] ${targetData.nama} (${targetData.kategori})</p>
+                            </div>
+                            <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                                <thead style="background: #f1f5f9;">
+                                    <tr>
+                                        <th style="border: 1px solid #cbd5e1; padding: 8px;" rowspan="2">Giliran</th>
+                                        <th style="border: 1px solid #cbd5e1; padding: 8px;" rowspan="2">Nama Peserta</th>
+                                        <th style="border: 1px solid #cbd5e1; padding: 8px;" rowspan="2">Rumah</th>
+                                        <th style="border: 1px solid #cbd5e1; padding: 4px; text-align: center;" colspan="3">Cubaan Jarak / Tinggi</th>
+                                        <th style="border: 1px solid #cbd5e1; padding: 8px;" rowspan="2">Catatan<br>Terbaik</th>
+                                        <th style="border: 1px solid #cbd5e1; padding: 8px;" rowspan="2">Kedudukan</th>
+                                    </tr>
+                                    <tr>
+                                        <th style="border: 1px solid #cbd5e1; padding: 4px; font-weight: normal;">1</th>
+                                        <th style="border: 1px solid #cbd5e1; padding: 4px; font-weight: normal;">2</th>
+                                        <th style="border: 1px solid #cbd5e1; padding: 4px; font-weight: normal;">3</th>
+                                    </tr>
+                                </thead>
+                                <tbody>${rows || '<tr><td colspan="8" style="text-align:center; padding:10px;">Tiada peserta didaftarkan.</td></tr>'}</tbody>
+                            </table>
+                        </div>
+                    `;
                 } else if (mode === 'sijil') {
                     // Cetak Sijil Format
                     printContent = `
@@ -611,8 +762,11 @@
                                                 <div><span className="text-[10px] font-bold text-slate-400 uppercase">Ked. #{i+1}</span><h3 className="font-black text-lg">Rumah {h.nama}</h3></div>
                                                 <span className={`text-2xl font-black ${h.teks}`}>{h.mata}</span>
                                             </div>
-                                            <div className="grid grid-cols-4 gap-1 mt-4 text-center text-xs font-bold bg-slate-50 p-2 rounded-xl">
-                                                <div>🥇 {h.emas}</div><div>🥈 {h.perak}</div><div>🥉 {h.gangsa}</div><div>🏅 {h.keempat}</div>
+                                            <div className="grid grid-cols-4 gap-2 mt-4 text-center text-xs font-bold bg-slate-50 p-3 rounded-xl">
+                                                <div><span className="text-3xl block mb-1">🥇</span>{h.emas}</div>
+                                                <div><span className="text-3xl block mb-1">🥈</span>{h.perak}</div>
+                                                <div><span className="text-3xl block mb-1">🥉</span>{h.gangsa}</div>
+                                                <div><span className="text-3xl block mb-1">🏅</span>{h.keempat}</div>
                                             </div>
                                         </div>
                                     ))}
@@ -710,7 +864,10 @@
                                                         )}
                                                     </div>
                                                 </div>
-                                                <button onClick={() => { setSelectedMembersHouse(name); setShowMembersModal(true); }} className="w-full bg-indigo-50 text-indigo-700 py-2 rounded-xl font-bold text-xs border border-indigo-100">👥 Kelola Ahli ({hAthletes.length})</button>
+                                                <div className="flex gap-2 mt-3">
+                                                    <button onClick={() => { setSelectedMembersHouse(name); setShowMembersModal(true); }} className="flex-1 bg-indigo-50 text-indigo-700 py-2 rounded-xl font-bold text-xs border border-indigo-100">👥 Kelola Ahli ({hAthletes.length})</button>
+                                                    <button onClick={() => executeBypassPrint('kehadiran_rumah', { houseName: name })} className="flex-1 bg-emerald-50 text-emerald-700 py-2 rounded-xl font-bold text-xs border border-emerald-100">🖨️ Borang Kehadiran</button>
+                                                </div>
                                             </div>
                                         )
                                     })}
@@ -738,17 +895,24 @@
                                                 <span className="bg-indigo-600 text-white px-2 py-1 rounded font-mono font-bold">{ev.kodAcara}</span>
                                                 <div><h4 className="font-extrabold uppercase">{ev.nama} {ev.kategori}</h4><span className="text-slate-500">{ev.jenis} • {ev.format}</span></div>
                                             </div>
-                                            <div className="flex gap-3 items-center font-bold">
-                                                <span className="text-slate-400">📅 {formatDateToDMY(ev.tarikh)} {ev.masa}</span>
-                                                {userRole !== "pelawat" && (
-                                                    <div className="flex gap-2">
-                                                        <button onClick={() => { setEventForm(ev); setIsEditingEvent(true); setIsEventSidebarOpen(true); }} className="text-blue-600 bg-blue-50 px-2 py-1 rounded">Edit</button>
-                                                        <button onClick={() => {
-                                                            if(isCloudActive&&db) db.collection('artifacts').doc(appId).collection('public').doc('data').collection('events').doc(ev.id).delete();
-                                                            else setEvents(events.filter(x => x.id !== ev.id));
-                                                        }} className="text-red-600 bg-red-50 px-2 py-1 rounded">Padam</button>
-                                                    </div>
-                                                )}
+                                            <div className="flex flex-col items-end gap-2">
+                                                <div className="flex gap-3 items-center font-bold">
+                                                    <span className="text-slate-400">📅 {formatDateToDMY(ev.tarikh)} {ev.masa}</span>
+                                                    {userRole !== "pelawat" && (
+                                                        <div className="flex gap-2">
+                                                            <button onClick={() => { setEventForm(ev); setIsEditingEvent(true); setIsEventSidebarOpen(true); }} className="text-blue-600 bg-blue-50 px-2 py-1 rounded">Edit</button>
+                                                            <button onClick={() => {
+                                                                if(isCloudActive&&db) db.collection('artifacts').doc(appId).collection('public').doc('data').collection('events').doc(ev.id).delete();
+                                                                else setEvents(events.filter(x => x.id !== ev.id));
+                                                            }} className="text-red-600 bg-red-50 px-2 py-1 rounded">Padam</button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="flex gap-1.5 mt-1">
+                                                    <button onClick={() => executeBypassPrint('marshall', ev)} className="text-[10px] bg-slate-100 border border-slate-200 text-slate-700 px-2 py-1 rounded font-bold">🖨️ Marshall</button>
+                                                    {ev.jenis === "Balapan" && <button onClick={() => executeBypassPrint('hakim_penamat', ev)} className="text-[10px] bg-rose-50 border border-rose-200 text-rose-700 px-2 py-1 rounded font-bold">🖨️ Hakim Penamat</button>}
+                                                    {ev.jenis === "Padang" && <button onClick={() => executeBypassPrint('hakim_padang', ev)} className="text-[10px] bg-emerald-50 border border-emerald-200 text-emerald-700 px-2 py-1 rounded font-bold">🖨️ Hakim Padang</button>}
+                                                </div>
                                             </div>
                                         </div>
                                     ))}

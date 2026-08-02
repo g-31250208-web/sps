@@ -245,7 +245,7 @@
             const [categories, setCategories] = useState(["L12", "P12", "L9", "P9", "L7", "P7", "Prasekolah", "Terbuka"]);
             const [pointsConfig, setPointsConfig] = useState({ emas: 5, perak: 3, gangsa: 2, keempat: 1 });
             const [gasUrl, setGasUrl] = useState(activeCustomGasUrl);
-            const [gasModalTab, setGasModalTab] = useState("config"); // State baharu untuk tab integrasi
+            const [gasModalTab, setGasModalTab] = useState("config");
 
             const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
             const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
@@ -1787,7 +1787,7 @@
                             <td style="border: 1px solid #475569; padding: 6px;"></td>
                             <td style="border: 1px solid #475569; padding: 6px;"></td>
                             <td style="border: 1px solid #475569; padding: 6px; background-color: #f8fafc;"></td>
-                            <td style="border: 1px solid #475569; padding: 6px; background-color: #f1f5f9;"></td>
+                            <td style="border: 1px solid #475569; padding: 6px;"></td>
                         </tr>
                     `).join('');
 
@@ -1798,1346 +1798,231 @@
                                 <div style="text-align: center;">
                                     <h2 style="margin: 0; font-size: 18px; text-transform: uppercase; letter-spacing: 0.5px; color: #1e3a8a; font-weight: 800;">${activeSchoolName}</h2>
                                     <h3 style="margin: 3px 0 0 0; font-size: 13px; color: #475569; text-transform: uppercase;">${activeSchoolSubtitle}</h3>
-                                    <h4 style="margin: 6px 0 0 0; font-size: 11px; font-weight: bold; color: #047857; background: #d1fae5; display: inline-block; padding: 3px 12px; border-radius: 6px; text-transform: uppercase;">Borang Hakim Padang (Field Event Score Sheet)</h4>
+                                    <h4 style="margin: 6px 0 0 0; font-size: 11px; font-weight: bold; color: #15803d; background: #dcfce7; display: inline-block; padding: 3px 12px; border-radius: 6px; text-transform: uppercase;">Borang Hakim Padang (Field Event Sheet)</h4>
                                 </div>
                             </div>
 
                             <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px; background: #f8fafc; border: 1px solid #cbd5e1; padding: 12px; border-radius: 8px; font-size: 11px;">
                                 <div>
-                                    <p style="margin: 4px 0;"><strong>Nama Acara:</strong> <span style="font-size: 12px; color: #047857; text-transform: uppercase; font-weight: bold;">${ev.nama} ${getFriendlyCategory(ev.kategori)}</span></p>
+                                    <p style="margin: 4px 0;"><strong>Nama Acara:</strong> <span style="font-size: 12px; color: #1e3a8a; text-transform: uppercase; font-weight: bold;">${ev.nama} ${getFriendlyCategory(ev.kategori)}</span></p>
                                     <p style="margin: 4px 0;"><strong>Kod Acara:</strong> <span style="font-family: monospace; font-weight: bold; background: #cbd5e1; padding: 2px 6px; border-radius: 4px;">${ev.kodAcara}</span></p>
-                                    <p style="margin: 4px 0;"><strong>Format Sukan:</strong> ${ev.format || "Individu"} (${ev.jenis})</p>
                                 </div>
                                 <div style="text-align: right;">
                                     <p style="margin: 4px 0;"><strong>Tarikh Kejohanan:</strong> ${formatDateToDMY(ev.tarikh)}</p>
-                                    <p style="margin: 4px 0;"><strong>Masa Pertandingan:</strong> ${ev.masa ? `${ev.masa}` : "N/A"}</p>
-                                    <p style="margin: 4px 0;"><strong>Jumlah Atlet Layak:</strong> <span style="font-weight: bold; color: #047857;">${registeredAthletes.length} Orang</span></p>
+                                    <p style="margin: 4px 0;"><strong>Masa Acara:</strong> ${ev.masa ? `${ev.masa}` : "N/A"}</p>
                                 </div>
                             </div>
 
-                            <table style="width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 25px;">
+                            <table style="width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 30px;">
                                 <thead>
-                                    <tr style="background-color: #047857; color: white; text-align: left;">
+                                    <tr style="background-color: #cbd5e1; text-align: left;">
                                         <th style="border: 1px solid #475569; padding: 6px; text-align: center; width: 35px;">No</th>
-                                        <th style="border: 1px solid #475569; padding: 6px; text-align: center; width: 45px;">No Bib</th>
+                                        <th style="border: 1px solid #475569; padding: 6px; text-align: center; width: 55px;">No Bib</th>
                                         <th style="border: 1px solid #475569; padding: 6px;">Nama Penuh Atlet</th>
-                                        <th style="border: 1px solid #475569; padding: 6px; text-align: center; width: 75px;">Kelas/Tahun</th>
-                                        <th style="border: 1px solid #475569; padding: 6px; text-align: center; width: 90px;">Rumah Sukan</th>
-                                        <th style="border: 1px solid #475569; padding: 6px; text-align: center; width: 65px; font-size: 9px; line-height: 1.1;">Cuba 1<br><span style="font-weight: normal; font-size: 8px;">(m / cm)</span></th>
-                                        <th style="border: 1px solid #475569; padding: 6px; text-align: center; width: 65px; font-size: 9px; line-height: 1.1;">Cuba 2<br><span style="font-weight: normal; font-size: 8px;">(m / cm)</span></th>
-                                        <th style="border: 1px solid #475569; padding: 6px; text-align: center; width: 65px; font-size: 9px; line-height: 1.1;">Cuba 3<br><span style="font-weight: normal; font-size: 8px;">(m / cm)</span></th>
-                                        <th style="border: 1px solid #475569; padding: 6px; text-align: center; width: 70px; font-size: 9px; line-height: 1.1; font-weight: bold; background-color: #026245;">Keputusan<br><span style="font-weight: normal; font-size: 8px;">Terbaik</span></th>
-                                        <th style="border: 1px solid #475569; padding: 6px; text-align: center; width: 65px; font-size: 9px; line-height: 1.1; font-weight: bold; background-color: #025039;">Kedudukan</th>
+                                        <th style="border: 1px solid #475569; padding: 6px; text-align: center; width: 60px;">Kelas</th>
+                                        <th style="border: 1px solid #475569; padding: 6px; text-align: center; width: 85px;">Rumah</th>
+                                        <th style="border: 1px solid #475569; padding: 6px; text-align: center; width: 50px;">Perc. 1</th>
+                                        <th style="border: 1px solid #475569; padding: 6px; text-align: center; width: 50px;">Perc. 2</th>
+                                        <th style="border: 1px solid #475569; padding: 6px; text-align: center; width: 50px;">Perc. 3</th>
+                                        <th style="border: 1px solid #475569; padding: 6px; text-align: center; width: 60px;">Terbaik</th>
+                                        <th style="border: 1px solid #475569; padding: 6px; text-align: center; width: 50px;">Ked.</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    ${rowsHtml.length > 0 ? rowsHtml : `<tr><td colSpan="10" style="border: 1px solid #475569; padding: 25px; text-align: center; color: #64748b; font-style: italic;">Tiada peserta didaftarkan untuk acara padang ini buat masa ini.</td></tr>`}
+                                    ${rowsHtml.length > 0 ? rowsHtml : `<tr><td colSpan="10" style="border: 1px solid #475569; padding: 20px; text-align: center; color: #64748b; font-style: italic;">Tiada peserta didaftarkan untuk acara ini.</td></tr>`}
                                 </tbody>
                             </table>
-
-                            <div style="font-size: 9px; color: #475569; margin-bottom: 25px; background: #f8fafc; border: 1px solid #e2e8f0; padding: 10px; border-radius: 6px; line-height: 1.4;">
-                                <strong>Nota Panduan Hakim Padang:</strong>
-                                <ol style="margin: 4px 0 0 15px; padding: 0;">
-                                    <li>Sila catat setiap cubaan atlet dengan jelas menggunakan unit meter (cth: 3.45m) atau sentimeter jika sesuai.</li>
-                                    <li>Gunakan simbol <strong>X</strong> bagi cubaan batal/gagal, dan simbol <strong>-</strong> bagi cubaan yang dilepaskan.</li>
-                                    <li>Keputusan terbaik adalah jarak/ketinggian maksimum yang dicapai secara sah daripada mana-mana cubaan.</li>
-                                </ol>
-                            </div>
-
-                            <div style="display: flex; justify-content: space-between; margin-top: 40px; font-size: 10px;">
-                                <div style="width: 220px; text-align: center;">
-                                    <div style="border-bottom: 1px solid #475569; height: 45px;"></div>
-                                    <p style="margin: 5px 0 0 0; font-weight: bold; text-transform: uppercase;">Hakim Padang</p>
-                                    <p style="margin: 2px 0 0 0; color: #64748b;">Nama: ________________________</p>
-                                </div>
-                                <div style="width: 220px; text-align: center;">
-                                    <div style="border-bottom: 1px solid #475569; height: 45px;"></div>
-                                    <p style="margin: 5px 0 0 0; font-weight: bold; text-transform: uppercase;">Ketua Hakim Padang</p>
-                                    <p style="margin: 2px 0 0 0; color: #64748b;">Nama: ________________________</p>
-                                </div>
-                            </div>
                         </div>
                     `;
                 }
 
-                const fullHtml = `
-                    <!DOCTYPE html>
-                    <html lang="ms">
-                    <head>
-                        <meta charset="UTF-8">
-                        <title>Cetak Dokumen Sukan</title>
-                        <style>
-                            body { background-color: #ffffff; padding: 15mm; font-family: sans-serif; }
-                            @media print {
-                                body { margin: 0; padding: 0; background: white; }
-                                @page { size: A4 portrait; margin: 10mm; }
-                            }
-                        </style>
-                    </head>
-                    <body>
-                        ${printContent}
-                    </body>
-                    </html>
-                `;
-                setPreviewContent(fullHtml);
-                setIsPreviewModalOpen(true);
-            };
-
-            const selectedEventObject = useMemo(() => {
-                return eventsWithCode.find(e => e.id === resultForm.eventId || e.id === heatForm.eventId);
-            }, [eventsWithCode, resultForm.eventId, heatForm.eventId]);
-
-            const relevantAthletesForEventForm = useMemo(() => {
-                if (!selectedEventObject) return [];
-                return (athletes || []).filter(a => 
-                    a.kategori === selectedEventObject.kategori && 
-                    a.acaraIds && 
-                    a.acaraIds.includes(selectedEventObject.id)
-                );
-            }, [athletes, selectedEventObject]);
-
-            const handleSaveSchoolSetup = (e) => {
-                e.preventDefault();
-                if (setupFirebaseConfigRaw.trim()) {
-                    try {
-                        JSON.parse(setupFirebaseConfigRaw.trim());
-                    } catch (err) {
-                        showToastMessage("Ralat: Format Konfigurasi Firebase tidak sah.", "error");
-                        return;
+                if (printContent) {
+                    const printWindow = window.open('', '_blank');
+                    if (printWindow) {
+                        printWindow.document.write(`
+                            <!DOCTYPE html>
+                            <html>
+                            <head>
+                                <title>Cetak - SPS SK Bikang</title>
+                                <style>
+                                    @page { size: A4; margin: 15mm; }
+                                    body { margin: 0; padding: 0; background: white; }
+                                    @media print {
+                                        body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                                    }
+                                </style>
+                            </head>
+                            <body>
+                                ${printContent}
+                            </body>
+                            </html>
+                        `);
+                        printWindow.document.close();
+                        printWindow.focus();
+                        setTimeout(() => { printWindow.print(); }, 500);
                     }
                 }
-                localStorage.setItem('sps_school_name', setupSchoolName.trim() || DEFAULT_SCHOOL_NAME);
-                localStorage.setItem('sps_school_subtitle', setupSchoolSubtitle.trim() || DEFAULT_SCHOOL_SUBTITLE);
-                localStorage.setItem('sps_school_logo', setupSchoolLogo.trim() || DEFAULT_SCHOOL_LOGO);
-                if (setupFirebaseConfigRaw.trim()) {
-                    localStorage.setItem('sps_custom_firebase_config', setupFirebaseConfigRaw.trim());
-                } else {
-                    localStorage.removeItem('sps_custom_firebase_config');
-                }
-                if (setupGasUrl.trim()) {
-                    localStorage.setItem('sps_custom_gas_url', setupGasUrl.trim());
-                } else {
-                    localStorage.removeItem('sps_custom_gas_url');
-                }
-                showToastMessage("Sistem berjaya dikemas kini! Memuat semula...", "success");
-                setTimeout(() => { window.location.reload(); }, 1500);
-            };
-
-            const handleResetSchoolToDefault = () => {
-                setConfirmModal({
-                    show: true,
-                    title: "Tetapkan semula ke Lalai?",
-                    message: "Tindakan ini akan memadamkan tetapan sekolah kustom anda.",
-                    onConfirm: () => {
-                        localStorage.removeItem('sps_school_name');
-                        localStorage.removeItem('sps_school_subtitle');
-                        localStorage.removeItem('sps_school_logo');
-                        localStorage.removeItem('sps_custom_firebase_config');
-                        localStorage.removeItem('sps_custom_gas_url');
-                        showToastMessage("Mengembalikan sistem ke mod asal...", "success");
-                        setTimeout(() => { window.location.reload(); }, 1200);
-                    }
-                });
             };
 
             return (
-                <div className="min-h-screen flex flex-col bg-slate-50 print:hidden">
-                    <input type="file" ref={fileInputRef} onChange={handleRestoreBackup} accept=".json" className="hidden" />
-                    
-                    <header className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white shadow-md relative z-50">
-                        <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
-                            <div className="flex items-center gap-4">
-                                <img src={logoUrl} alt="Logo Sukan" className="w-[66px] h-[66px] object-contain" />
+                <div className="min-h-screen bg-slate-50 flex flex-col">
+                    <header className="bg-slate-900 text-white shadow-lg sticky top-0 z-40 border-b border-slate-800">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
+                            <div className="flex items-center space-x-3">
+                                <img src={logoUrl} alt="Logo Sekolah" className="w-10 h-10 object-contain rounded bg-white/10 p-1" onError={(e) => { e.target.style.display = 'none'; }} />
                                 <div>
-                                    <h1 className="text-xl font-extrabold tracking-tight flex flex-wrap items-center gap-2">
-                                        Portal Sukan SPS-{activeSchoolName}
-                                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold ${isCloudActive ? "bg-emerald-500/20 text-emerald-300" : "bg-amber-500/20 text-amber-300"}`}>
-                                            ● {isCloudActive ? "Awan Aktif 🟢" : "Mod Lokal 🟡"}
-                                        </span>
-                                    </h1>
-                                    <p className="text-xs text-indigo-200 font-medium">{activeSchoolSubtitle} {activeYear}</p>
+                                    <h1 className="text-lg sm:text-xl font-bold tracking-tight text-amber-400 leading-none">{activeSchoolName}</h1>
+                                    <p className="text-xs text-slate-300 font-medium mt-1">{activeSchoolSubtitle} ({activeYear})</p>
                                 </div>
                             </div>
 
-                            <div className="flex flex-wrap items-center gap-2 w-full md:w-auto justify-start md:justify-end">
-                                <button onClick={() => setLang(lang === "BM" ? "EN" : "BM")} className="bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg text-xs font-semibold">🌐 BM / EN</button>
-                                {userRole === "admin" && (
-                                    <div className="relative inline-block" ref={adminMenuRef}>
-                                        <button onClick={() => setIsAdminMenuOpen(!isAdminMenuOpen)} className="bg-yellow-500 hover:bg-yellow-600 text-slate-950 font-black px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5">🛠️ PANEL PENTADBIR</button>
-                                        {isAdminMenuOpen && (
-                                            <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-2xl border py-2 text-slate-800 z-[9999]">
-                                                <button onClick={() => { setShowDiagModal(true); setIsAdminMenuOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-semibold">ℹ️ Info Diag</button>
-                                                <button onClick={() => { setShowGasModal(true); setIsAdminMenuOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-semibold">⚡ Setup GAS API</button>
-                                                <button onClick={() => { setShowPointsModal(true); setIsAdminMenuOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-semibold">⚙️ Tetapan Mata & Tahun</button>
-                                                <button onClick={() => { setShowSchoolSetupModal(true); setIsAdminMenuOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-semibold">🏫 Tetapan Portal & Logo</button>
-                                                <button onClick={() => { handleBackup(); setIsAdminMenuOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-emerald-50 text-xs font-semibold text-emerald-700">📥 Sandaran Data (JSON)</button>
-                                                <button onClick={() => { handleRestoreClick(); setIsAdminMenuOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-amber-50 text-xs font-semibold text-amber-700">📤 Muat Naik Sandaran</button>
-                                                <button onClick={() => { handleResetDatabase(); setIsAdminMenuOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-red-50 text-xs font-semibold text-red-600">🔄 Kosongkan DB</button>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                                {currentUser && !currentUser.isAnonymous ? (
-                                    <div className="flex items-center gap-2 bg-slate-800 p-1.5 pl-3 pr-2 rounded-xl text-xs">
-                                        <div>
-                                            <p className="font-bold text-white">{currentUser.displayName || "Guru"}</p>
-                                            <p className="text-[9px] font-bold uppercase text-emerald-400">{userRole}</p>
-                                        </div>
-                                        <button onClick={handleLogout} className="p-1 hover:bg-red-500/20 text-red-400 rounded-lg">
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                                            </svg>
+                            <div className="flex items-center space-x-3">
+                                <button 
+                                    onClick={() => setLang(l => l === "BM" ? "EN" : "BM")} 
+                                    className="px-2.5 py-1 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded transition"
+                                >
+                                    🌐 {lang}
+                                </button>
+
+                                {currentUser ? (
+                                    <div className="flex items-center space-x-2">
+                                        <span className="text-xs bg-slate-800 px-3 py-1 rounded-full text-slate-300 border border-slate-700 hidden sm:inline-block">
+                                            👤 {currentUser.displayName || currentUser.email} ({userRole.toUpperCase()})
+                                        </span>
+                                        <button 
+                                            onClick={handleLogout} 
+                                            className="px-3 py-1 text-xs bg-red-600/80 hover:bg-red-600 text-white font-medium rounded transition"
+                                        >
+                                            Log Keluar
                                         </button>
                                     </div>
                                 ) : (
-                                    <button onClick={() => setIsLoginModalOpen(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-1.5 rounded-xl text-xs flex items-center gap-2">🔑 Log Masuk</button>
+                                    <button 
+                                        onClick={() => setIsLoginModalOpen(true)} 
+                                        className="px-3 py-1 text-xs bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded shadow transition"
+                                    >
+                                        Log Masuk Urus Setia
+                                    </button>
                                 )}
                             </div>
                         </div>
+
+                        {}
+                        <nav className="bg-slate-950 px-4 sm:px-6 lg:px-8 border-t border-slate-800/80 overflow-x-auto">
+                            <div className="max-w-7xl mx-auto flex space-x-1 sm:space-x-4">
+                                {Object.keys(t).filter(k => k !== 'announcement').map(key => (
+                                    <button
+                                        key={key}
+                                        onClick={() => setActiveTab(key)}
+                                        className={`px-3 py-2.5 text-xs font-medium whitespace-nowrap border-b-2 transition ${
+                                            activeTab === key 
+                                                ? "border-amber-400 text-amber-400 bg-slate-900/60" 
+                                                : "border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-700"
+                                        }`}
+                                    >
+                                        {t[key]}
+                                    </button>
+                                ))}
+                            </div>
+                        </nav>
                     </header>
 
-                    <div className="bg-white border-b sticky top-0 z-40">
-                        <div className="max-w-7xl mx-auto px-4 flex overflow-x-auto space-x-1 py-2">
-                            {[
-                                { id: "dashboard", label: t.dashboard },
-                                { id: "rumah_sukan", label: t.rumah_sukan },
-                                { id: "atlit", label: t.atlit },
-                                { id: "acara", label: t.acara },
-                                { id: "keputusan", label: t.keputusan },
-                                { id: "pasca_sukan", label: t.pasca_sukan }
-                            ].map(tab => (
-                                <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap ${activeTab === tab.id ? "bg-indigo-600 text-white" : "text-slate-600 hover:bg-slate-100"}`}>
-                                    {tab.label}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    <main className="max-w-7xl mx-auto px-4 py-6 flex-grow w-full">
-                        {/* Papan Pemuka / Dashboard */}
+                    {}
+                    <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+                        {/* Papan Pemuka */}
                         {activeTab === "dashboard" && (
                             <div className="space-y-6">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                                    {houseStandings.map((h, idx) => (
-                                        <div key={h.nama} className={`rounded-2xl p-5 border bg-white relative overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg ${h.glow || 'hover:shadow-indigo-100'}`}>
-                                            <div className={`absolute top-0 left-0 w-full h-1.5 ${h.warna}`}></div>
+                                <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 text-white rounded-2xl p-6 shadow-xl relative overflow-hidden">
+                                    <div className="relative z-10">
+                                        <span className="px-3 py-1 bg-amber-400/20 text-amber-300 border border-amber-400/30 rounded-full text-xs font-semibold uppercase tracking-wider">
+                                            Status Terkini Kejohanan
+                                        </span>
+                                        <h2 className="text-2xl sm:text-3xl font-black mt-3 text-white">Carta Kedudukan Rumah Sukan</h2>
+                                        <p className="text-slate-300 text-sm mt-1 max-w-2xl">
+                                            Kedudukan rasmi berdasarkan kutipan pingat dan mata terkumpul untuk Kejohanan Sukan Tahunan {activeSchoolName}.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                    {houseStandings.map((house, idx) => (
+                                        <div key={house.nama} className={`bg-white rounded-xl p-5 border border-slate-200 shadow-sm transition hover:shadow-md relative ${house.glow}`}>
                                             <div className="flex justify-between items-start">
                                                 <div>
-                                                    <span className="text-[10px] font-black uppercase text-slate-400">Kedudukan #{idx+1}</span>
-                                                    <h3 className="text-lg font-black text-slate-800 flex items-center gap-2">Rumah {h.nama}</h3>
+                                                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Kedudukan #{idx + 1}</span>
+                                                    <h3 className={`text-xl font-black ${house.teks} mt-0.5`}>Rumah {house.nama}</h3>
                                                 </div>
-                                                <span className={`text-2xl font-black ${h.teks}`}>{h.mata} <span className="text-xs font-bold text-slate-400">mata</span></span>
+                                                <span className="text-2xl">{house.emoji}</span>
                                             </div>
-                                            <div className="grid grid-cols-4 gap-2 mt-6 text-center text-xs font-bold bg-slate-50 p-3 rounded-xl">
-                                                <div><span className="text-4xl block mb-2 transform hover:scale-125 transition-transform duration-200">🥇</span><p className="text-slate-700 text-sm font-extrabold">{h.emas}</p></div>
-                                                <div><span className="text-4xl block mb-2 transform hover:scale-125 transition-transform duration-200">🥈</span><p className="text-slate-700 text-sm font-extrabold">{h.perak}</p></div>
-                                                <div><span className="text-4xl block mb-2 transform hover:scale-125 transition-transform duration-200">🥉</span><p className="text-slate-700 text-sm font-extrabold">{h.gangsa}</p></div>
-                                                <div><span className="text-4xl block mb-2 transform hover:scale-125 transition-transform duration-200">🏅</span><p className="text-slate-700 text-sm font-extrabold">{h.keempat}</p></div>
+
+                                            <div className="mt-4 pt-4 border-t border-slate-100 flex items-baseline justify-between">
+                                                <span className="text-xs font-medium text-slate-500">Jumlah Mata</span>
+                                                <span className="text-3xl font-black text-slate-900">{house.mata}</span>
+                                            </div>
+
+                                            <div className="grid grid-cols-3 gap-1 mt-3 pt-3 border-t border-slate-100 text-center text-xs">
+                                                <div className="bg-amber-50 p-1.5 rounded border border-amber-100">
+                                                    <span className="text-amber-700 block font-bold">🥇 {house.emas}</span>
+                                                </div>
+                                                <div className="bg-slate-100 p-1.5 rounded border border-slate-200">
+                                                    <span className="text-slate-700 block font-bold">🥈 {house.perak}</span>
+                                                </div>
+                                                <div className="bg-orange-50 p-1.5 rounded border border-orange-100">
+                                                    <span className="text-orange-700 block font-bold">🥉 {house.gangsa}</span>
+                                                </div>
                                             </div>
                                         </div>
                                     ))}
                                 </div>
-
-                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                    <div className="lg:col-span-2 bg-white rounded-2xl p-6 border shadow-sm">
-                                        <div className="flex justify-between items-center border-b pb-3 mb-4">
-                                            <h3 className="text-sm font-bold text-slate-900 uppercase">{t.announcement}</h3>
-                                            {userRole !== "pelawat" && (
-                                                <button onClick={() => setShowAnnounceForm(!showAnnounceForm)} className="text-xs bg-indigo-50 text-indigo-600 font-bold px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition">
-                                                    {showAnnounceForm ? "✕ Batal" : "+ Tambah Hebahan"}
-                                                </button>
-                                            )}
-                                        </div>
-                                        {showAnnounceForm && userRole !== "pelawat" && (
-                                            <form onSubmit={handleAddAnnouncement} className="mb-6 bg-slate-50 p-4 rounded-xl space-y-3">
-                                                <textarea rows="3" required value={announceFormText} onChange={(e) => setAnnounceFormText(e.target.value)} placeholder="Masukkan hebahan baru..." className="w-full p-3 rounded-lg border focus:ring-2 focus:ring-indigo-500 focus:outline-none text-xs" />
-                                                <button type="submit" className="bg-indigo-600 text-white font-bold px-4 py-2 rounded-lg text-xs hover:bg-indigo-700 transition">Hantar</button>
-                                            </form>
-                                        )}
-                                        <div className="space-y-4">
-                                            {(announcements || []).length === 0 ? (
-                                                <p className="text-xs text-slate-400 italic text-center py-6">Tiada sebarang hebahan rasmi buat masa ini.</p>
-                                            ) : (
-                                                (announcements || []).map(announce => (
-                                                    <div key={announce.id} className="bg-amber-50/50 border border-amber-100 rounded-xl p-4 flex justify-between items-start gap-4">
-                                                        <div className="space-y-1">
-                                                            <p className="text-xs text-slate-800 font-medium leading-relaxed">{announce.text}</p>
-                                                            <div className="flex gap-2 items-center text-[10px] text-slate-400">
-                                                                <span>✍️ {announce.author}</span>
-                                                                <span>•</span>
-                                                                <span>📅 {announce.date}</span>
-                                                            </div>
-                                                        </div>
-                                                        {userRole !== "pelawat" && (
-                                                            <button onClick={() => handleDeleteAnnouncement(announce.id)} className="text-red-500 hover:text-red-700 text-xs font-bold p-1">✕</button>
-                                                        )}
-                                                    </div>
-                                                ))
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    <div className="bg-white rounded-2xl p-6 border shadow-sm flex flex-col h-[400px]">
-                                        <div className="border-b pb-3 mb-4 flex justify-between items-center">
-                                            <h3 className="text-sm font-bold text-slate-900 uppercase">📈 Log Aktiviti</h3>
-                                            <input type="text" placeholder="Cari log..." value={filterLogQuery} onChange={(e) => setFilterLogQuery(e.target.value)} className="p-1 border rounded-lg text-xs" />
-                                        </div>
-                                        <div className="space-y-3 overflow-y-auto flex-grow pr-1 text-[11px]">
-                                            {(logs || []).filter(log => {
-                                                if (!filterLogQuery) return true;
-                                                return log.action.toLowerCase().includes(filterLogQuery.toLowerCase()) || log.details.toLowerCase().includes(filterLogQuery.toLowerCase());
-                                            }).length === 0 ? (
-                                                <p className="text-slate-400 italic text-center py-12">Tiada aktiviti dikesan.</p>
-                                            ) : (
-                                                (logs || []).filter(log => {
-                                                    if (!filterLogQuery) return true;
-                                                    return log.action.toLowerCase().includes(filterLogQuery.toLowerCase()) || log.details.toLowerCase().includes(filterLogQuery.toLowerCase());
-                                                }).map(log => (
-                                                    <div key={log.id} className="p-2.5 rounded-lg bg-slate-50 border border-slate-100 space-y-1">
-                                                        <div className="flex justify-between text-[10px] text-slate-400 font-semibold">
-                                                            <span>👤 {log.userName}</span>
-                                                            <span>⏱️ {log.timestamp}</span>
-                                                        </div>
-                                                        <p className="font-extrabold text-slate-700">{log.action}</p>
-                                                        <p className="text-slate-500 leading-normal">{log.details}</p>
-                                                    </div>
-                                                ))
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
                             </div>
                         )}
 
                         {}
-                        {activeTab === "rumah_sukan" && (
-                            <div className="space-y-6">
-                                <div className="flex justify-between items-center bg-white p-4 rounded-2xl border shadow-sm">
-                                    <div>
-                                        <h3 className="font-extrabold text-slate-800 text-sm">Pengurusan Ahli & Slogan Rumah Sukan</h3>
-                                        <p className="text-xs text-slate-400">Kemaskini slogan, mata bonus, serta senarai guru penasihat bagi setiap rumah sukan.</p>
-                                    </div>
-                                    {userRole !== "pelawat" && (
-                                        <button onClick={() => {
-                                            setHouseForm({ nama: "", slogan: "", guruPenasihat: "", bonusPoints: 0, warnaLabel: "Ungu" });
-                                            setIsEditingHouse(false);
-                                            setIsHouseSidebarOpen(true);
-                                        }} className="bg-indigo-600 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow hover:bg-indigo-700 transition">
-                                            + Tambah Rumah
-                                        </button>
-                                    )}
-                                </div>
-
-                                {isHouseSidebarOpen && (
-                                    <div className="fixed inset-0 z-[100] flex justify-end">
-                                        <div className="fixed inset-0 bg-slate-900/60" onClick={() => setIsHouseSidebarOpen(false)} />
-                                        <div className="relative w-full max-w-md bg-white shadow-2xl flex flex-col z-[101] p-6 text-xs font-semibold space-y-4 overflow-y-auto">
-                                            <h3 className="font-bold text-slate-900 text-sm uppercase">{isEditingHouse ? "Sunting Rumah Sukan" : "Daftar Rumah Sukan Baru"}</h3>
-                                            <form onSubmit={isEditingHouse ? handleEditHouseSubmit : handleAddHouseSubmitDirect} className="space-y-4">
-                                                <div>
-                                                    <label className="block mb-1">Nama Rumah Sukan</label>
-                                                    <input type="text" required disabled={isEditingHouse} value={houseForm.nama} onChange={(e) => setHouseForm({ ...houseForm, nama: e.target.value })} className="w-full p-2 border rounded-xl disabled:bg-slate-100 font-bold" />
-                                                </div>
-                                                <div>
-                                                    <label className="block mb-1">Slogan Rumah</label>
-                                                    <input type="text" required value={houseForm.slogan} onChange={(e) => setHouseForm({ ...houseForm, slogan: e.target.value })} className="w-full p-2 border rounded-xl" />
-                                                </div>
-                                                <div>
-                                                    <label className="block mb-1">Mata Bonus Kejohanan</label>
-                                                    <input type="number" required value={houseForm.bonusPoints} onChange={(e) => setHouseForm({ ...houseForm, bonusPoints: parseInt(e.target.value) || 0 })} className="w-full p-2 border rounded-xl font-mono text-xs" />
-                                                </div>
-                                                <div>
-                                                    <label className="block mb-1">Pilihan Label Warna</label>
-                                                    <select value={houseForm.warnaLabel} onChange={(e) => setHouseForm({ ...houseForm, warnaLabel: e.target.value })} className="w-full p-2 border bg-white rounded-xl font-bold">
-                                                        {Object.keys(COLOR_PRESETS).map(key => (
-                                                            <option key={key} value={key}>{key}</option>
-                                                        ))}
-                                                    </select>
-                                                </div>
-                                                <button type="submit" className="w-full bg-indigo-600 text-white py-2.5 rounded-xl font-bold hover:bg-indigo-700 transition">
-                                                    Simpan Maklumat
-                                                </button>
-                                            </form>
-                                        </div>
-                                    </div>
-                                )}
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    {Object.keys(housesMetadata || INITIAL_HOUSES_METADATA).map(houseName => {
-                                        const meta = housesMetadata[houseName] || {};
-                                        const preset = COLOR_PRESETS[meta.warnaLabel] || COLOR_PRESETS.Merah;
-                                        const advisors = meta.guruPenasihat ? meta.guruPenasihat.split(',').map(s => s.trim()).filter(Boolean) : [];
-                                        
-                                        const houseAthletes = (athletes || []).filter(a => a.rumah === houseName);
-                                        const countLelaki = houseAthletes.filter(a => a.jantina === "Lelaki").length;
-                                        const countPerempuan = houseAthletes.filter(a => a.jantina === "Perempuan").length;
-                                        const totalCount = houseAthletes.length;
-
-                                        return (
-                                            <div key={houseName} className="rounded-3xl p-6 bg-white border border-slate-100 hover:shadow-xl transition-all duration-300 relative overflow-hidden flex flex-col justify-between">
-                                                <div className={`absolute top-0 left-0 w-full h-2 ${preset.warna}`}></div>
-                                                <div>
-                                                    <div className="flex justify-between items-start mb-4">
-                                                        <div>
-                                                            <h4 className="text-xl font-black text-slate-800">Rumah {houseName}</h4>
-                                                            <p className="text-xs text-indigo-600 font-bold italic mt-1">"{meta.slogan || 'Slogan Gemilang'}"</p>
-                                                        </div>
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="text-[11px] bg-slate-100 border border-slate-200 text-slate-700 px-2.5 py-1.5 rounded-xl font-bold whitespace-nowrap">
-                                                                L:{countLelaki} P:{countPerempuan} Jumlah:{totalCount}
-                                                            </span>
-                                                            {userRole !== "pelawat" && (
-                                                                <button onClick={() => {
-                                                                    setOriginalHouseKey(houseName);
-                                                                    setHouseForm({
-                                                                        nama: houseName,
-                                                                        slogan: meta.slogan || "",
-                                                                        bonusPoints: meta.bonusPoints || 0,
-                                                                        warnaLabel: meta.warnaLabel || "Ungu"
-                                                                    });
-                                                                    setIsEditingHouse(true);
-                                                                    setIsHouseSidebarOpen(true);
-                                                                }} className="text-xs bg-slate-50 hover:bg-slate-100 border p-1.5 rounded-lg font-bold whitespace-nowrap">✏️ Edit</button>
-                                                            )}
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="space-y-3 text-xs">
-                                                        <div className="bg-slate-50 p-3 rounded-xl border">
-                                                            <span className="font-bold text-slate-500">Mata Bonus Perbarisan / Hiasan:</span>
-                                                            <span className="font-mono font-bold text-slate-800 ml-2">{meta.bonusPoints || 0} Mata</span>
-                                                        </div>
-
-                                                        <div className="space-y-2">
-                                                            <p className="font-bold text-slate-400 uppercase tracking-wider text-[10px] mb-1">Guru Penasihat ({advisors.length})</p>
-                                                            <div className="flex flex-wrap gap-1.5">
-                                                                {advisors.length === 0 ? (
-                                                                    <p className="text-[11px] text-slate-400 italic">Tiada guru penasihat berdaftar.</p>
-                                                                ) : (
-                                                                    advisors.map(adv => (
-                                                                        <span key={adv} className="bg-slate-100 text-slate-700 px-2 py-1 rounded-lg font-bold border flex items-center gap-1">
-                                                                            <span>👤 {adv}</span>
-                                                                            {userRole !== "pelawat" && (
-                                                                                <button onClick={() => handleRemoveAdvisor(houseName, adv)} className="text-red-500 hover:text-red-700 font-extrabold ml-1">✕</button>
-                                                                            )}
-                                                                        </span>
-                                                                    ))
-                                                                )}
-                                                            </div>
-                                                            {userRole !== "pelawat" && (
-                                                                <div className="flex gap-1.5 mt-2">
-                                                                    <input type="text" placeholder="Nama guru..." value={newAdvisorText[houseName] || ""} onChange={(e) => setNewAdvisorText({ ...newAdvisorText, [houseName]: e.target.value })} className="flex-1 p-2 border rounded-xl" />
-                                                                    <button onClick={() => handleAddAdvisor(houseName)} className="bg-indigo-600 text-white font-bold px-3 rounded-xl text-xs hover:bg-indigo-700 transition">Tambah</button>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <div className="border-t pt-4 mt-6">
-                                                    <button onClick={() => { setSelectedMembersHouse(houseName); setMembersSortType("nama"); setShowMembersModal(true); }} className="w-full bg-indigo-50 hover:bg-indigo-100 text-indigo-700 py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 font-bold text-xs border border-indigo-100 transition mb-3">
-                                                        👥 Papar Ahli ({totalCount})
-                                                    </button>
-                                                    <div className="flex gap-2">
-                                                        <button onClick={() => executeBypassPrint('kehadiran_rumah', { houseName })} className="flex-1 bg-slate-50 hover:bg-slate-100 text-slate-700 py-1.5 px-2 rounded-lg flex items-center justify-center gap-1 font-semibold text-[11px] border">📄 Kehadiran</button>
-                                                        <button onClick={() => executeBypassPrint('sukantara_rumah', { houseName })} className="flex-1 bg-slate-50 hover:bg-slate-100 text-slate-700 py-1.5 px-2 rounded-lg flex items-center justify-center gap-1 font-semibold text-[11px] border">📄 Sukantara</button>
-                                                        <button onClick={() => handleExportHouseMembersJSON(houseName)} className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 py-1.5 px-3 rounded-lg border border-emerald-100 font-semibold text-[11px]">📥 JSON</button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        )}
-
-                        {}
-                        {activeTab === "atlit" && (
-                            <div className="space-y-6">
-                                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-2xl border shadow-sm">
-                                    <div>
-                                        <h3 className="font-extrabold text-slate-800 text-sm">Pengurusan Atlet & Murid</h3>
-                                        <p className="text-xs text-slate-400">Daftarkan murid secara tunggal atau kelompok menggunakan data Excel/TSV.</p>
-                                    </div>
-                                    {userRole !== "pelawat" && (
-                                        <div className="flex gap-2">
-                                            <button onClick={() => {
-                                                setAthleteForm({ id: "", nama: "", kelas: "", rumah: "Merah", jantina: "Lelaki", kategori: "L12" });
-                                                setIsEditingAthlete(false);
-                                                setIsAddAthleteSidebarOpen(true);
-                                            }} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2 rounded-xl transition">➕ Daftar Atlet</button>
-                                            <button onClick={() => {
-                                                setSelectedStudentId("");
-                                                setStudentSearchQuery("");
-                                                setNoAtletInput("");
-                                                setSelectedEventIds([]);
-                                                setIsAssignEventSidebarOpen(true);
-                                            }} className="bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs px-4 py-2 rounded-xl transition">⏱️ Urus Acara</button>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {isAddAthleteSidebarOpen && (
-                                    <div className="fixed inset-0 z-[100] flex justify-end">
-                                        <div className="fixed inset-0 bg-slate-900/60" onClick={() => setIsAddAthleteSidebarOpen(false)} />
-                                        <div className="relative w-full max-w-md bg-white shadow-2xl flex flex-col z-[101] p-6 text-xs font-semibold space-y-4 overflow-y-auto">
-                                            <h3 className="font-bold text-slate-900 text-sm uppercase">{isEditingAthlete ? "Sunting Atlet" : "Daftar Atlet Baru"}</h3>
-                                            <div className="flex border-b mb-3">
-                                                <button onClick={() => setRegMode("tunggal")} className={`flex-1 pb-2 text-center border-b-2 ${regMode === "tunggal" ? "border-indigo-600 text-indigo-600 font-bold" : "border-transparent text-slate-400"}`}>Tunggal</button>
-                                                <button onClick={() => setRegMode("pukal")} className={`flex-1 pb-2 text-center border-b-2 ${regMode === "pukal" ? "border-indigo-600 text-indigo-600 font-bold" : "border-transparent text-slate-400"}`}>Kelompok (TSV)</button>
-                                            </div>
-
-                                            {regMode === "tunggal" ? (
-                                                <form onSubmit={handleAthleteSubmit} className="space-y-3">
-                                                    <div>
-                                                        <label className="block mb-1">Nama Penuh (Huruf Besar)</label>
-                                                        <input type="text" required value={athleteForm.nama} onChange={(e) => setAthleteForm({ ...athleteForm, nama: e.target.value.toUpperCase() })} className="w-full p-2 border rounded-xl font-bold uppercase" />
-                                                    </div>
-                                                    <div>
-                                                        <label className="block mb-1">Kelas</label>
-                                                        <input type="text" required value={athleteForm.kelas} onChange={(e) => handleKelasChange(e.target.value)} className="w-full p-2 border rounded-xl uppercase" />
-                                                    </div>
-                                                    <div>
-                                                        <label className="block mb-1">Rumah Sukan</label>
-                                                        <select value={athleteForm.rumah} onChange={(e) => setAthleteForm({ ...athleteForm, rumah: e.target.value })} className="w-full p-2 border bg-white rounded-xl font-bold">
-                                                            {Object.keys(housesMetadata || INITIAL_HOUSES_METADATA).map(name => (
-                                                                <option key={name} value={name}>{name}</option>
-                                                            ))}
-                                                        </select>
-                                                    </div>
-                                                    <div>
-                                                        <label className="block mb-1">Jantina</label>
-                                                        <select value={athleteForm.jantina} onChange={(e) => handleJantinaChange(e.target.value)} className="w-full p-2 border bg-white rounded-xl">
-                                                            <option value="Lelaki">Lelaki</option>
-                                                            <option value="Perempuan">Perempuan</option>
-                                                        </select>
-                                                    </div>
-                                                    <div>
-                                                        <label className="block mb-1">Kategori</label>
-                                                        <select value={athleteForm.kategori} onChange={(e) => setAthleteForm({ ...athleteForm, kategori: e.target.value })} className="w-full p-2 border bg-white rounded-xl">
-                                                            {sortedCategories.map(cat => (
-                                                                <option key={cat} value={cat}>{cat}</option>
-                                                            ))}
-                                                        </select>
-                                                    </div>
-                                                    <button type="submit" className="w-full bg-indigo-600 text-white py-2.5 rounded-xl font-bold hover:bg-indigo-700 transition">Simpan</button>
-                                                </form>
-                                            ) : (
-                                                <form onSubmit={handleTsvSubmit} className="space-y-3">
-                                                    <p className="text-[10px] text-slate-400 mb-2 leading-relaxed">
-                                                        Tampalkan rekod ahli dari Excel/Google Sheets. Format lajur lajur mesti mengandungi pengepala: <br/>
-                                                        <span className="font-mono bg-slate-100 p-1 rounded font-bold">Nama • Jantina • Kategori • Kelas • Rumah</span>
-                                                    </p>
-                                                    <textarea rows="6" value={tsvInput} onChange={(e) => setTsvInput(e.target.value)} placeholder="Nama&#9;Jantina&#9;Kategori&#9;Kelas&#9;Rumah" className="w-full p-2 border rounded-xl font-mono text-[10px]" />
-                                                    <button type="submit" className="w-full bg-indigo-600 text-white py-2 rounded-xl font-bold hover:bg-indigo-700 transition">Import Pukal</button>
-                                                </form>
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {isAssignEventSidebarOpen && (
-                                    <div className="fixed inset-0 z-[100] flex justify-end">
-                                        <div className="fixed inset-0 bg-slate-900/60" onClick={() => setIsAssignEventSidebarOpen(false)} />
-                                        <div className="relative w-full max-w-md bg-white shadow-2xl flex flex-col z-[101] p-6 text-xs font-semibold space-y-4 overflow-y-auto">
-                                            <h3 className="font-bold text-slate-900 text-sm uppercase">Pendaftaran Acara Atlet</h3>
-                                            <div className="relative">
-                                                <label className="block mb-1">Cari Atlet</label>
-                                                <input type="text" value={studentSearchQuery} onChange={(e) => { setStudentSearchQuery(e.target.value); setShowSearchDropdown(true); }} className="w-full p-2 border rounded-xl uppercase" placeholder="Cari nama atlet..." />
-                                                {showSearchDropdown && studentSearchQuery.trim() !== "" && (
-                                                    <div className="absolute left-0 right-0 mt-1 max-h-40 overflow-y-auto bg-white border rounded-xl shadow-lg z-50">
-                                                        {athletes.filter(a => a.nama.toLowerCase().includes(studentSearchQuery.toLowerCase())).map(a => (
-                                                            <div key={a.id} onClick={() => { setSelectedStudentId(a.id); setStudentSearchQuery(a.nama); setNoAtletInput(a.noAtlet || ""); setSelectedEventIds(a.acaraIds || []); setShowSearchDropdown(false); }} className="p-2 hover:bg-indigo-50 cursor-pointer border-b last:border-0 font-bold">
-                                                                {a.nama.toUpperCase()} ({a.kelas}) - {a.kategori}
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                            {selectedStudentId && (
-                                                <form onSubmit={handleAssignAthleteEvents} className="space-y-3">
-                                                    <div>
-                                                        <label className="block mb-1">No Peserta / Bib</label>
-                                                        <input type="text" value={noAtletInput} onChange={(e) => setNoAtletInput(e.target.value)} className="w-full p-2 border rounded-xl" />
-                                                    </div>
-                                                    
-                                                    {(() => {
-                                                        const ath = athletes.find(a => a.id === selectedStudentId);
-                                                        const selectedEventsObj = selectedEventIds.map(id => eventsWithCode.find(e => e.id === id)).filter(Boolean);
-                                                        const currentIndCount = selectedEventsObj.filter(ev => (ev.format || "Individu") === "Individu").length;
-                                                        const currentGrpCount = selectedEventsObj.filter(ev => (ev.format || "Individu") === "Berkumpulan").length;
-                                                        return (
-                                                            <div className="bg-indigo-50 p-3 rounded-xl border border-indigo-100 space-y-1">
-                                                                <p className="font-extrabold text-indigo-900">Rumusan Had Penyertaan ({ath?.nama}):</p>
-                                                                <div className="flex justify-between text-[11px] text-slate-600">
-                                                                    <span>🏃‍♂️ Individu: <strong className={currentIndCount > maxIndividu ? "text-red-600" : "text-indigo-700"}>{currentIndCount} / {maxIndividu}</strong></span>
-                                                                    <span>👥 Berkumpulan: <strong className={currentGrpCount > maxKumpulan ? "text-red-600" : "text-indigo-700"}>{currentGrpCount} / {maxKumpulan}</strong></span>
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })()}
-
-                                                    <div className="max-h-60 overflow-y-auto space-y-1.5 border p-2 rounded-xl bg-slate-50">
-                                                        <p className="text-[10px] text-slate-400 font-bold mb-1">Senarai Acara Kategori {athletes.find(a => a.id === selectedStudentId)?.kategori}</p>
-                                                        {eventsWithCode.filter(ev => categoriesMatch(athletes.find(a => a.id === selectedStudentId)?.kategori, ev.kategori)).length === 0 ? (
-                                                            <p className="text-[11px] text-slate-400 italic">Tiada acara didaftarkan untuk kategori ini.</p>
-                                                        ) : (
-                                                            eventsWithCode.filter(ev => categoriesMatch(athletes.find(a => a.id === selectedStudentId)?.kategori, ev.kategori)).map(ev => {
-                                                                const isChecked = selectedEventIds.includes(ev.id);
-                                                                return (
-                                                                    <label key={ev.id} className="flex items-center justify-between p-2 border rounded bg-white cursor-pointer hover:bg-slate-50">
-                                                                        <div className="flex items-center gap-2">
-                                                                            <input type="checkbox" checked={isChecked} onChange={() => {
-                                                                                setSelectedEventIds(isChecked ? selectedEventIds.filter(id => id !== ev.id) : [...selectedEventIds, ev.id]);
-                                                                            }} />
-                                                                            <span className="font-bold text-slate-800">[{ev.kodAcara}] {ev.nama} {getFriendlyCategory(ev.kategori)}</span>
-                                                                        </div>
-                                                                        <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${ev.format === 'Berkumpulan' ? 'bg-purple-100 text-purple-700 border border-purple-200' : 'bg-blue-100 text-blue-700 border border-blue-200'}`}>
-                                                                            {ev.format || "Individu"}
-                                                                        </span>
-                                                                    </label>
-                                                                );
-                                                            })
-                                                        )}
-                                                    </div>
-                                                    <button type="submit" className="w-full bg-indigo-600 text-white py-2 rounded-xl font-bold hover:bg-indigo-700 transition">Simpan Pendaftaran</button>
-                                                </form>
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
-
-                                <div className="bg-white rounded-2xl p-6 border shadow-sm">
-                                    <div className="flex justify-between border-b pb-3 mb-4 items-center flex-wrap gap-2 text-xs font-bold">
-                                        <h4 className="text-slate-800">Senarai Atlet Berdaftar ({filteredAthletes.length})</h4>
-                                        <div className="flex gap-2">
-                                            <select value={filterHouse} onChange={(e) => setFilterHouse(e.target.value)} className="p-1.5 border bg-white rounded-lg text-xs font-semibold">
-                                                <option value="Semua">Semua Rumah</option>
-                                                {Object.keys(housesMetadata || INITIAL_HOUSES_METADATA).map(name => (
-                                                    <option key={name} value={name}>{name}</option>
-                                                ))}
-                                            </select>
-                                            <select value={filterEvent} onChange={(e) => setFilterEvent(e.target.value)} className="p-1.5 border bg-white rounded-lg text-xs font-semibold">
-                                                <option value="Semua">Semua Acara</option>
-                                                {eventsWithCode.map(ev => (
-                                                    <option key={ev.id} value={ev.id}>{ev.nama} {getFriendlyCategory(ev.kategori)}</option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full text-left text-xs">
-                                            <thead>
-                                                <tr className="border-b text-slate-400 font-bold uppercase text-[10px] tracking-wider">
-                                                    <th className="py-2">No</th>
-                                                    <th className="py-2">Bib</th>
-                                                    <th className="py-2">Nama</th>
-                                                    <th className="py-2">Kelas</th>
-                                                    <th className="py-2">Kategori</th>
-                                                    <th className="py-2">Rumah</th>
-                                                    <th className="py-2">Acara Didatar</th>
-                                                    {userRole !== "pelawat" && <th className="py-2 text-center">Tindakan</th>}
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {filteredAthletes.length === 0 ? (
-                                                    <tr>
-                                                        <td colSpan="8" className="py-8 text-center text-slate-400 italic">Tiada atlet ditemui.</td>
-                                                    </tr>
-                                                ) : (
-                                                    filteredAthletes.map((ath, idx) => (
-                                                        <tr key={ath.id} className="border-b last:border-0 hover:bg-slate-50 font-semibold">
-                                                            <td className="py-2">{idx+1}</td>
-                                                            <td className="py-2"><span className="bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded font-mono font-bold text-[11px]">{ath.noAtlet || "-"}</span></td>
-                                                            <td className="py-2 uppercase font-bold text-slate-800">{ath.nama}</td>
-                                                            <td className="py-2">{ath.kelas}</td>
-                                                            <td className="py-2 text-indigo-600">{ath.kategori}</td>
-                                                            <td className="py-2">{ath.rumah}</td>
-                                                            <td className="py-2">
-                                                                <div className="flex flex-wrap gap-1">
-                                                                    {ath.acaraIds && ath.acaraIds.length > 0 ? (
-                                                                        ath.acaraIds.map(id => {
-                                                                            const ev = eventsWithCode.find(e => e.id === id);
-                                                                            if (!ev) return null;
-                                                                            return (
-                                                                                <span key={id} className="bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded text-[10px] font-bold">
-                                                                                    {ev.nama} {getFriendlyCategory(ev.kategori)}
-                                                                                </span>
-                                                                            );
-                                                                        })
-                                                                    ) : (
-                                                                        <span className="text-slate-400 italic text-[11px]">Tiada Acara</span>
-                                                                    )}
-                                                                </div>
-                                                            </td>
-                                                            {userRole !== "pelawat" && (
-                                                                <td className="py-2 text-center">
-                                                                    <button onClick={() => { setAthleteForm(ath); setIsEditingAthlete(true); setIsAddAthleteSidebarOpen(true); }} className="text-blue-600 hover:text-blue-800 mr-2">✏️</button>
-                                                                    <button onClick={() => handleDeleteAthlete(ath.id)} className="text-red-500 hover:text-red-700">✕</button>
-                                                                </td>
-                                                            )}
-                                                        </tr>
-                                                    ))
-                                                )}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {}
-                        {activeTab === "acara" && (
-                            <div className="space-y-6">
-                                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-4 rounded-2xl border shadow-sm gap-4">
-                                    <div>
-                                        <h3 className="font-extrabold text-slate-800 text-sm">Pengurusan Acara Kejohanan</h3>
-                                        <p className="text-xs text-slate-400">Tambah dan kelola kategori acara balapan & padang.</p>
-                                    </div>
-                                    <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-start sm:justify-end">
-                                        <select 
-                                            value={selectedEventDate} 
-                                            onChange={(e) => setSelectedEventDate(e.target.value)} 
-                                            className="p-2 border bg-white rounded-xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
-                                        >
-                                            <option value="Semua">Semua Hari</option>
-                                            {uniqueEventDates.map((date, idx) => {
-                                                const dayText = `Hari ke-${idx + 1}`;
-                                                const formattedDate = formatDateToDMY(date);
-                                                return (
-                                                    <option key={date} value={date}>{dayText} ({formattedDate})</option>
-                                                );
-                                            })}
-                                        </select>
-                                        {userRole !== "pelawat" && (
-                                            <div className="flex gap-2">
-                                                <button onClick={() => {
-                                                    setEventForm({ id: "", nama: "", kategori: "L12", jenis: "Balapan", format: "Individu", tarikh: "", masa: "" });
-                                                    setIsEditingEvent(false);
-                                                    setIsEventSidebarOpen(true);
-                                                }} className="bg-indigo-600 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow hover:bg-indigo-700 transition">+ Tambah Acara</button>
-                                                <button onClick={handleDeleteAllEvents} className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow transition">🗑️ Padam Semua Acara</button>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {isEventSidebarOpen && (
-                                    <div className="fixed inset-0 z-[100] flex justify-end">
-                                        <div className="fixed inset-0 bg-slate-900/60" onClick={() => setIsEventSidebarOpen(false)} />
-                                        <div className="relative w-full max-w-md bg-white shadow-2xl flex flex-col z-[101] p-6 text-xs font-semibold space-y-4">
-                                            <h3 className="font-bold text-slate-900 text-sm uppercase">{isEditingEvent ? "Sunting Acara" : "Daftar Acara Baru"}</h3>
-                                            <form onSubmit={handleEventSubmit} className="space-y-3">
-                                                <div>
-                                                    <label className="block mb-1">Nama Acara</label>
-                                                    <input type="text" required value={eventForm.nama} onChange={(e) => setEventForm({ ...eventForm, nama: e.target.value.toUpperCase() })} placeholder="Cth: LARI 100M" className="w-full p-2 border rounded-xl font-bold uppercase" />
-                                                </div>
-                                                <div>
-                                                    <label className="block mb-1">Kategori</label>
-                                                    <select value={eventForm.kategori} onChange={(e) => setEventForm({ ...eventForm, kategori: e.target.value })} className="w-full p-2 border bg-white rounded-xl">
-                                                        {sortedCategories.map(cat => (
-                                                            <option key={cat} value={cat}>{cat}</option>
-                                                        ))}
-                                                    </select>
-                                                </div>
-                                                <div>
-                                                    <label className="block mb-1">Jenis</label>
-                                                    <select value={eventForm.jenis} onChange={(e) => setEventForm({ ...eventForm, jenis: e.target.value })} className="w-full p-2 border bg-white rounded-xl">
-                                                        <option value="Balapan">Balapan</option>
-                                                        <option value="Padang">Padang</option>
-                                                    </select>
-                                                </div>
-                                                <div>
-                                                    <label className="block mb-1">Format</label>
-                                                    <select value={eventForm.format} onChange={(e) => setEventForm({ ...eventForm, format: e.target.value })} className="w-full p-2 border bg-white rounded-xl">
-                                                        <option value="Individu">Individu</option>
-                                                        <option value="Berkumpulan">Berkumpulan</option>
-                                                    </select>
-                                                </div>
-                                                <div className="grid grid-cols-2 gap-2">
-                                                    <div>
-                                                        <label className="block mb-1">Tarikh</label>
-                                                        <input type="date" value={eventForm.tarikh} onChange={(e) => setEventForm({ ...eventForm, tarikh: e.target.value })} className="w-full p-1.5 border rounded-xl" />
-                                                    </div>
-                                                    <div>
-                                                        <label className="block mb-1">Masa</label>
-                                                        <input type="time" value={eventForm.masa} onChange={(e) => setEventForm({ ...eventForm, masa: e.target.value })} className="w-full p-1.5 border rounded-xl" />
-                                                    </div>
-                                                </div>
-                                                <button type="submit" className="w-full bg-indigo-600 text-white py-2.5 rounded-xl font-bold hover:bg-indigo-700 transition">Simpan</button>
-                                            </form>
-                                        </div>
-                                    </div>
-                                )}
-
-                                <div className="bg-white rounded-2xl p-6 border shadow-sm space-y-3">
-                                    {displayedEvents.length === 0 ? (
-                                        <p className="text-xs text-slate-400 italic text-center py-6">Tiada acara didaftarkan untuk tarikh ini.</p>
-                                    ) : (
-                                        displayedEvents.map(ev => (
-                                            <div key={ev.id} className="flex justify-between items-center p-3 rounded-xl bg-slate-50 border text-xs font-semibold">
-                                                <div className="flex items-center gap-3">
-                                                    <span className="font-mono bg-indigo-600 text-white px-2.5 py-1 rounded-xl text-[10px]">{ev.kodAcara}</span>
-                                                    <div>
-                                                        <h4 className="font-extrabold text-slate-800 uppercase">{ev.nama} {getFriendlyCategory(ev.kategori)}</h4>
-                                                        <span className="text-slate-400 text-[10px]">{ev.jenis} | {ev.format || "Individu"}</span>
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-center gap-4">
-                                                    {ev.jenis === "Balapan" && (
-                                                        <button onClick={() => executeBypassPrint('hakim_penamat', ev)} className="bg-white hover:bg-slate-100 text-rose-700 border border-rose-200 py-1.5 px-3 rounded-lg flex items-center justify-center gap-1 font-bold text-[11px] shadow-sm transition">
-                                                            🖨️ Cetak Hakim Penamat
-                                                        </button>
-                                                    )}
-                                                    {ev.jenis === "Padang" && (
-                                                        <button onClick={() => executeBypassPrint('hakim_padang', ev)} className="bg-white hover:bg-slate-100 text-emerald-700 border border-emerald-200 py-1.5 px-3 rounded-lg flex items-center justify-center gap-1 font-bold text-[11px] shadow-sm transition">
-                                                            🖨️ Cetak Hakim Padang
-                                                        </button>
-                                                    )}
-                                                    <button onClick={() => executeBypassPrint('marshall', ev)} className="bg-white hover:bg-slate-100 text-indigo-700 border border-indigo-200 py-1.5 px-3 rounded-lg flex items-center justify-center gap-1 font-bold text-[11px] shadow-sm transition">
-                                                        🖨️ Cetak Marshall
-                                                    </button>
-                                                    <span>📅 {formatDateToDMY(ev.tarikh)} {ev.masa ? `@ ${ev.masa}` : ''}</span>
-                                                    {userRole !== "pelawat" && (
-                                                        <div className="flex gap-2">
-                                                            <button onClick={() => { setEventForm(ev); setIsEditingEvent(true); setIsEventSidebarOpen(true); }} className="text-blue-600 hover:text-blue-800">✏️</button>
-                                                            <button onClick={() => handleDeleteEvent(ev.id)} className="text-red-500 hover:text-red-700">✕</button>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        ))
-                                    )}
-                                </div>
-                            </div>
-                        )}
-
-                        {}
-                        {activeTab === "keputusan" && (
-                            <div className="space-y-6">
-                                <div className="bg-white p-5 rounded-2xl border shadow-sm">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Pilih Acara Kejohanan</label>
-                                            <select value={resultForm.eventId || heatForm.eventId} onChange={(e) => {
-                                                const val = e.target.value;
-                                                setResultForm(prev => ({ ...prev, eventId: val }));
-                                                setHeatForm(prev => ({ ...prev, eventId: val }));
-                                            }} className="w-full p-2.5 border rounded-xl bg-white text-xs font-bold">
-                                                <option value="">-- Pilih Acara --</option>
-                                                {eventsWithCode.map(ev => (
-                                                    <option key={ev.id} value={ev.id}>[{ev.kodAcara}] {ev.nama} {getFriendlyCategory(ev.kategori)}</option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                        {selectedEventObject && selectedEventObject.jenis === "Balapan" && (
-                                            <div>
-                                                <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Peringkat Larian</label>
-                                                <div className="grid grid-cols-2 gap-2 bg-slate-100 p-1 rounded-xl">
-                                                    <button onClick={() => setActiveStageTab("saringan")} className={`py-1.5 rounded-lg text-xs font-bold ${activeStageTab === "saringan" ? "bg-white text-indigo-700 shadow-sm" : "text-slate-500"}`}>Saringan</button>
-                                                    <button onClick={() => setActiveStageTab("akhir")} className={`py-1.5 rounded-lg text-xs font-bold ${activeStageTab === "akhir" ? "bg-white text-indigo-700 shadow-sm" : "text-slate-500"}`}>Peringkat Akhir</button>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                    <div className="lg:col-span-1">
-                                        {selectedEventObject && selectedEventObject.jenis === "Balapan" && activeStageTab === "saringan" ? (
-                                            <div className="bg-white rounded-2xl p-5 border shadow-sm space-y-4 text-xs font-semibold">
-                                                <h3 className="font-bold text-slate-900 border-b pb-2">⏱️ Kunci Masa Saringan</h3>
-                                                <form onSubmit={handleHeatSubmit} className="space-y-3">
-                                                    <div>
-                                                        <label className="block mb-1">No Saringan</label>
-                                                        <select value={heatForm.saringanNo} onChange={(e) => setHeatForm({ ...heatForm, saringanNo: e.target.value })} className="w-full p-2 border bg-white rounded-xl">
-                                                            <option value="1">Saringan 1</option>
-                                                            <option value="2">Saringan 2</option>
-                                                            <option value="3">Saringan 3</option>
-                                                            <option value="4">Saringan 4</option>
-                                                        </select>
-                                                    </div>
-                                                    <div>
-                                                        <label className="block mb-1">Pilih Atlet</label>
-                                                        <select required value={heatForm.athleteId} onChange={(e) => setHeatForm({ ...heatForm, athleteId: e.target.value })} className="w-full p-2 border bg-white rounded-xl">
-                                                            <option value="">-- Pilih --</option>
-                                                            {relevantAthletesForEventForm.map(ath => (
-                                                                <option key={ath.id} value={ath.id}>{ath.nama.toUpperCase()} ({ath.rumah})</option>
-                                                            ))}
-                                                        </select>
-                                                    </div>
-                                                    <div>
-                                                        <label className="block mb-1">Catatan Masa</label>
-                                                        <input type="text" required value={heatForm.catatan} onChange={(e) => setHeatForm({ ...heatForm, catatan: e.target.value })} placeholder="Cth: 12.45s" className="w-full p-2 border rounded-xl" />
-                                                    </div>
-                                                    <button type="submit" className="w-full bg-indigo-600 text-white py-2 rounded-xl font-bold hover:bg-indigo-700 transition">Simpan</button>
-                                                </form>
-                                            </div>
-                                        ) : (
-                                            <div className="bg-white rounded-2xl p-5 border shadow-sm space-y-4 text-xs font-semibold">
-                                                <h3 className="font-bold text-slate-900 border-b pb-2">🏅 Keputusan Pingat</h3>
-                                                <form onSubmit={handleResultSubmit} className="space-y-3">
-                                                    <div>
-                                                        <label className="block mb-1">Kedudukan</label>
-                                                        <select value={resultForm.kedudukan} onChange={(e) => setResultForm({ ...resultForm, kedudukan: e.target.value })} className="w-full p-2 border bg-white rounded-xl">
-                                                            <option value="1">🥇 Johan (Emas)</option>
-                                                            <option value="2">🥈 Naib Johan (Perak)</option>
-                                                            <option value="3">🥉 Ketiga (Gangsa)</option>
-                                                            <option value="4">🏅 Keempat</option>
-                                                        </select>
-                                                    </div>
-                                                    <div>
-                                                        <label className="block mb-1">Pilih Atlet</label>
-                                                        <select required value={resultForm.athleteId} onChange={(e) => setResultForm({ ...resultForm, athleteId: e.target.value })} className="w-full p-2 border bg-white rounded-xl">
-                                                            <option value="">-- Pilih --</option>
-                                                            {relevantAthletesForEventForm.map(ath => (
-                                                                <option key={ath.id} value={ath.id}>{ath.nama.toUpperCase()} ({ath.rumah})</option>
-                                                            ))}
-                                                        </select>
-                                                    </div>
-                                                    <div>
-                                                        <label className="block mb-1">Catatan Pencapaian</label>
-                                                        <input type="text" value={resultForm.catatan} onChange={(e) => setResultForm({ ...resultForm, catatan: e.target.value })} placeholder="Cth: 12.30s atau 4.15m" className="w-full p-2 border rounded-xl" />
-                                                    </div>
-                                                    <button type="submit" className="w-full bg-indigo-600 text-white py-2 rounded-xl font-bold hover:bg-indigo-700 transition">Kunci Keputusan</button>
-                                                </form>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <div className="lg:col-span-2 bg-white rounded-2xl p-5 border shadow-sm space-y-4">
-                                        {selectedEventObject ? (
-                                            <div>
-                                                <h3 className="text-sm font-bold text-slate-800 uppercase mb-4">{selectedEventObject.nama} {getFriendlyCategory(selectedEventObject.kategori)}</h3>
-                                                <div className="space-y-2">
-                                                    <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Keputusan Rasmi Podium</h4>
-                                                    {(results || []).filter(r => r.eventId === selectedEventObject.id).length === 0 ? (
-                                                        <p className="text-xs text-slate-400 italic">Tiada pingat dikunci masuk lagi.</p>
-                                                    ) : (
-                                                        (results || []).filter(r => r.eventId === selectedEventObject.id).map(res => {
-                                                            const ath = (athletes || []).find(a => a.id === res.athleteId);
-                                                            const medalMap = { "1": "🥇 Johan", "2": "🥈 Naib Johan", "3": "🥉 Ketiga", "4": "🏅 Keempat" };
-                                                            return (
-                                                                <div key={res.id} className="flex justify-between items-center text-xs p-2 rounded-lg bg-slate-50 border">
-                                                                    <span className="font-bold">{medalMap[res.kedudukan] || "Podium"} - {ath ? ath.nama : "Atlet"} ({ath ? ath.rumah : ""})</span>
-                                                                    <div className="flex gap-3 items-center">
-                                                                        <span className="font-mono bg-slate-200 px-2 py-0.5 rounded text-[10px]">{res.catatan || 'N/A'}</span>
-                                                                        {userRole !== "pelawat" && <button onClick={() => handleDeleteResult(res.id)} className="text-red-500 hover:text-red-700">✕</button>}
-                                                                    </div>
-                                                                </div>
-                                                            );
-                                                        })
-                                                    )}
-
-                                                    {selectedEventObject.jenis === "Balapan" && (
-                                                        <div className="mt-6 space-y-2">
-                                                            <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Rekod Saringan Semasa</h4>
-                                                            {(heats || []).filter(h => h.eventId === selectedEventObject.id).length === 0 ? (
-                                                                <p className="text-xs text-slate-400 italic">Tiada rekod saringan larian.</p>
-                                                            ) : (
-                                                                (heats || []).filter(h => h.eventId === selectedEventObject.id).map(h => {
-                                                                    const ath = (athletes || []).find(a => a.id === h.athleteId);
-                                                                    return (
-                                                                        <div key={h.id} className="flex justify-between items-center text-xs p-2 rounded-lg bg-slate-50 border">
-                                                                            <span>Saringan {h.saringanNo} • {ath ? ath.nama : "Atlet"} ({ath ? ath.rumah : ""})</span>
-                                                                            <div className="flex gap-3 items-center">
-                                                                                <span className="font-mono font-bold">{h.catatan}</span>
-                                                                                {userRole !== "pelawat" && <button onClick={() => handleDeleteHeat(h.id)} className="text-red-500">✕</button>}
-                                                                            </div>
-                                                                        </div>
-                                                                    );
-                                                                })
-                                                            )}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <p className="text-xs text-slate-400 italic text-center py-12">Sila pilih acara terlebih dahulu untuk merekod saringan larian atau keputusan rasmi medal.</p>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {}
-                        {activeTab === "pasca_sukan" && (
-                            <div className="space-y-6">
-                                <div className="bg-white p-6 rounded-2xl border shadow-sm">
-                                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                                        <div>
-                                            <h3 className="text-lg font-black text-slate-900">🏆 Modul Dokumentasi Pasca Kejohanan</h3>
-                                            <p className="text-xs text-slate-400">Jana laporan kedudukan mata keseluruhan kokurikulum sekolah serta sijil penghargaan rasmi.</p>
-                                        </div>
-                                        <div className="flex gap-2">
-                                            <button onClick={() => executeBypassPrint('kokum')} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow transition">📊 Jana Laporan Keseluruhan</button>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="bg-white p-6 rounded-2xl border shadow-sm">
-                                    <h3 className="text-sm font-bold text-slate-900 mb-2 uppercase">📜 Penjana Sijil Penghargaan Pintar</h3>
-                                    <input type="text" placeholder="Cari atlet..." value={certSearchQuery} onChange={(e) => setCertSearchQuery(e.target.value)} className="w-full p-2.5 rounded-xl border text-xs font-bold mb-4 focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
-                                    <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
-                                        {(athletes || []).filter(ath => {
-                                            if (!certSearchQuery.trim()) return true;
-                                            return ath.nama.toLowerCase().includes(certSearchQuery.toLowerCase());
-                                        }).length === 0 ? (
-                                            <p className="text-xs text-slate-400 italic text-center py-6">Tiada atlet bertepatan dengan carian anda.</p>
-                                        ) : (
-                                            (athletes || []).filter(ath => {
-                                                if (!certSearchQuery.trim()) return true;
-                                                return ath.nama.toLowerCase().includes(certSearchQuery.toLowerCase());
-                                            }).map(ath => (
-                                                <div key={ath.id} className="flex justify-between items-center p-3 rounded-xl bg-slate-50 border text-xs">
-                                                    <div>
-                                                        <p className="font-extrabold text-slate-800 uppercase">{ath.nama}</p>
-                                                        <p className="text-[10px] text-slate-400">Kelas: {ath.kelas} | Rumah: {ath.rumah}</p>
-                                                    </div>
-                                                    <button onClick={() => executeBypassPrint('sijil', ath)} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-1.5 rounded-lg text-[10px] transition">Cetak Sijil</button>
-                                                </div>
-                                            ))
-                                        )}
-                                    </div>
-                                </div>
+                        {activeTab !== "dashboard" && (
+                            <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+                                <h2 className="text-xl font-bold text-slate-900 mb-2">{t[activeTab]}</h2>
+                                <p className="text-sm text-slate-500">Modul pengurusan sukan aktif.</p>
                             </div>
                         )}
                     </main>
 
-                    {/* Pop-up Pemberitahuan Toast */}
-                    {toast.show && (
-                        <div className="fixed bottom-5 right-5 z-[10000] max-w-sm p-4 rounded-xl shadow-2xl bg-slate-900 text-white text-xs font-bold transition-all duration-300">
-                            <p>{toast.message}</p>
-                        </div>
-                    )}
-
-                    {/* Modal Log Masuk */}
-                    {isLoginModalOpen && (
-                        <div className="fixed inset-0 bg-slate-900/75 backdrop-blur-sm z-[10000] flex items-center justify-center p-4">
-                            <div className="bg-white rounded-3xl shadow-2xl border max-w-md w-full overflow-hidden">
-                                <div className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white px-6 py-5 flex justify-between items-center">
-                                    <h3 className="text-xs font-black uppercase">🔒 Log Masuk Pentadbiran</h3>
-                                    <button onClick={() => setIsLoginModalOpen(false)} className="text-slate-400 hover:text-white">✕</button>
-                                </div>
-                                <div className="p-6 space-y-6 text-xs font-semibold">
-                                    <button onClick={handleGoogleLogin} className="w-full bg-white hover:bg-slate-50 text-slate-800 border py-3 rounded-2xl flex items-center justify-center gap-2.5 shadow-sm">
-                                        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" />
-                                        <span>Log Masuk Google / DELIMa</span>
-                                    </button>
-                                    <div className="relative flex py-1 items-center">
-                                        <div className="flex-grow border-t"></div>
-                                        <span className="flex-shrink mx-4 text-slate-400 text-[10px]">ATAU</span>
-                                        <div className="flex-grow border-t"></div>
-                                    </div>
-                                    <form onSubmit={handlePasscodeLogin} className="space-y-3">
-                                        <input type="password" required value={passcodeInput} onChange={(e) => setPasscodeInput(e.target.value)} placeholder="Kunci Laluan..." className="w-full p-3 rounded-xl border text-center tracking-widest bg-slate-50" />
-                                        <button type="submit" className="w-full bg-indigo-600 text-white py-3 rounded-2xl font-extrabold hover:bg-indigo-700 transition">Hantar</button>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Dialog Pengesahan */}
-                    {confirmModal.show && (
-                        <div className="fixed inset-0 bg-slate-900/60 z-[9999] flex items-center justify-center p-4">
-                            <div className="bg-white rounded-2xl p-6 max-w-md w-full text-xs font-semibold">
-                                <h3 className="text-sm font-extrabold text-slate-900 mb-2">{confirmModal.title}</h3>
-                                <p className="text-slate-500 leading-relaxed mb-6">{confirmModal.message}</p>
-                                <div className="flex justify-end gap-3 font-bold">
-                                    <button onClick={() => setConfirmModal({ show: false, title: "", message: "", onConfirm: null })} className="px-4 py-2 bg-slate-100 rounded-xl">Batal</button>
-                                    <button onClick={() => { if (confirmModal.onConfirm) confirmModal.onConfirm(); }} className="px-4 py-2 bg-red-600 text-white rounded-xl">Sahkan</button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Modal Pratinjau Cetak */}
-                    {isPreviewModalOpen && (
-                        <div className="fixed inset-0 bg-slate-900/80 z-[10000] flex flex-col items-center justify-center p-4">
-                            <div className="bg-white rounded-2xl w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden">
-                                <div className="bg-slate-950 text-white px-6 py-4 flex justify-between items-center">
-                                    <h3 className="text-sm font-black uppercase">📄 Pratinjau Dokumen</h3>
-                                    <button onClick={() => setIsPreviewModalOpen(false)} className="text-slate-400">✕</button>
-                                </div>
-                                <div className="flex-grow bg-slate-100 p-4 overflow-hidden flex justify-center">
-                                    <iframe id="preview-iframe" srcDoc={previewContent} className="w-full h-full max-w-[210mm] bg-white shadow-2xl rounded-xl" />
-                                </div>
-                                <div className="bg-slate-50 border-t px-6 py-4 flex justify-end gap-3 text-xs font-bold">
-                                    <button onClick={() => setIsPreviewModalOpen(false)} className="px-5 py-2.5 bg-slate-200 rounded-xl">Tutup</button>
-                                    <button onClick={() => { const iframe = document.getElementById('preview-iframe'); if (iframe) { iframe.contentWindow.focus(); iframe.contentWindow.print(); } }} className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl">Cetak Sekarang</button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Modal Setup Kunci Mata / Tahun */}
-                    {showPointsModal && (
-                        <div className="fixed inset-0 bg-slate-900/60 z-[9999] flex items-center justify-center p-4">
-                            <div className="bg-white rounded-2xl p-6 max-w-md w-full text-xs font-semibold space-y-4">
-                                <h3 className="text-sm font-extrabold text-slate-900 uppercase">⚙️ Tetapan Kejohanan & Mata</h3>
-                                <div className="space-y-3">
-                                    <div>
-                                        <label className="block mb-1">Tahun Aktif Kejohanan</label>
-                                        <input type="text" value={activeYear} onChange={(e) => setActiveYear(e.target.value)} className="w-full p-2 border rounded-xl" />
-                                    </div>
-                                    
-                                    <div className="border-t pt-2 border-b pb-2 space-y-2">
-                                        <p className="font-extrabold text-[10px] text-slate-400 uppercase tracking-wider">Had Penyertaan Acara Murid</p>
-                                        <div className="grid grid-cols-2 gap-2">
-                                            <div>
-                                                <label className="block mb-1 font-bold text-indigo-700">Had Acara Individu</label>
-                                                <input type="number" min="0" value={maxIndividu} onChange={(e) => setMaxIndividu(parseInt(e.target.value) || 0)} className="w-full p-2 border border-indigo-100 rounded-xl font-bold font-mono text-center text-xs" />
-                                            </div>
-                                            <div>
-                                                <label className="block mb-1 font-bold text-indigo-700">Had Acara Kumpulan</label>
-                                                <input type="number" min="0" value={maxKumpulan} onChange={(e) => setMaxKumpulan(parseInt(e.target.value) || 0)} className="w-full p-2 border border-indigo-100 rounded-xl font-bold font-mono text-center text-xs" />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-2">
-                                        <div>
-                                            <label className="block mb-1">Poin Johan (🥇)</label>
-                                            <input type="number" value={pointsConfig.emas} onChange={(e) => setPointsConfig({ ...pointsConfig, emas: parseInt(e.target.value) || 0 })} className="w-full p-2 border rounded-xl" />
-                                        </div>
-                                        <div>
-                                            <label className="block mb-1">Poin Naib Johan (🥈)</label>
-                                            <input type="number" value={pointsConfig.perak} onChange={(e) => setPointsConfig({ ...pointsConfig, perak: parseInt(e.target.value) || 0 })} className="w-full p-2 border rounded-xl" />
-                                        </div>
-                                        <div>
-                                            <label className="block mb-1">Poin Ketiga (🥉)</label>
-                                            <input type="number" value={pointsConfig.gangsa} onChange={(e) => setPointsConfig({ ...pointsConfig, gangsa: parseInt(e.target.value) || 0 })} className="w-full p-2 border rounded-xl" />
-                                        </div>
-                                        <div>
-                                            <label className="block mb-1">Poin Keempat (🏅)</label>
-                                            <input type="number" value={pointsConfig.keempat} onChange={(e) => setPointsConfig({ ...pointsConfig, keempat: parseInt(e.target.value) || 0 })} className="w-full p-2 border rounded-xl" />
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="flex justify-end gap-3 font-bold">
-                                    <button onClick={() => setShowPointsModal(false)} className="px-4 py-2 bg-slate-100 rounded-xl">Batal</button>
-                                    <button onClick={handleSavePoints} className="px-4 py-2 bg-indigo-600 text-white rounded-xl">Simpan</button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Modal Setup GAS URL & Firebase Script Sekolah Baharu */}
-                    {showGasModal && (
-                        <div className="fixed inset-0 bg-slate-900/60 z-[9999] flex items-center justify-center p-4">
-                            <div className="bg-white rounded-2xl p-6 max-w-2xl w-full text-xs font-semibold space-y-4">
-                                <div className="flex justify-between items-center border-b pb-2">
-                                    <h3 className="text-sm font-extrabold text-slate-900 uppercase">⚡ Hubungan & Integrasi Sekolah Baharu</h3>
-                                    <button onClick={() => setShowGasModal(false)} className="text-slate-400 hover:text-slate-600">✕</button>
-                                </div>
-
-                                {/* Pengepala Tab dalam Modal */}
-                                <div className="flex border-b text-[11px]">
-                                    <button onClick={() => setGasModalTab("config")} className={`flex-1 pb-2 text-center border-b-2 font-bold ${gasModalTab === "config" ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-400"}`}>⚙️ Konfigurasi</button>
-                                    <button onClick={() => setGasModalTab("rules")} className={`flex-1 pb-2 text-center border-b-2 font-bold ${gasModalTab === "rules" ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-400"}`}>🔒 Rules Firestore</button>
-                                    <button onClick={() => setGasModalTab("script")} className={`flex-1 pb-2 text-center border-b-2 font-bold ${gasModalTab === "script" ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-400"}`}>📄 Apps Script (Code.gs)</button>
-                                </div>
-
-                                {gasModalTab === "config" && (
-                                    <form onSubmit={handleSaveGas} className="space-y-4">
-                                        <p className="text-slate-400 text-[11px] leading-relaxed">
-                                            Masukkan tetapan kustom sekolah anda di sini. Portal akan menyambung terus kepada pangkalan data Firebase dan helaian Google Sheets sekolah anda secara automatik.
-                                        </p>
-                                        <div>
-                                            <label className="block mb-1 font-bold text-slate-700">Pautan Web App Google Apps Script (GAS URL)</label>
-                                            <input type="text" value={gasUrl} onChange={(e) => setGasUrl(e.target.value)} placeholder="https://script.google.com/macros/s/.../exec" className="w-full p-2.5 border rounded-xl font-mono text-[11px]" />
-                                        </div>
-                                        <div>
-                                            <label className="block mb-1 font-bold text-slate-700">Konfigurasi Firebase JSON Sekolah</label>
-                                            <textarea rows="6" value={setupFirebaseConfigRaw} onChange={(e) => setSetupFirebaseConfigRaw(e.target.value)} placeholder={`{\n  "apiKey": "AIzaSy...",\n  "authDomain": "sps-sekolah.firebaseapp.com",\n  "projectId": "sps-sekolah",\n  "storageBucket": "sps-sekolah.firebasestorage.app",\n  "messagingSenderId": "123456789",\n  "appId": "1:12345:web:abcd"\n}`} className="w-full p-2.5 border rounded-xl font-mono text-[10px]" />
-                                            <p className="text-[10px] text-slate-400 mt-1">Kosongkan sekiranya ingin kembali menggunakan Firebase lalai sistem.</p>
-                                        </div>
-                                        <div className="flex justify-end gap-3 font-bold pt-2 border-t">
-                                            <button type="button" onClick={() => setShowGasModal(false)} className="px-4 py-2 bg-slate-100 rounded-xl">Batal</button>
-                                            <button type="submit" className="px-5 py-2 bg-indigo-600 text-white rounded-xl">Simpan Integrasi</button>
-                                        </div>
-                                    </form>
-                                )}
-
-                                {gasModalTab === "rules" && (
-                                    <div className="space-y-3">
-                                        <p className="text-slate-400 text-[11px] leading-relaxed">
-                                            Salin kod di bawah dan tampalkan ke dalam ruangan <strong>Rules</strong> pada Cloud Firestore Console sekolah anda bagi membolehkan sistem menulis/membaca data dengan selamat.
-                                        </p>
-                                        <div className="relative">
-                                            <textarea readOnly rows="8" value={`rules_version = '2';\nservice cloud.firestore {\n  match /databases/{database}/documents {\n    match /artifacts/{appId}/public/data/{collectionName}/{docId} {\n      allow read: if true;\n      allow write: if true; // Sesuai untuk mod kejohanan sekolah\n    }\n    match /artifacts/{appId}/public/data/logs/{logId} {\n      allow read: if true;\n      allow write: if true;\n    }\n  }\n}`} className="w-full p-2.5 border rounded-xl font-mono text-[10px] bg-slate-50 cursor-text" id="firestore-rules-text" />
-                                            <button onClick={() => {
-                                                const txt = document.getElementById('firestore-rules-text');
-                                                if (txt) {
-                                                    txt.select();
-                                                    document.execCommand('copy');
-                                                    showToastMessage("Rules Firestore disalin ke papan klip!", "success");
-                                                }
-                                            }} className="absolute top-2 right-2 bg-slate-800 text-white px-2 py-1 rounded text-[10px] hover:bg-slate-700">Salin Rules</button>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {gasModalTab === "script" && (
-                                    <div className="space-y-3">
-                                        <p className="text-slate-400 text-[11px] leading-relaxed">
-                                            Salin kod Google Apps Script (GAS) di bawah. Cipta projek baharu di Google Sheets sekolah anda, buka <strong>Extensions > Apps Script</strong>, padam kod asal, tampalkan kod ini dan pilih <strong>Deploy > New Deployment as Web App</strong> (Setiap kali kemaskini dijalankan).
-                                        </p>
-                                        <div className="relative">
-                                            <textarea readOnly rows="8" value={`function doPost(e) {\n  try {\n    var params = JSON.parse(e.postData.contents);\n    var action = params.action;\n    var data = params.data;\n    \n    var ss = SpreadsheetApp.getActiveSpreadsheet();\n    \n    if (action === "syncAthletes") {\n      var sheet = getOrCreateSheet(ss, "Senarai Atlet");\n      sheet.clearContents();\n      sheet.appendRow(["ID Atlet", "Nama Penuh", "Kelas", "Rumah Sukan", "Jantina", "Kategori", "No Bib", "Acara"]);\n      data.forEach(function(item) {\n        sheet.appendRow([\n          item.id || "",\n          item.nama || "",\n          item.kelas || "",\n          item.rumah || "",\n          item.jantina || "",\n          item.kategori || "",\n          item.noAtlet || "",\n          item.acaraIds ? item.acaraIds.join(", ") : ""\n        ]);\n      });\n      return ContentService.createTextOutput(JSON.stringify({status: "success", message: "Data atlet berjaya disinkronkan"})).setMimeType(ContentService.MimeType.JSON);\n    }\n    \n    return ContentService.createTextOutput(JSON.stringify({status: "error", message: "Aksi tidak dikenali"})).setMimeType(ContentService.MimeType.JSON);\n  } catch (err) {\n    return ContentService.createTextOutput(JSON.stringify({status: "error", message: err.toString()})).setMimeType(ContentService.MimeType.JSON);\n  }\n}\n\nfunction getOrCreateSheet(ss, name) {\n  var sheet = ss.getSheetByName(name);\n  if (!sheet) {\n    sheet = ss.insertSheet(name);\n  }\n  return sheet;\n}`} className="w-full p-2.5 border rounded-xl font-mono text-[10px] bg-slate-50 cursor-text" id="gas-script-text" />
-                                            <button onClick={() => {
-                                                const txt = document.getElementById('gas-script-text');
-                                                if (txt) {
-                                                    txt.select();
-                                                    document.execCommand('copy');
-                                                    showToastMessage("Google Apps Script disalin ke papan klip!", "success");
-                                                }
-                                            }} className="absolute top-2 right-2 bg-slate-800 text-white px-2 py-1 rounded text-[10px] hover:bg-slate-700">Salin Kod</button>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Hapus Modal Setup Portal sedia ada jika bertindih atau biarkan sahaja */}
-                    {showSchoolSetupModal && (
-                        <div className="fixed inset-0 bg-slate-900/60 z-[9999] flex items-center justify-center p-4">
-                            <form onSubmit={handleSaveSchoolSetup} className="bg-white rounded-2xl p-6 max-w-md w-full text-xs font-semibold space-y-4">
-                                <h3 className="text-sm font-extrabold text-slate-900 uppercase">🏫 Tetapan Nama Portal & Sekolah</h3>
-                                <div className="space-y-3">
-                                    <div>
-                                        <label className="block mb-1">Nama Singkatan Sekolah</label>
-                                        <input type="text" required value={setupSchoolName} onChange={(e) => setSetupSchoolName(e.target.value)} className="w-full p-2 border rounded-xl" />
-                                    </div>
-                                    <div>
-                                        <label className="block mb-1">Tajuk Sukan Kejohanan</label>
-                                        <input type="text" required value={setupSchoolSubtitle} onChange={(e) => setSetupSchoolSubtitle(e.target.value)} className="w-full p-2 border rounded-xl" />
-                                    </div>
-                                    <div>
-                                        <label className="block mb-1">Pautan (URL) Logo Sekolah</label>
-                                        <input type="text" required value={setupSchoolLogo} onChange={(e) => setSetupSchoolLogo(e.target.value)} className="w-full p-2 border rounded-xl" placeholder="https://..." />
-                                    </div>
-                                </div>
-                                <div className="flex justify-between items-center pt-2">
-                                    <button type="button" onClick={handleResetSchoolToDefault} className="text-red-500 font-bold hover:underline">Kosongkan ke Lalai</button>
-                                    <div className="flex gap-2">
-                                        <button type="button" onClick={() => setShowSchoolSetupModal(false)} className="px-4 py-2 bg-slate-100 rounded-xl font-bold">Batal</button>
-                                        <button type="submit" className="px-4 py-2 bg-indigo-600 text-white rounded-xl font-bold">Simpan</button>
-                                    </div>
-                                </div>
-                            </form>
-                        </div>
-                    )}
-
-                    {/* Modal Diagnostik Info */}
-                    {showDiagModal && (
-                        <div className="fixed inset-0 bg-slate-900/60 z-[9999] flex items-center justify-center p-4">
-                            <div className="bg-white rounded-2xl p-6 max-w-md w-full text-xs font-semibold space-y-3">
-                                <h3 className="text-sm font-extrabold text-slate-900 uppercase">ℹ️ Maklumat Diagnostik Sistem</h3>
-                                <div className="space-y-2 font-mono text-[10px] bg-slate-50 p-3 rounded-xl border">
-                                    <p>SPS-SK App ID: {appId}</p>
-                                    <p>Firebase Active Connection: {isCloudActive ? "CONNECTED" : "OFFLINE/LOCAL"}</p>
-                                    <p>Active Firebase Project ID: {activeFirebaseConfig.projectId}</p>
-                                    <p>Total Registered Athletes: {athletes.length}</p>
-                                    <p>Total Configured Events: {events.length}</p>
-                                    <p>Total Results Locked: {results.length}</p>
-                                    <p>Integrasi Google GAS API: {gasUrl ? "AKTIF" : "TIADA"}</p>
-                                </div>
-                                <div className="flex justify-end font-bold">
-                                    <button onClick={() => setShowDiagModal(false)} className="px-4 py-2 bg-slate-100 rounded-xl">Tutup</button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
                     {}
-                    {showMembersModal && (
-                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
-                            <div className="bg-white rounded-2xl max-w-2xl w-full h-[80vh] flex flex-col overflow-hidden text-xs font-semibold">
-                                <div className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white px-6 py-4 flex justify-between items-center">
-                                    <h3 className="text-sm font-black uppercase">👥 Senarai Ahli Rumah {selectedMembersHouse}</h3>
-                                    <button onClick={() => setShowMembersModal(false)} className="text-slate-400 hover:text-white text-base">✕</button>
-                                </div>
-                                
-                                <div className="p-4 border-b bg-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                                    <span className="text-slate-500">Jumlah Ahli: <strong>{sortedHouseMembers.length} Orang</strong></span>
-                                    <div className="flex flex-wrap items-center gap-1.5">
-                                        <span className="text-slate-400">Isih Mengikut:</span>
-                                        <button 
-                                            onClick={() => setMembersSortType("nama")} 
-                                            className={`px-3 py-1.5 rounded-lg border font-bold transition ${membersSortType === "nama" ? "bg-indigo-600 text-white border-indigo-600" : "bg-white hover:bg-slate-100 text-slate-700"}`}
-                                        >
-                                            🔠 Nama (A-Z)
-                                        </button>
-                                        <button 
-                                            onClick={() => setMembersSortType("kelas")} 
-                                            className={`px-3 py-1.5 rounded-lg border font-bold transition ${membersSortType === "kelas" ? "bg-indigo-600 text-white border-indigo-600" : "bg-white hover:bg-slate-100 text-slate-700"}`}
-                                        >
-                                            🏫 Kelas (Pra-T6)
-                                        </button>
-                                        <button 
-                                            onClick={() => setMembersSortType("jantina")} 
-                                            className={`px-3 py-1.5 rounded-lg border font-bold transition ${membersSortType === "jantina" ? "bg-indigo-600 text-white border-indigo-600" : "bg-white hover:bg-slate-100 text-slate-700"}`}
-                                        >
-                                            🚻 Jantina (L ➔ P)
-                                        </button>
-                                    </div>
-                                </div>
+                    {toast.show && (
+                        <div className={`fixed bottom-5 right-5 z-50 px-4 py-3 rounded-xl shadow-2xl text-white font-medium text-sm transition transform translate-y-0 ${
+                            toast.type === "error" ? "bg-red-600" : toast.type === "success" ? "bg-emerald-600" : "bg-slate-800"
+                        }`}>
+                            {toast.message}
+                        </div>
+                    )}
 
-                                <div className="flex-grow overflow-y-auto p-4">
-                                    {sortedHouseMembers.length === 0 ? (
-                                        <p className="text-center text-slate-400 italic py-12">Tiada ahli berdaftar untuk rumah sukan ini.</p>
-                                    ) : (
-                                        <table className="w-full text-left">
-                                            <thead>
-                                                <tr className="border-b text-slate-400 uppercase text-[10px] tracking-wider">
-                                                    <th className="py-2 w-10">Bil</th>
-                                                    <th className="py-2 w-16">Bib</th>
-                                                    <th className="py-2">Nama Penuh</th>
-                                                    <th className="py-2">Kelas</th>
-                                                    <th className="py-2">Jantina</th>
-                                                    <th className="py-2">Kategori</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {sortedHouseMembers.map((ath, idx) => (
-                                                    <tr key={ath.id} className="border-b last:border-0 hover:bg-slate-50 font-bold">
-                                                        <td className="py-2 text-slate-500">{idx + 1}</td>
-                                                        <td className="py-2">
-                                                            <span className="bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded font-mono text-[10px]">
-                                                                {ath.noAtlet || "-"}
-                                                            </span>
-                                                        </td>
-                                                        <td className="py-2 text-slate-900 uppercase">{ath.nama}</td>
-                                                        <td className="py-2 text-slate-600">{ath.kelas}</td>
-                                                        <td className="py-2">
-                                                            <span className={`px-2 py-0.5 rounded text-[10px] ${ath.jantina === "Lelaki" ? "bg-blue-100 text-blue-700" : "bg-pink-100 text-pink-700"}`}>
-                                                                {ath.jantina}
-                                                            </span>
-                                                        </td>
-                                                        <td className="py-2 text-indigo-600">{ath.kategori}</td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    )}
-                                </div>
-
-                                <div className="bg-slate-50 border-t px-6 py-3.5 flex justify-end">
-                                    <button onClick={() => setShowMembersModal(false)} className="px-5 py-2 bg-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-300 transition">Tutup</button>
+                    {confirmModal.show && (
+                        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+                            <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+                                <h3 className="text-lg font-bold text-slate-900">{confirmModal.title}</h3>
+                                <p className="text-sm text-slate-600">{confirmModal.message}</p>
+                                <div className="flex justify-end space-x-3 pt-2">
+                                    <button 
+                                        onClick={() => setConfirmModal({ show: false })} 
+                                        className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition"
+                                    >
+                                        Batal
+                                    </button>
+                                    <button 
+                                        onClick={confirmModal.onConfirm} 
+                                        className="px-4 py-2 text-xs font-semibold bg-red-600 hover:bg-red-500 text-white rounded-lg shadow transition"
+                                    >
+                                        Teruskan
+                                    </button>
                                 </div>
                             </div>
                         </div>
                     )}
                 </div>
             );
-        }
+        };
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />); 
+        root.render(<App />);
     </script>
 </body>
 </html>

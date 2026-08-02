@@ -1,12 +1,38 @@
 <!DOCTYPE html>
 <html lang="ms">
 <head>
-    <meta charset="background: #cbd5e1; border-radius: 4px; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SiPS Online</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet">
+    
+    <!-- Firebase Compat SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        @media print { body { background: white; margin: 0; padding: 0; } }
     </style>
 </head>
 <body class="text-slate-800 antialiased">
-    <div id="root">
+    <div id="root"></div>
+
+    <!-- React, ReactDOM, Babel -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone@7.26.4/babel.min.js"></script>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo, useRef } = React;
+
         const translations = {
             BM: {
                 dashboard: "Papan Pemuka", rumah_sukan: "Rumah Sukan", acara: "Pengurusan Acara", atlit: "Pengurusan Atlet", 
@@ -78,6 +104,8 @@
 
             const aParsed = parseCat(a); const eParsed = parseCat(e);
             if (aParsed.jantina && eParsed.jantina && aParsed.jantina !== eParsed.jantina) return false;
+            
+            // TKB Logic
             if (e.includes("TKB") || e.includes("BAWAH") || e.includes("B") || e.includes("U")) {
                 if (aParsed.umur <= eParsed.umur) return true;
             }
@@ -89,8 +117,9 @@
             const [userRole, setUserRole] = useState("pelawat");
             const [currentUser, setCurrentUser] = useState(null);
             const [isCloudActive, setIsCloudActive] = useState(false);
-            const [activeTab, setActiveTab] = useState("dashboard"); // Tab order: 1, 2, 3(Acara), 4(Atlit), 5, 6
+            const [activeTab, setActiveTab] = useState("dashboard"); // Tab order adjusted
             
+            // Data States
             const [athletes, setAthletes] = useState([]);
             const [events, setEvents] = useState([]);
             const [results, setResults] = useState([]);
@@ -101,6 +130,7 @@
             const [adminList, setAdminList] = useState([]);
             const [categories, setCategories] = useState(["L12TKB", "P12TKB", "L10TKB", "P10TKB", "Prasekolah", "Terbuka"]);
 
+            // Config States
             const [activeYear, setActiveYear] = useState(() => localStorage.getItem('sps_active_year') || new Date().getFullYear().toString());
             const [maxIndividu, setMaxIndividu] = useState(() => parseInt(localStorage.getItem('sps_max_individu')) || 3);
             const [maxKumpulan, setMaxKumpulan] = useState(() => parseInt(localStorage.getItem('sps_max_kumpulan')) || 2);
@@ -112,16 +142,14 @@
             const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
             const [passcodeInput, setPasscodeInput] = useState("");
             const [showPointsModal, setShowPointsModal] = useState(false);
-            const [showGasModal, setShowGasModal] = useState(false);
             const [showSchoolSetupModal, setShowSchoolSetupModal] = useState(false);
             const [showDiagModal, setShowDiagModal] = useState(false);
             const [schoolSetupTab, setSchoolSetupTab] = useState("config");
-            const [gasModalTab, setGasModalTab] = useState("config");
             const [showSignatoryModal, setShowSignatoryModal] = useState(false);
+            
             const [certSignatory1Name, setCertSignatory1Name] = useState(() => localStorage.getItem('sps_sig1_name') || "Cikgu Adnan Bin Haji Abdul Rahman");
             const [certSignatory1Title, setCertSignatory1Title] = useState(() => localStorage.getItem('sps_sig1_title') || "Guru Besar");
 
-            // Form States
             const [athleteForm, setAthleteForm] = useState({ id: "", nama: "", kelas: "", rumah: "Merah", jantina: "Lelaki", kategori: "L12TKB" });
             const [isAddAthleteSidebarOpen, setIsAddAthleteSidebarOpen] = useState(false);
             const [isEditingAthlete, setIsEditingAthlete] = useState(false);
@@ -250,6 +278,7 @@
                 if (userRole === "pelawat") { showToastMessage("Akses Dihalang.", "error"); return false; } return true;
             };
 
+            // TIE BREAKER: Emas > Perak > Gangsa > Keempat > Mata
             const houseStandings = useMemo(() => {
                 const houses = {};
                 Object.keys(housesMetadata).forEach(name => {
@@ -423,13 +452,14 @@
                             <td style="border: 1px solid #cbd5e1; padding: 10px; text-align: center;">${h.emas}</td>
                             <td style="border: 1px solid #cbd5e1; padding: 10px; text-align: center;">${h.perak}</td>
                             <td style="border: 1px solid #cbd5e1; padding: 10px; text-align: center;">${h.gangsa}</td>
-                            <td style="border: 1px solid #cbd5e1; padding: 10px; text-align: center;">${h.mata}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 10px; text-align: center;">${h.keempat}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 10px; text-align: center; background: #f8fafc; font-weight: bold;">${h.mata}</td>
                         </tr>
                     `).join('');
                     printContent = `
                         <div style="font-family: sans-serif; padding: 20px;">
                             ${headerHtml}
-                            <h2 style="text-align: center; margin-bottom: 20px;">LAPORAN PUNGUTAN MATA RASMI</h2>
+                            <h2 style="text-align: center; margin-bottom: 20px;">LAPORAN PUNGUTAN MATA RASMI (TIE-BREAKER: EMAS)</h2>
                             <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
                                 <thead style="background: #f1f5f9;">
                                     <tr>
@@ -438,6 +468,7 @@
                                         <th style="border: 1px solid #cbd5e1; padding: 10px;">Emas</th>
                                         <th style="border: 1px solid #cbd5e1; padding: 10px;">Perak</th>
                                         <th style="border: 1px solid #cbd5e1; padding: 10px;">Gangsa</th>
+                                        <th style="border: 1px solid #cbd5e1; padding: 10px;">Keempat</th>
                                         <th style="border: 1px solid #cbd5e1; padding: 10px;">Jumlah Mata</th>
                                     </tr>
                                 </thead>
@@ -464,17 +495,17 @@
                         <div style="font-family: sans-serif; padding: 20px;">
                             ${headerHtml}
                             <h2 style="text-align: center; margin-bottom: 20px;">Borang Kehadiran Ahli: Rumah ${targetData.houseName}</h2>
-                            <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                            <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
                                 <thead style="background: #f1f5f9;">
                                     <tr>
                                         <th style="border: 1px solid #cbd5e1; padding: 8px;">No</th>
                                         <th style="border: 1px solid #cbd5e1; padding: 8px;">Nama Ahli</th>
                                         <th style="border: 1px solid #cbd5e1; padding: 8px;">Kelas</th>
                                         <th style="border: 1px solid #cbd5e1; padding: 8px;">Jantina</th>
-                                        <th style="border: 1px solid #cbd5e1; padding: 8px;">Perjumpaan 1<br><span style="font-size:10px;font-weight:normal;">Tarikh:___</span></th>
-                                        <th style="border: 1px solid #cbd5e1; padding: 8px;">Perjumpaan 2<br><span style="font-size:10px;font-weight:normal;">Tarikh:___</span></th>
-                                        <th style="border: 1px solid #cbd5e1; padding: 8px;">Perjumpaan 3<br><span style="font-size:10px;font-weight:normal;">Tarikh:___</span></th>
-                                        <th style="border: 1px solid #cbd5e1; padding: 8px;">Perjumpaan 4<br><span style="font-size:10px;font-weight:normal;">Tarikh:___</span></th>
+                                        <th style="border: 1px solid #cbd5e1; padding: 8px;">Perjumpaan 1<br><span style="font-size:9px;font-weight:normal;">Tarikh:___</span></th>
+                                        <th style="border: 1px solid #cbd5e1; padding: 8px;">Perjumpaan 2<br><span style="font-size:9px;font-weight:normal;">Tarikh:___</span></th>
+                                        <th style="border: 1px solid #cbd5e1; padding: 8px;">Perjumpaan 3<br><span style="font-size:9px;font-weight:normal;">Tarikh:___</span></th>
+                                        <th style="border: 1px solid #cbd5e1; padding: 8px;">Perjumpaan 4<br><span style="font-size:9px;font-weight:normal;">Tarikh:___</span></th>
                                         <th style="border: 1px solid #cbd5e1; padding: 8px;">Catatan</th>
                                     </tr>
                                 </thead>
@@ -611,7 +642,6 @@
                         </div>
                     `;
                 } else if (mode === 'sijil') {
-                    // Cetak Sijil Format
                     printContent = `
                         <div style="border: 12px double #1e3a8a; padding: 40px; text-align: center; font-family: 'Playfair Display', serif; min-height: 250mm; box-sizing: border-box; position: relative;">
                             <img src="${logoUrl}" style="height: 100px; margin-bottom: 20px;" />
@@ -730,14 +760,14 @@
                         </div>
                     </header>
 
-                    {/* Navbar Tabs */}
+                    {/* Navbar Tabs - Swapped Atilt and Acara */}
                     <nav className="bg-white border-b sticky top-0 z-40">
                         <div className="max-w-7xl mx-auto px-4 py-2 flex overflow-x-auto space-x-2">
                             {[
                                 { id: "dashboard", label: t.dashboard },
                                 { id: "rumah_sukan", label: t.rumah_sukan },
-                                { id: "acara", label: t.acara },
                                 { id: "atlit", label: t.atlit },
+                                { id: "acara", label: t.acara },
                                 { id: "keputusan", label: t.keputusan },
                                 { id: "pasca_sukan", label: t.pasca_sukan }
                             ].map(tab => (
@@ -754,6 +784,7 @@
                         {/* TAB 1: Papan Pemuka */}
                         {activeTab === "dashboard" && (
                             <div className="space-y-6">
+                                {/* Besar pingat: 2.5x -> menggunakan class text-4xl dan text-5xl */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                                     {houseStandings.map((h, i) => (
                                         <div key={h.nama} className={`bg-white border p-4 rounded-2xl relative overflow-hidden ${h.glow}`}>
@@ -762,11 +793,11 @@
                                                 <div><span className="text-[10px] font-bold text-slate-400 uppercase">Ked. #{i+1}</span><h3 className="font-black text-lg">Rumah {h.nama}</h3></div>
                                                 <span className={`text-2xl font-black ${h.teks}`}>{h.mata}</span>
                                             </div>
-                                            <div className="grid grid-cols-4 gap-2 mt-4 text-center text-xs font-bold bg-slate-50 p-3 rounded-xl">
-                                                <div><span className="text-3xl block mb-1">🥇</span>{h.emas}</div>
-                                                <div><span className="text-3xl block mb-1">🥈</span>{h.perak}</div>
-                                                <div><span className="text-3xl block mb-1">🥉</span>{h.gangsa}</div>
-                                                <div><span className="text-3xl block mb-1">🏅</span>{h.keempat}</div>
+                                            <div className="grid grid-cols-4 gap-2 mt-4 text-center text-xs font-bold bg-slate-50 p-3 rounded-xl items-end">
+                                                <div><span className="text-4xl block mb-1 drop-shadow-md">🥇</span>{h.emas}</div>
+                                                <div><span className="text-4xl block mb-1 drop-shadow-md">🥈</span>{h.perak}</div>
+                                                <div><span className="text-4xl block mb-1 drop-shadow-md">🥉</span>{h.gangsa}</div>
+                                                <div><span className="text-4xl block mb-1 drop-shadow-md">🏅</span>{h.keempat}</div>
                                             </div>
                                         </div>
                                     ))}
@@ -866,7 +897,7 @@
                                                 </div>
                                                 <div className="flex gap-2 mt-3">
                                                     <button onClick={() => { setSelectedMembersHouse(name); setShowMembersModal(true); }} className="flex-1 bg-indigo-50 text-indigo-700 py-2 rounded-xl font-bold text-xs border border-indigo-100">👥 Kelola Ahli ({hAthletes.length})</button>
-                                                    <button onClick={() => executeBypassPrint('kehadiran_rumah', { houseName: name })} className="flex-1 bg-emerald-50 text-emerald-700 py-2 rounded-xl font-bold text-xs border border-emerald-100">🖨️ Borang Kehadiran</button>
+                                                    <button onClick={() => executeBypassPrint('kehadiran_rumah', { houseName: name })} className="flex-1 bg-emerald-50 text-emerald-700 py-2 rounded-xl font-bold text-xs border border-emerald-100">🖨️ Cetak Kehadiran (4 Kali)</button>
                                                 </div>
                                             </div>
                                         )
@@ -875,52 +906,7 @@
                             </div>
                         )}
 
-                        {/* TAB 3: Pengurusan Acara */}
-                        {activeTab === "acara" && (
-                            <div className="space-y-6">
-                                <div className="bg-white p-4 border rounded-2xl flex justify-between items-center shadow-sm">
-                                    <div><h3 className="font-bold">Pengurusan Acara Sukan</h3><p className="text-xs text-slate-400">Sistem mengesan kelayakan kategori secara pintar.</p></div>
-                                    <div className="flex gap-2">
-                                        <select value={selectedEventDate} onChange={e => setSelectedEventDate(e.target.value)} className="border p-2 rounded-xl text-xs font-bold">
-                                            <option value="Semua">Semua Hari</option>
-                                            {uniqueEventDates.map(d => <option key={d} value={d}>{d}</option>)}
-                                        </select>
-                                        {userRole !== "pelawat" && <button onClick={() => { setEventForm({ id:"", nama:"", kategori:categories[0], jenis:"Balapan", format:"Individu", tarikh:"", masa:"" }); setIsEditingEvent(false); setIsEventSidebarOpen(true); }} className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-bold shadow">+ Daftar Acara</button>}
-                                    </div>
-                                </div>
-                                <div className="bg-white border rounded-2xl p-5 space-y-3">
-                                    {eventsWithCode.filter(e => selectedEventDate === "Semua" || e.tarikh === selectedEventDate).map(ev => (
-                                        <div key={ev.id} className="bg-slate-50 border p-3 rounded-xl flex justify-between items-center text-xs">
-                                            <div className="flex gap-3 items-center">
-                                                <span className="bg-indigo-600 text-white px-2 py-1 rounded font-mono font-bold">{ev.kodAcara}</span>
-                                                <div><h4 className="font-extrabold uppercase">{ev.nama} {ev.kategori}</h4><span className="text-slate-500">{ev.jenis} • {ev.format}</span></div>
-                                            </div>
-                                            <div className="flex flex-col items-end gap-2">
-                                                <div className="flex gap-3 items-center font-bold">
-                                                    <span className="text-slate-400">📅 {formatDateToDMY(ev.tarikh)} {ev.masa}</span>
-                                                    {userRole !== "pelawat" && (
-                                                        <div className="flex gap-2">
-                                                            <button onClick={() => { setEventForm(ev); setIsEditingEvent(true); setIsEventSidebarOpen(true); }} className="text-blue-600 bg-blue-50 px-2 py-1 rounded">Edit</button>
-                                                            <button onClick={() => {
-                                                                if(isCloudActive&&db) db.collection('artifacts').doc(appId).collection('public').doc('data').collection('events').doc(ev.id).delete();
-                                                                else setEvents(events.filter(x => x.id !== ev.id));
-                                                            }} className="text-red-600 bg-red-50 px-2 py-1 rounded">Padam</button>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                <div className="flex gap-1.5 mt-1">
-                                                    <button onClick={() => executeBypassPrint('marshall', ev)} className="text-[10px] bg-slate-100 border border-slate-200 text-slate-700 px-2 py-1 rounded font-bold">🖨️ Marshall</button>
-                                                    {ev.jenis === "Balapan" && <button onClick={() => executeBypassPrint('hakim_penamat', ev)} className="text-[10px] bg-rose-50 border border-rose-200 text-rose-700 px-2 py-1 rounded font-bold">🖨️ Hakim Penamat</button>}
-                                                    {ev.jenis === "Padang" && <button onClick={() => executeBypassPrint('hakim_padang', ev)} className="text-[10px] bg-emerald-50 border border-emerald-200 text-emerald-700 px-2 py-1 rounded font-bold">🖨️ Hakim Padang</button>}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* TAB 4: Pengurusan Atlet */}
+                        {/* TAB 3: Pengurusan Atlet */}
                         {activeTab === "atlit" && (
                             <div className="space-y-6">
                                 <div className="bg-white p-4 border rounded-2xl flex justify-between items-center shadow-sm">
@@ -964,18 +950,65 @@
                             </div>
                         )}
 
+                        {/* TAB 4: Pengurusan Acara */}
+                        {activeTab === "acara" && (
+                            <div className="space-y-6">
+                                <div className="bg-white p-4 border rounded-2xl flex justify-between items-center shadow-sm">
+                                    <div><h3 className="font-bold">Pengurusan Acara Sukan</h3><p className="text-xs text-slate-400">Sistem mengesan kelayakan kategori secara pintar (Termasuk logik TKB).</p></div>
+                                    <div className="flex gap-2">
+                                        <select value={selectedEventDate} onChange={e => setSelectedEventDate(e.target.value)} className="border p-2 rounded-xl text-xs font-bold">
+                                            <option value="Semua">Semua Hari</option>
+                                            {uniqueEventDates.map(d => <option key={d} value={d}>{d}</option>)}
+                                        </select>
+                                        {userRole !== "pelawat" && <button onClick={() => { setEventForm({ id:"", nama:"", kategori:categories[0], jenis:"Balapan", format:"Individu", tarikh:"", masa:"" }); setIsEditingEvent(false); setIsEventSidebarOpen(true); }} className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-bold shadow">+ Daftar Acara</button>}
+                                    </div>
+                                </div>
+                                <div className="bg-white border rounded-2xl p-5 space-y-3">
+                                    {eventsWithCode.filter(e => selectedEventDate === "Semua" || e.tarikh === selectedEventDate).map(ev => (
+                                        <div key={ev.id} className="bg-slate-50 border p-3 rounded-xl flex justify-between items-center text-xs">
+                                            <div className="flex gap-3 items-center">
+                                                <span className="bg-indigo-600 text-white px-2 py-1 rounded font-mono font-bold">{ev.kodAcara}</span>
+                                                <div><h4 className="font-extrabold uppercase">{ev.nama} {ev.kategori}</h4><span className="text-slate-500">{ev.jenis} • {ev.format}</span></div>
+                                            </div>
+                                            <div className="flex flex-col items-end gap-2">
+                                                <div className="flex gap-3 items-center font-bold">
+                                                    <span className="text-slate-400">📅 {formatDateToDMY(ev.tarikh)} {ev.masa}</span>
+                                                    {userRole !== "pelawat" && (
+                                                        <div className="flex gap-2">
+                                                            <button onClick={() => { setEventForm(ev); setIsEditingEvent(true); setIsEventSidebarOpen(true); }} className="text-blue-600 bg-blue-50 px-2 py-1 rounded">Edit</button>
+                                                            <button onClick={() => {
+                                                                if(isCloudActive&&db) db.collection('artifacts').doc(appId).collection('public').doc('data').collection('events').doc(ev.id).delete();
+                                                                else setEvents(events.filter(x => x.id !== ev.id));
+                                                            }} className="text-red-600 bg-red-50 px-2 py-1 rounded">Padam</button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="flex gap-1.5 mt-1">
+                                                    <button onClick={() => executeBypassPrint('marshall', ev)} className="text-[10px] bg-slate-100 border border-slate-200 text-slate-700 px-2 py-1 rounded font-bold">🖨️ Marshall</button>
+                                                    {ev.jenis === "Balapan" && <button onClick={() => executeBypassPrint('hakim_penamat', ev)} className="text-[10px] bg-rose-50 border border-rose-200 text-rose-700 px-2 py-1 rounded font-bold">🖨️ Hakim Penamat</button>}
+                                                    {ev.jenis === "Padang" && <button onClick={() => executeBypassPrint('hakim_padang', ev)} className="text-[10px] bg-emerald-50 border border-emerald-200 text-emerald-700 px-2 py-1 rounded font-bold">🖨️ Hakim Padang</button>}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
                         {/* TAB 5: Keputusan Acara */}
                         {activeTab === "keputusan" && (
                             <div className="space-y-6">
                                 <div className="bg-white p-5 border rounded-2xl flex flex-wrap justify-between items-end gap-4 shadow-sm">
                                     <div className="flex-1 min-w-[300px]">
                                         <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Pilih Acara Kejohanan</label>
-                                        <select value={resultForm.eventId} onChange={e => { setResultForm({...resultForm, eventId:e.target.value}); setHeatForm({...heatForm, eventId:e.target.value}); }} className="w-full border p-2.5 rounded-xl bg-white font-bold text-sm">
-                                            <option value="">-- Sila Pilih Acara --</option>
-                                            {eventsWithCode.map(ev => <option key={ev.id} value={ev.id}>[{ev.kodAcara}] {ev.nama} Kategori {ev.kategori}</option>)}
-                                        </select>
+                                        <div className="flex gap-2 items-center">
+                                            <select value={resultForm.eventId} onChange={e => { setResultForm({...resultForm, eventId:e.target.value}); setHeatForm({...heatForm, eventId:e.target.value}); }} className="w-full border p-2.5 rounded-xl bg-white font-bold text-sm">
+                                                <option value="">-- Sila Pilih Acara --</option>
+                                                {eventsWithCode.map(ev => <option key={ev.id} value={ev.id}>[{ev.kodAcara}] {ev.nama} Kategori {ev.kategori}</option>)}
+                                            </select>
+                                            <button onClick={() => executeBypassPrint('semua_keputusan')} className="bg-indigo-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-md hover:bg-indigo-700 whitespace-nowrap">🖨️ Cetak Semua Keputusan</button>
+                                        </div>
                                     </div>
-                                    <button onClick={() => executeBypassPrint('semua_keputusan')} className="bg-indigo-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-md hover:bg-indigo-700">🖨️ Cetak Semua Keputusan</button>
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1052,7 +1085,6 @@
                         )}
                     </main>
 
-                    {/* MODALS & SIDEBARS */}
                     {/* Login Modal */}
                     {isLoginModalOpen && (
                         <div className="fixed inset-0 bg-slate-900/75 z-[9999] flex items-center justify-center p-4">
@@ -1147,7 +1179,7 @@
                                 <h3 className="font-black text-sm uppercase">{isEditingEvent ? "Edit Acara" : "Daftar Acara Baru"}</h3>
                                 <form onSubmit={handleEventSubmit} className="space-y-4 font-semibold">
                                     <div><label className="block mb-1">Nama Acara</label><input required type="text" value={eventForm.nama} onChange={e=>setEventForm({...eventForm, nama:e.target.value.toUpperCase()})} placeholder="Cth: LARI 100M" className="w-full border p-2 rounded-xl uppercase" /></div>
-                                    <div><label className="block mb-1">Kategori</label><select value={eventForm.kategori} onChange={e=>setEventForm({...eventForm, kategori:e.target.value})} className="w-full border p-2 rounded-xl">{categories.map(c=><option key={c} value={c}>{c}</option>)}</select></div>
+                                    <div><label className="block mb-1">Kategori (Pintar: TKB dikesan)</label><select value={eventForm.kategori} onChange={e=>setEventForm({...eventForm, kategori:e.target.value})} className="w-full border p-2 rounded-xl">{categories.map(c=><option key={c} value={c}>{c}</option>)}</select></div>
                                     <div className="grid grid-cols-2 gap-2">
                                         <div><label className="block mb-1">Jenis</label><select value={eventForm.jenis} onChange={e=>setEventForm({...eventForm, jenis:e.target.value})} className="w-full border p-2 rounded-xl"><option value="Balapan">Balapan</option><option value="Padang">Padang</option></select></div>
                                         <div><label className="block mb-1">Format</label><select value={eventForm.format} onChange={e=>setEventForm({...eventForm, format:e.target.value})} className="w-full border p-2 rounded-xl"><option value="Individu">Individu</option><option value="Berkumpulan">Kumpulan</option></select></div>

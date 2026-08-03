@@ -923,19 +923,14 @@
                     
                     <header className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white shadow-md relative z-50">
                         <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
-                            <div className="flex items-center gap-4">
+                            <div class="flex items-center gap-4">
                                 <img src={logoUrl} alt="Logo" className="w-14 h-14 object-contain rounded bg-white p-1" />
                                 <div>
                                     <h1 className="text-xl font-extrabold tracking-tight">SiPS Online</h1>
                                     <p className="text-xs text-indigo-200 font-medium">{activeSchoolSubtitle} {activeYear} | {isCloudActive ? "🟢 Awan" : "🟡 Lokal"}</p>
                                 </div>
                             </div>
-                            <div className="flex flex-wrap items-center gap-2">
-                                <div className="flex items-center gap-2 border-r pr-2 border-indigo-400">
-                                    <button onClick={() => setLang(lang === "BM" ? "EN" : "BM")} className="text-xs font-bold bg-white/20 hover:bg-white/30 text-white px-2 py-1.5 rounded-lg transition shadow-sm">
-                                        {lang === "BM" ? "🇲🇾 BM" : "🇬🇧 EN"}
-                                    </button>
-                                </div>
+                            <div class="flex flex-wrap items-center gap-2">
                                 {userRole === "admin" && (
                                     <div className="relative inline-block" ref={adminMenuRef}>
                                         <button onClick={() => setIsAdminMenuOpen(!isAdminMenuOpen)} className="bg-yellow-500 hover:bg-yellow-600 text-slate-950 font-black px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 shadow-sm">🛠️ PANEL PENTADBIR</button>

@@ -1154,8 +1154,8 @@
                                     <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="G" className="w-4 h-4"/> Log Masuk DELIMa
                                 </button>
                                 <div className="text-center text-[10px] text-slate-400 font-bold border-b pb-2">ATAU KOD LALUAN MANUAL</div>
-                                <input type="password" value={passcodeInput} onChange={e => setPasscodeInput(e.target.value)} placeholder="Kod Laluan (ADMIN7608 / GURU7608)" className="w-full border p-3 rounded-xl text-center text-xs font-mono font-bold" />
-                                <div className="flex gap-2">
+                                <input type="password" value={passcodeInput} onChange={e => setPasscodeInput(e.target.value)} Laluan (ADMIN7608 / GURU7608)" className="w-full border p-3 rounded-xl text-center text-xs font-mono font-bold" />
+                                <div className="flex gap-2">placeholder="Kod Laluan" 
                                     <button onClick={() => setIsLoginModalOpen(false)} className="flex-1 bg-slate-200 py-2 rounded-xl text-xs font-bold">Batal</button>
                                     <button onClick={() => {
                                         if(passcodeInput.trim() === "ADMIN7608") { localStorage.setItem('sps_local_role','admin'); setUserRole('admin'); setIsLoginModalOpen(false); showToastMessage("Berjaya Admin"); }

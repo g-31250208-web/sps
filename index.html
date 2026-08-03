@@ -347,7 +347,6 @@
             const bestAthletesCalc = useMemo(() => {
                 const calculateBest = (gender, cat) => {
                     if (!cat) return null;
-                    // Enjin Pintar: Gabung padanan tepat dan padanan payung umur (contoh: L10 dikira untuk LB12)
                     const catAthletes = athletes.filter(a => a.jantina === gender && (a.kategori === cat || categoriesMatch(a.kategori, cat)));
                     const stats = catAthletes.map(ath => {
                         let g=0, s=0, b=0, k=0, pts=0;
@@ -921,6 +920,7 @@
                 <div className="min-h-screen flex flex-col bg-slate-50">
                     <input type="file" ref={fileInputRef} onChange={handleRestoreBackup} accept=".json" className="hidden" />
                     
+                    {}
                     <header className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white shadow-md relative z-50">
                         <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
                             <div class="flex items-center gap-4">

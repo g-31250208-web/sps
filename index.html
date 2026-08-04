@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SiPS Online - Transformasi Digital</title>
+    
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet">
@@ -35,7 +36,7 @@
     <!-- React, ReactDOM, Babel -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-    <script src="https://unpkg.com/@babel/standalone@7.26.4/babel.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <script type="text/babel">
         const { useState, useEffect, useMemo, useRef } = React;
@@ -80,10 +81,10 @@
             Kuning: { slogan: "Kuning Diraja", guruPenasihat: "", bonusPoints: 0, warnaLabel: "Kuning" }
         };
 
-        const getFriendlyCategory = (cat) => cat ? String(cat).trim().toUpperCase() : "";
         const formatDateToDMY = (dateStr) => {
             if (!dateStr) return "N/A";
             const parts = dateStr.split('-');
+            // Jika format YYYY-MM-DD (dari input date html), tukar ke DD-MM-YYYY
             return parts.length === 3 ? (parts[0].length === 4 ? `${parts[2]}-${parts[1]}-${parts[0]}` : dateStr) : dateStr;
         };
 
@@ -1012,7 +1013,6 @@
             const handleEventSubmit = async (e) => {
                 e.preventDefault(); if (!checkAuth()) return;
                 const id = eventForm.id || "E_" + Date.now();
-                // Check format dd-mm-yyyy for display later, but HTML input date returns yyyy-mm-dd
                 const evData = { ...eventForm, id };
                 if (isCloudActive && db) await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('events').doc(id).set(evData);
                 else setEvents(prev => isEditingEvent ? prev.map(x => x.id === id ? evData : x) : [...prev, evData]);
@@ -1550,6 +1550,7 @@
                         </div>
                     )}
 
+                    {}
                     {isHouseSidebarOpen && (
                         <div className="fixed inset-0 z-[9999] flex justify-end text-xs">
                             <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={()=>setIsHouseSidebarOpen(false)}></div>
@@ -1565,6 +1566,7 @@
                         </div>
                     )}
 
+                    {}
                     {showMembersModal && (
                         <div className="fixed inset-0 bg-slate-900/60 z-[9999] flex items-center justify-center p-4 text-xs font-semibold backdrop-blur-sm">
                             <div className="bg-white rounded-2xl w-full max-w-4xl flex flex-col h-[85vh] shadow-2xl overflow-hidden animate-fade-in">
@@ -1615,6 +1617,7 @@
                         </div>
                     )}
 
+                    {}
                     {isEventSidebarOpen && (
                         <div className="fixed inset-0 z-[9999] flex justify-end text-xs">
                             <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={()=>setIsEventSidebarOpen(false)}></div>
@@ -1662,6 +1665,7 @@
                         </div>
                     )}
 
+                    {}
                     {isAssignEventSidebarOpen && (
                         <div className="fixed inset-0 z-[9999] flex justify-end text-xs">
                             <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={()=>setIsAssignEventSidebarOpen(false)}></div>
@@ -1759,6 +1763,7 @@
                         </div>
                     )}
 
+                    {}
                     {showRecordForm && (
                         <div className="fixed inset-0 bg-slate-900/60 z-[9999] flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
                             <div className="bg-white rounded-2xl w-full max-w-sm p-6 text-xs font-semibold space-y-4 shadow-2xl">
@@ -1829,6 +1834,7 @@
                         </div>
                     )}
 
+                    {}
                     {showPointsModal && (
                         <div className="fixed inset-0 bg-slate-900/60 z-[9999] flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
                             <div className="bg-white rounded-2xl p-6 w-full max-w-md text-xs font-semibold space-y-4 max-h-[90vh] overflow-y-auto shadow-2xl">
@@ -1950,7 +1956,7 @@
                                     {schoolSetupTab === "script" && (
                                         <div className="space-y-3">
                                             <p className="text-slate-500 text-[11px] leading-relaxed">
-                                                Salin skrip JavaScript (GAS) ini dan klik <strong>Deploy as Web App</strong> dalam <i>Extensions > Apps Script</i> di dalam helaian Google Sheets anda untuk membenarkan pemindahan data laporan terus ke awan.
+                                                Salin skrip JavaScript (GAS) ini dan klik <strong>Deploy as Web App</strong> dalam <i>Extensions &gt; Apps Script</i> di dalam helaian Google Sheets anda untuk membenarkan pemindahan data laporan terus ke awan.
                                             </p>
                                             <div className="relative group">
                                                 <textarea readOnly rows="10" defaultValue={"function doPost(e) {\n  try {\n    var p = JSON.parse(e.postData.contents);\n    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Atlet') || SpreadsheetApp.getActiveSpreadsheet().insertSheet('Atlet');\n    if(p.action==='sync'){\n      sheet.clearContents();\n      sheet.appendRow(['ID', 'Nama', 'Kelas', 'Rumah', 'Jantina', 'Kategori']);\n      p.data.forEach(function(d){ sheet.appendRow([d.id, d.nama, d.kelas, d.rumah, d.jantina, d.kategori]); });\n      return ContentService.createTextOutput(JSON.stringify({s:'ok'})).setMimeType(ContentService.MimeType.JSON);\n    }\n  } catch(err) { return ContentService.createTextOutput(JSON.stringify({s:'err',m:err.toString()})).setMimeType(ContentService.MimeType.JSON); }\n}"} className="w-full p-3 border-2 border-slate-200 rounded-xl font-mono text-[10px] bg-slate-50 text-slate-700" id="gas-script-txt" />
@@ -1965,13 +1971,13 @@
 
                                 <div className="p-5 border-t flex justify-between items-center bg-slate-50 rounded-b-2xl">
                                     {schoolSetupTab === "config" ? (
-                                        <>
+                                        <React.Fragment>
                                             <button type="button" onClick={()=>{localStorage.clear(); window.location.reload();}} className="text-red-500 hover:text-red-700 font-bold underline transition text-[11px]">Set Semula Lalai (Reset)</button>
                                             <div className="flex gap-2">
                                                 <button type="button" onClick={()=>setShowSchoolSetupModal(false)} className="px-4 py-2.5 bg-white border border-slate-300 hover:bg-slate-100 rounded-xl transition shadow-sm font-bold">Batal</button>
                                                 <button type="submit" form="school-setup-form" className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-md transition font-bold">Simpan & Restart</button>
                                             </div>
-                                        </>
+                                        </React.Fragment>
                                     ) : (
                                         <div className="w-full flex justify-end">
                                             <button type="button" onClick={()=>setShowSchoolSetupModal(false)} className="px-6 py-2.5 bg-slate-200 hover:bg-slate-300 font-bold rounded-xl transition">Tutup Tetingkap</button>
@@ -1982,6 +1988,7 @@
                         </div>
                     )}
 
+                    {}
                     {showAdminManagerModal && (
                         <div className="fixed inset-0 bg-slate-900/60 z-[9999] flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
                             <div className="bg-white rounded-2xl p-6 w-full max-w-md text-xs font-semibold space-y-4 shadow-2xl">
@@ -2070,6 +2077,7 @@
                         </div>
                     )}
 
+                    {}
                     {isPreviewModalOpen && (
                         <div className="fixed inset-0 bg-slate-900/80 z-[10000] flex flex-col p-4 backdrop-blur-sm animate-fade-in">
                             <div className="bg-slate-100 rounded-2xl shadow-2xl flex flex-col flex-1 max-w-5xl w-full mx-auto overflow-hidden border border-slate-300">

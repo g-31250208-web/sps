@@ -190,6 +190,8 @@
             const [showAnnounceForm, setShowAnnounceForm] = useState(false);
             const [selectedEventDate, setSelectedEventDate] = useState("Semua");
             const [certSearchQuery, setCertSearchQuery] = useState("");
+            const [certHouseFilter, setCertHouseFilter] = useState("Semua");
+            const [certEventFilter, setCertEventFilter] = useState("Semua");
             
             const [bestAthleteMaleCat, setBestAthleteMaleCat] = useState("");
             const [bestAthleteFemaleCat, setBestAthleteFemaleCat] = useState("");
@@ -1523,16 +1525,46 @@
                                 </div>
 
                                 <div className="bg-white p-6 border rounded-2xl shadow-sm">
-                                    <h3 className="font-bold mb-3 uppercase text-sm">📜 Penjana Sijil Pintar (Carian Atlet)</h3>
-                                    <input type="text" placeholder="Taip nama penuh atlet untuk cetak sijil..." value={certSearchQuery} onChange={e => setCertSearchQuery(e.target.value)} className="w-full border-2 border-slate-200 focus:border-indigo-500 p-3 rounded-xl text-xs font-bold mb-4 bg-slate-50 hover:bg-white transition outline-none" />
-                                    <div className="max-h-72 overflow-y-auto space-y-2">
-                                        {athletes.filter(a => certSearchQuery && (a.nama||"").toLowerCase().includes(certSearchQuery.toLowerCase())).map(ath => (
-                                            <div key={ath.id} className="bg-white border p-3 rounded-xl flex justify-between items-center text-xs shadow-sm hover:shadow transition">
+                                    <h3 className="font-bold mb-3 uppercase text-sm">📜 Penjana Sijil Pintar (Carian & Tapisan)</h3>
+                                    <div className="flex flex-col sm:flex-row gap-3 mb-4">
+                                        <input type="text" placeholder="Taip nama penuh atlet..." value={certSearchQuery} onChange={e => setCertSearchQuery(e.target.value)} className="flex-1 border-2 border-slate-200 focus:border-indigo-500 p-3 rounded-xl text-xs font-bold bg-slate-50 hover:bg-white transition outline-none" />
+                                        <select value={certHouseFilter} onChange={e => setCertHouseFilter(e.target.value)} className="border-2 border-slate-200 p-3 rounded-xl text-xs font-bold bg-slate-50 outline-none">
+                                            <option value="Semua">Semua Rumah</option>
+                                            {Object.keys(housesMetadata).map(k => <option key={k} value={k}>Rumah {k}</option>)}
+                                        </select>
+                                        <select value={certEventFilter} onChange={e => setCertEventFilter(e.target.value)} className="border-2 border-slate-200 p-3 rounded-xl text-xs font-bold bg-slate-50 outline-none">
+                                            <option value="Semua">Semua Acara</option>
+                                            {eventsWithCode.map(ev => <option key={ev.id} value={ev.id}>[{ev.kodAcara}] {ev.nama}</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="max-h-72 overflow-y-auto space-y-2 pr-2">
+                                        {athletes.filter(a => {
+                                            const mSearch = !certSearchQuery || (a.nama||"").toLowerCase().includes(certSearchQuery.toLowerCase());
+                                            const mHouse = certHouseFilter === "Semua" || a.rumah === certHouseFilter;
+                                            let mEvent = true;
+                                            if (certEventFilter !== "Semua") {
+                                                const reg = a.acaraIds && a.acaraIds.includes(certEventFilter);
+                                                const won = results.some(r => r.athleteId === a.id && r.eventId === certEventFilter);
+                                                mEvent = reg || won;
+                                            }
+                                            return mSearch && mHouse && mEvent;
+                                        }).sort((a,b) => a.rumah.localeCompare(b.rumah) || (a.kelas||"").localeCompare(b.kelas||"") || a.nama.localeCompare(b.nama)).map(ath => (
+                                            <div key={ath.id} className="bg-slate-50 border p-3 rounded-xl flex justify-between items-center text-xs shadow-sm hover:shadow transition">
                                                 <div><p className="font-extrabold uppercase text-sm">{ath.nama}</p><p className="text-[10px] text-slate-500 font-semibold mt-1">Rumah {ath.rumah} | Kelas {ath.kelas}</p></div>
-                                                <button onClick={() => executeBypassPrint('sijil', ath)} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-bold shadow-sm transition">Cetak Sijil</button>
+                                                <button onClick={() => executeBypassPrint('sijil', ath)} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-bold shadow-sm transition whitespace-nowrap">Cetak Sijil</button>
                                             </div>
                                         ))}
-                                        {certSearchQuery && athletes.filter(a => (a.nama||"").toLowerCase().includes(certSearchQuery.toLowerCase())).length === 0 && <p className="text-center text-slate-400 italic py-4">Tiada rekod dijumpai bagi carian tersebut.</p>}
+                                        {athletes.filter(a => {
+                                            const mSearch = !certSearchQuery || (a.nama||"").toLowerCase().includes(certSearchQuery.toLowerCase());
+                                            const mHouse = certHouseFilter === "Semua" || a.rumah === certHouseFilter;
+                                            let mEvent = true;
+                                            if (certEventFilter !== "Semua") {
+                                                const reg = a.acaraIds && a.acaraIds.includes(certEventFilter);
+                                                const won = results.some(r => r.athleteId === a.id && r.eventId === certEventFilter);
+                                                mEvent = reg || won;
+                                            }
+                                            return mSearch && mHouse && mEvent;
+                                        }).length === 0 && <p className="text-center text-slate-400 italic py-4">Tiada rekod dijumpai bagi carian/tapisan tersebut.</p>}
                                     </div>
                                 </div>
                             </div>

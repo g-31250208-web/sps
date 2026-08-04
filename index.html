@@ -96,7 +96,7 @@
             if (!athCat || !evCat) return false;
             const a = athCat.trim().toUpperCase().replace(/\s+/g, '');
             const e = evCat.trim().toUpperCase().replace(/\s+/g, '');
-            if (a === e || e === "TERBUKA") return true;
+            if (a === e || e === "TERBUKA" || e === "KESELURUHAN") return true;
 
             const parseCat = (cat) => {
                 const jantina = cat.startsWith('L') ? 'L' : (cat.startsWith('P') ? 'P' : null);
@@ -108,7 +108,10 @@
             const aParsed = parseCat(a); const eParsed = parseCat(e);
             if (aParsed.jantina && eParsed.jantina && aParsed.jantina !== eParsed.jantina) return false;
             
-            if (e.includes("TKB") || e.includes("BAWAH") || e.includes("B") || e.includes("U")) {
+            // Peraturan TKB = Tepat 3 Tahun (xx, xx-1, xx-2)
+            if (e.includes("TKB")) {
+                return aParsed.umur <= eParsed.umur && aParsed.umur >= eParsed.umur - 2;
+            } else if (e.includes("BAWAH") || e.includes("B") || e.includes("U")) {
                 if (aParsed.umur <= eParsed.umur) return true;
             }
             return aParsed.umur === eParsed.umur;
@@ -403,9 +406,14 @@
             };
 
             const bestAthletesCalc = useMemo(() => {
+                const getBest = (gender, cat) => {
+                    if (!cat) return null;
+                    if (cat === "Keseluruhan") return calculateOverallBest(gender);
+                    return calculateBest(gender, cat);
+                };
                 return { 
-                    male: calculateBest("Lelaki", bestAthleteMaleCat), 
-                    female: calculateBest("Perempuan", bestAthleteFemaleCat) 
+                    male: getBest("Lelaki", bestAthleteMaleCat), 
+                    female: getBest("Perempuan", bestAthleteFemaleCat) 
                 };
             }, [athletes, results, events, bestAthleteMaleCat, bestAthleteFemaleCat, pointsConfig]);
 
@@ -1488,6 +1496,7 @@
                                                     <p className="text-[10px] font-black text-blue-800 uppercase tracking-wider">Olahragawan (Lelaki)</p>
                                                     <select value={bestAthleteMaleCat} onChange={e=>setBestAthleteMaleCat(e.target.value)} className="border border-blue-200 p-1 rounded-lg text-[10px] font-bold bg-white outline-none focus:ring-1 focus:ring-blue-500 z-10 relative">
                                                         <option value="">-- Kategori --</option>
+                                                        <option value="Keseluruhan">Keseluruhan</option>
                                                         {categories.map(c => <option key={c} value={c}>{c}</option>)}
                                                     </select>
                                                 </div>
@@ -1507,6 +1516,7 @@
                                                     <p className="text-[10px] font-black text-pink-800 uppercase tracking-wider">Olahragawati (Perempuan)</p>
                                                     <select value={bestAthleteFemaleCat} onChange={e=>setBestAthleteFemaleCat(e.target.value)} className="border border-pink-200 p-1 rounded-lg text-[10px] font-bold bg-white outline-none focus:ring-1 focus:ring-pink-500 z-10 relative">
                                                         <option value="">-- Kategori --</option>
+                                                        <option value="Keseluruhan">Keseluruhan</option>
                                                         {categories.map(c => <option key={c} value={c}>{c}</option>)}
                                                     </select>
                                                 </div>

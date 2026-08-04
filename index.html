@@ -1819,7 +1819,15 @@
                                 {selectedStudentId && (() => {
                                     const ath = athletes.find(a=>a.id === selectedStudentId);
                                     if(!ath) return null;
-                                    const availableEvents = eventsWithCode.filter(ev => categoriesMatch(ath.kategori, ev.kategori));
+                                    const availableEvents = eventsWithCode.filter(ev => {
+                                        const isCatMatch = categoriesMatch(ath.kategori, ev.kategori);
+                                        if (!isCatMatch) return false;
+                                        const evCatStr = (ev.kategori || "").trim().toUpperCase();
+                                        if (evCatStr === "TERBUKA" || evCatStr === "KESELURUHAN") return true;
+                                        if (ath.jantina === "Lelaki" && evCatStr.startsWith("P")) return false;
+                                        if (ath.jantina === "Perempuan" && evCatStr.startsWith("L")) return false;
+                                        return true;
+                                    });
                                     const curInd = (selectedEventIds||[]).map(id=>(events||[]).find(e=>e.id===id)).filter(e=>e&&e.format==="Individu").length;
                                     const curGrp = (selectedEventIds||[]).map(id=>(events||[]).find(e=>e.id===id)).filter(e=>e&&e.format==="Berkumpulan").length;
                                     return (

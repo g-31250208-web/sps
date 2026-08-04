@@ -1544,11 +1544,11 @@
                                             let mEvent = true;
                                             if (certEventFilter !== "Semua") {
                                                 const reg = a.acaraIds && a.acaraIds.includes(certEventFilter);
-                                                const won = results.some(r => r.athleteId === a.id && r.eventId === certEventFilter);
+                                                const won = (results || []).some(r => r.athleteId === a.id && r.eventId === certEventFilter);
                                                 mEvent = reg || won;
                                             }
                                             return mSearch && mHouse && mEvent;
-                                        }).sort((a,b) => a.rumah.localeCompare(b.rumah) || (a.kelas||"").localeCompare(b.kelas||"") || a.nama.localeCompare(b.nama)).map(ath => (
+                                        }).sort((a,b) => (a.rumah || "").localeCompare(b.rumah || "") || (a.kelas || "").localeCompare(b.kelas || "") || (a.nama || "").localeCompare(b.nama || "")).map(ath => (
                                             <div key={ath.id} className="bg-slate-50 border p-3 rounded-xl flex justify-between items-center text-xs shadow-sm hover:shadow transition">
                                                 <div><p className="font-extrabold uppercase text-sm">{ath.nama}</p><p className="text-[10px] text-slate-500 font-semibold mt-1">Rumah {ath.rumah} | Kelas {ath.kelas}</p></div>
                                                 <button onClick={() => executeBypassPrint('sijil', ath)} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-bold shadow-sm transition whitespace-nowrap">Cetak Sijil</button>
@@ -1560,7 +1560,7 @@
                                             let mEvent = true;
                                             if (certEventFilter !== "Semua") {
                                                 const reg = a.acaraIds && a.acaraIds.includes(certEventFilter);
-                                                const won = results.some(r => r.athleteId === a.id && r.eventId === certEventFilter);
+                                                const won = (results || []).some(r => r.athleteId === a.id && r.eventId === certEventFilter);
                                                 mEvent = reg || won;
                                             }
                                             return mSearch && mHouse && mEvent;

@@ -37,10 +37,6 @@
             BM: {
                 dashboard: "Papan Pemuka", rumah_sukan: "Rumah Sukan", acara: "Pengurusan Acara", atlit: "Pengurusan Atlet", 
                 keputusan: "Keputusan Acara", pasca_sukan: "Pasca Sukan", announcement: "Hebahan Semasa Kejohanan"
-            },
-            EN: {
-                dashboard: "Dashboard", rumah_sukan: "Sport Houses", acara: "Event Management", atlit: "Athlete Management", 
-                keputusan: "Results", pasca_sukan: "Post-Sports", announcement: "Tournament Announcements"
             }
         };
 
@@ -766,16 +762,16 @@
                     for (let i = 0; i < rowCount; i++) {
                         const ath = sortedAthletes[i];
                         if (ath) {
-                            rowsHtml += `<tr style="height: 35px;"><td style="border: 1px solid #000; text-align: center;">${i + 1}</td><td style="border: 1px solid #000; text-align: center;">${ath.noAtlet || ""}</td><td style="border: 1px solid #000; padding-left: 8px; text-align: left; text-transform: uppercase;">${ath.nama}</td><td style="border: 1px solid #000; text-align: center;">${ath.rumah}</td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td></tr>`;
+                            rowsHtml += `<tr style="height: 30px;"><td style="border: 1px solid #000; text-align: center;">${i + 1}</td><td style="border: 1px solid #000; text-align: center;">${ath.noAtlet || ""}</td><td style="border: 1px solid #000; padding-left: 8px; text-align: left; text-transform: uppercase;">${ath.nama}</td><td style="border: 1px solid #000; text-align: center;">${ath.rumah}</td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td></tr>`;
                         } else {
-                            rowsHtml += `<tr style="height: 35px;"><td style="border: 1px solid #000; text-align: center;">${i + 1}</td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td></tr>`;
+                            rowsHtml += `<tr style="height: 30px;"><td style="border: 1px solid #000; text-align: center;">${i + 1}</td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td></tr>`;
                         }
                     }
 
                     printContent = `
                         <style>
                             .lt-container { font-family: Arial, sans-serif; font-size: 10pt; color: #000; }
-                            .lt-title { text-align: center; margin: 0 0 15px 0; font-size: 14pt; font-weight: bold; }
+                            .lt-title { font-size: 14pt; font-weight: bold; margin: 0; }
                             .lt-info-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
                             .lt-info-table td { border: 1px solid #000; padding: 6px; font-weight: bold; }
                             .lt-info-label { width: 150px; background-color: #e9e9e9; }
@@ -791,7 +787,10 @@
                             .lt-sig-line { border-bottom: 1px solid #000; margin-bottom: 5px; height: 35px; }
                         </style>
                         <div class="lt-container">
-                            <div class="lt-title">BORANG CATATAN HAKIM - ACARA LOMPAT TINGGI</div>
+                            <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 15px;">
+                                <img src="${logoUrl}" style="height: 60px; margin-right: 15px;" onerror="this.style.display='none'" />
+                                <div class="lt-title">BORANG CATATAN HAKIM - ACARA LOMPAT TINGGI</div>
+                            </div>
                             <table class="lt-info-table">
                                 <tr><td class="lt-info-label">KEJOHANAN</td><td colspan="3" style="text-transform: uppercase;">${activeSchoolSubtitle} ${activeSchoolName} ${activeYear}</td></tr>
                                 <tr><td class="lt-info-label">KATEGORI / KELAS</td><td>${ev.kategori}</td><td class="lt-info-label" style="width: 120px;">TARIKH</td><td>${formatDateToDMY(ev.tarikh)}</td></tr>
@@ -802,7 +801,7 @@
                             <table class="lt-main-table">
                                 <thead>
                                     <tr>
-                                        <th rowspan="2" style="width: 40px;">BIL</th><th rowspan="2" style="width: 80px;">NO.<br>PESERTA</th><th rowspan="2" style="text-align: left; padding-left: 8px;">NAMA PESERTA</th><th rowspan="2" style="width: 110px;">PASUKAN</th><th colspan="5">KETINGGIAN PALANG (m)</th><th rowspan="2" style="width: 90px;">CATATAN<br>TERBAIK</th><th rowspan="2" style="width: 90px;">KEDUDUKAN</th>
+                                        <th rowspan="2" style="width: 30px;">BIL</th><th rowspan="2" style="width: 60px;">NO.<br>PESERTA</th><th rowspan="2" style="text-align: left; padding-left: 8px; width: auto;">NAMA PESERTA</th><th rowspan="2" style="width: 80px;">PASUKAN</th><th colspan="5">KETINGGIAN PALANG (m)</th><th rowspan="2" style="width: 70px;">CATATAN<br>TERBAIK</th><th rowspan="2" style="width: 70px;">KEDUDUKAN</th>
                                     </tr>
                                     <tr><th style="width: 60px; height: 25px;"></th><th style="width: 60px;"></th><th style="width: 60px;"></th><th style="width: 60px;"></th><th style="width: 60px;"></th></tr>
                                 </thead>
@@ -819,21 +818,49 @@
                         </div>
                     `;
                 } else if (mode === 'sijil') {
+                    // Menyemak pencapaian murid (Podium Kedudukan 1, 2, atau 3)
+                    const athResults = results.filter(r => r.athleteId === targetData.id);
+                    const podiumResults = athResults.filter(r => parseInt(r.kedudukan) >= 1 && parseInt(r.kedudukan) <= 3).sort((a,b) => parseInt(a.kedudukan) - parseInt(b.kedudukan));
+                    
+                    let title = "SIJIL PENGHARGAAN";
+                    let descriptionHtml = `
+                        <p style="font-size: 18px; line-height: 1.6; max-width: 600px; margin: 0 auto 50px auto;">
+                            Telah mempamerkan semangat kesukanan yang tinggi dan mengambil bahagian dengan cemerlang semasa ${activeSchoolSubtitle} Tahun ${activeYear}.
+                        </p>
+                    `;
+
+                    if (podiumResults.length > 0) {
+                        title = "SIJIL PENCAPAIAN";
+                        let achievementList = podiumResults.map(res => {
+                            const ev = events.find(e => e.id === res.eventId);
+                            const medal = res.kedudukan === "1" ? "EMAS" : res.kedudukan === "2" ? "PERAK" : "GANGSA";
+                            return `<li style="margin-bottom: 8px; font-weight: bold; background: #f8fafc; padding: 5px; border-radius: 5px; border: 1px solid #e2e8f0;">Pingat ${medal} - ${ev ? ev.nama : 'Acara'} (${ev ? ev.kategori : ''})</li>`;
+                        }).join('');
+
+                        descriptionHtml = `
+                            <p style="font-size: 17px; line-height: 1.5; max-width: 600px; margin: 0 auto 20px auto;">
+                                Tahniah, di atas pencapaian cemerlang atlet ini semasa ${activeSchoolSubtitle} Tahun ${activeYear} 
+                                seperti rekod berikut:
+                            </p>
+                            <ul style="list-style-type: none; padding: 0; margin: 0 auto 40px auto; max-width: 500px; font-size: 15px; color: #1e3a8a;">
+                                ${achievementList}
+                            </ul>
+                        `;
+                    }
+
                     printContent = `
                         <div style="border: 12px double #1e3a8a; padding: 40px; text-align: center; font-family: 'Playfair Display', serif; min-height: 250mm; box-sizing: border-box; position: relative;">
-                            <img src="${logoUrl}" style="height: 100px; margin-bottom: 20px;" />
+                            <img src="${logoUrl}" style="height: 100px; margin-bottom: 20px;" onerror="this.style.display='none'" />
                             <h1 style="font-size: 28px; font-weight: 800; color: #1e3a8a; margin: 0;">${activeSchoolName}</h1>
                             <div style="height: 2px; width: 120px; background: #fbbf24; margin: 25px auto;"></div>
-                            <h2 style="font-size: 34px; font-weight: 700; color: #b45309;">SIJIL PENGHARGAAN</h2>
+                            <h2 style="font-size: 34px; font-weight: 700; color: #b45309;">${title}</h2>
                             <p style="font-size: 16px; margin: 30px 0;">Dengan ini diperakui bahawa</p>
                             <h3 style="font-size: 26px; font-weight: bold; text-decoration: underline; margin: 10px 0;">${targetData.nama.toUpperCase()}</h3>
                             <p style="font-size: 14px; color: #334155; margin-bottom: 30px;">
                                 Rumah: <strong>Rumah ${targetData.rumah}</strong> | Kelas: <strong>${targetData.kelas}</strong>
                             </p>
-                            <p style="font-size: 18px; line-height: 1.6; max-width: 600px; margin: 0 auto 50px auto;">
-                                Telah mempamerkan semangat kesukanan yang tinggi dan mengambil bahagian dengan cemerlang semasa ${activeSchoolSubtitle} Tahun ${activeYear}.
-                            </p>
-                            <div style="margin-top: 60px; font-family: sans-serif; font-size: 12px;">
+                            ${descriptionHtml}
+                            <div style="margin-top: 40px; font-family: sans-serif; font-size: 12px;">
                                 <div style="border-bottom: 1px solid #000; width: 250px; margin: 0 auto;"></div>
                                 <p style="margin: 8px 0 0 0; font-weight: bold;">${certSignatory1Name}</p>
                                 <p style="margin: 0; color: #64748b;">${certSignatory1Title}</p>
@@ -920,17 +947,16 @@
                 <div className="min-h-screen flex flex-col bg-slate-50">
                     <input type="file" ref={fileInputRef} onChange={handleRestoreBackup} accept=".json" className="hidden" />
                     
-                    {}
                     <header className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white shadow-md relative z-50">
                         <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
-                            <div class="flex items-center gap-4">
+                            <div className="flex items-center gap-4">
                                 <img src={logoUrl} alt="Logo" className="w-14 h-14 object-contain rounded bg-white p-1" />
                                 <div>
                                     <h1 className="text-xl font-extrabold tracking-tight">SiPS Online</h1>
                                     <p className="text-xs text-indigo-200 font-medium">{activeSchoolSubtitle} {activeYear} | {isCloudActive ? "🟢 Awan" : "🟡 Lokal"}</p>
                                 </div>
                             </div>
-                            <div class="flex flex-wrap items-center gap-2">
+                            <div className="flex flex-wrap items-center gap-2">
                                 {userRole === "admin" && (
                                     <div className="relative inline-block" ref={adminMenuRef}>
                                         <button onClick={() => setIsAdminMenuOpen(!isAdminMenuOpen)} className="bg-yellow-500 hover:bg-yellow-600 text-slate-950 font-black px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 shadow-sm">🛠️ PANEL PENTADBIR</button>
@@ -974,7 +1000,6 @@
 
                     <main className="max-w-7xl mx-auto p-4 w-full flex-grow">
                         
-                        {}
                         {activeTab === "dashboard" && (
                             <div className="space-y-6 animate-fade-in">
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1040,7 +1065,6 @@
                             </div>
                         )}
 
-                        {}
                         {activeTab === "rumah_sukan" && userRole !== "pelawat" && (
                             <div className="space-y-6">
                                 <div className="bg-white p-4 border rounded-2xl flex justify-between items-center shadow-sm">
@@ -1100,7 +1124,6 @@
                             </div>
                         )}
 
-                        {}
                         {activeTab === "acara" && userRole !== "pelawat" && (
                             <div className="space-y-6">
                                 <div className="bg-white p-4 border rounded-2xl flex justify-between items-center shadow-sm">
@@ -1137,7 +1160,10 @@
                                                     {ev.jenis === "Padang" && (
                                                         <div className="flex gap-1.5">
                                                             <button onClick={() => executeBypassPrint('hakim_padang', ev)} className="bg-white hover:bg-slate-100 text-emerald-700 border border-emerald-200 py-1.5 px-3 rounded-lg flex items-center justify-center gap-1 font-bold text-[11px] shadow-sm transition">🖨️ Borang Am Padang</button>
-                                                            <button onClick={() => executeBypassPrint('hakim_lompat_tinggi', ev)} className="bg-white hover:bg-slate-100 text-teal-700 border border-teal-200 py-1.5 px-3 rounded-lg flex items-center justify-center gap-1 font-bold text-[11px] shadow-sm transition">🖨️ Borang L.Tinggi</button>
+                                                            {/* Fix: Butang Cetak Borang Lompat Tinggi hanya wujud bagi acara yang mempunyai nama "Lompat Tinggi" */}
+                                                            {ev.nama && ev.nama.toUpperCase().includes('TINGGI') && (
+                                                                <button onClick={() => executeBypassPrint('hakim_lompat_tinggi', ev)} className="bg-white hover:bg-slate-100 text-teal-700 border border-teal-200 py-1.5 px-3 rounded-lg flex items-center justify-center gap-1 font-bold text-[11px] shadow-sm transition">🖨️ Borang L.Tinggi</button>
+                                                            )}
                                                         </div>
                                                     )}
                                                 </div>
@@ -1149,7 +1175,6 @@
                             </div>
                         )}
 
-                        {}
                         {activeTab === "atlit" && userRole !== "pelawat" && (
                             <div className="space-y-6">
                                 <div className="bg-white p-4 border rounded-2xl flex flex-col md:flex-row justify-between md:items-center gap-4 shadow-sm">
@@ -1214,7 +1239,6 @@
                             </div>
                         )}
 
-                        {}
                         {activeTab === "keputusan" && (
                             <div className="space-y-6">
                                 <div className="bg-white p-5 border rounded-2xl flex flex-wrap justify-between items-end gap-4 shadow-sm">
@@ -1351,11 +1375,10 @@
                             </div>
                         )}
 
-                        {}
                         {activeTab === "pasca_sukan" && userRole !== "pelawat" && (
                             <div className="space-y-6">
                                 <div className="bg-white p-6 border rounded-2xl shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
-                                    <div><h3 className="text-lg font-black text-slate-900">Modul Dokumentasi</h3><p className="text-xs text-slate-400">Jana laporan rumah sukan (Kokum) dan Sijil Penyertaan.</p></div>
+                                    <div><h3 className="text-lg font-black text-slate-900">Modul Dokumentasi</h3><p className="text-xs text-slate-400">Jana laporan rumah sukan (Kokum) dan Sijil Penyertaan / Pencapaian.</p></div>
                                     <div className="flex gap-2">
                                         <button onClick={() => setShowSignatoryModal(true)} className="bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow transition">✍️ Penandatangan Sijil</button>
                                         <button onClick={() => executeBypassPrint('kokum')} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow transition">📊 Cetak Laporan Kokum</button>
@@ -1379,7 +1402,6 @@
                         )}
                     </main>
 
-                    {}
                     {isLoginModalOpen && (
                         <div className="fixed inset-0 bg-slate-900/75 z-[9999] flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
                             <div className="bg-white rounded-2xl w-full max-w-sm p-8 space-y-5 shadow-2xl">

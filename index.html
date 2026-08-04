@@ -488,35 +488,143 @@
                         </div>
                     `;
                 } else if (mode === 'kokum') {
-                    const rows = houseStandings.map((h, i) => `
+                    // Pengiraan Data Dinamik Laporan
+                    const totalAthletes = athletes.length;
+                    const maleCount = athletes.filter(a => a.jantina === 'Lelaki').length;
+                    const femaleCount = athletes.filter(a => a.jantina === 'Perempuan').length;
+                    
+                    const eventDates = events.map(e => e.tarikh).filter(Boolean).sort();
+                    const uniqueDates = [...new Set(eventDates)];
+                    const totalDays = uniqueDates.length;
+                    const startDate = uniqueDates[0];
+                    const endDate = uniqueDates[uniqueDates.length - 1];
+                    let dateStrDisplay = "Belum Ditetapkan";
+                    if (totalDays === 1) dateStrDisplay = formatDateToDMY(startDate) + " (1 Hari)";
+                    else if (totalDays > 1) dateStrDisplay = formatDateToDMY(startDate) + " hingga " + formatDateToDMY(endDate) + ` (${totalDays} Hari Kejohanan)`;
+
+                    const eventTimes = events.map(e => e.masa).filter(Boolean).sort();
+                    const startTimeDisplay = eventTimes[0] || "Belum Ditetapkan";
+
+                    const calculateOverallBest = (gender) => {
+                        const genderAthletes = athletes.filter(a => a.jantina === gender);
+                        const stats = genderAthletes.map(ath => {
+                            let g=0, s=0, b=0, pts=0;
+                            results.forEach(r => {
+                                if (r.athleteId === ath.id) {
+                                    const ev = events.find(e => e.id === r.eventId);
+                                    if (ev && ev.format === "Individu") {
+                                        if(r.kedudukan==="1"){g++; pts+=pointsConfig.emas;}
+                                        else if(r.kedudukan==="2"){s++; pts+=pointsConfig.perak;}
+                                        else if(r.kedudukan==="3"){b++; pts+=pointsConfig.gangsa;}
+                                    }
+                                }
+                            });
+                            return { ...ath, g, s, b, pts };
+                        });
+                        const sorted = stats.sort((x,y) => y.g-x.g || y.s-x.s || y.b-x.b || y.pts-x.pts);
+                        return sorted.length > 0 && (sorted[0].g > 0 || sorted[0].pts > 0) ? sorted[0] : null;
+                    };
+                    
+                    const overallMale = calculateOverallBest('Lelaki');
+                    const overallFemale = calculateOverallBest('Perempuan');
+
+                    const standingRows = houseStandings.map((h, i) => `
                         <tr>
-                            <td style="border: 1px solid #cbd5e1; padding: 10px; font-weight: 700;">${i+1}</td>
-                            <td style="border: 1px solid #cbd5e1; padding: 10px; font-weight: 700;">Rumah ${h.nama}</td>
-                            <td style="border: 1px solid #cbd5e1; padding: 10px; text-align: center;">${h.emas}</td>
-                            <td style="border: 1px solid #cbd5e1; padding: 10px; text-align: center;">${h.perak}</td>
-                            <td style="border: 1px solid #cbd5e1; padding: 10px; text-align: center;">${h.gangsa}</td>
-                            <td style="border: 1px solid #cbd5e1; padding: 10px; text-align: center;">${h.keempat}</td>
-                            <td style="border: 1px solid #cbd5e1; padding: 10px; text-align: center; background: #f8fafc; font-weight: bold;">${h.mata}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 6px; text-align: center; font-weight: bold;">${i+1}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 6px; font-weight: bold;">Rumah ${h.nama}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 6px; text-align: center;">${h.emas}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 6px; text-align: center;">${h.perak}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 6px; text-align: center;">${h.gangsa}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 6px; text-align: center;">${h.keempat}</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 6px; text-align: center; background: #f8fafc; font-weight: bold;">${h.mata}</td>
                         </tr>
                     `).join('');
+
+                    const manualBoxStyle = "border: 1px dashed #94a3b8; padding: 15px; min-height: 70px; margin-bottom: 15px; font-family: inherit; color: #1e293b; line-height: 1.5; outline: none; background: #f8fafc;";
+
                     printContent = `
-                        <div style="font-family: sans-serif; padding: 20px;">
+                        <div style="font-family: 'Times New Roman', serif; padding: 10px 30px; font-size: 14px; line-height: 1.5; color: #000;">
                             ${headerHtml}
-                            <h2 style="text-align: center; margin-bottom: 20px;">LAPORAN PUNGUTAN MATA RASMI (TIE-BREAKER: EMAS)</h2>
-                            <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
-                                <thead style="background: #f1f5f9;">
+                            <h2 style="text-align: center; margin-bottom: 20px; font-size: 18px; text-decoration: underline;">LAPORAN RASMI KEJOHANAN SUKAN TAHUNAN</h2>
+                            
+                            <div style="margin-bottom: 20px;">
+                                <h3 style="font-size: 15px; font-weight: bold; margin-bottom: 8px; background: #e2e8f0; padding: 5px;">A. MAKLUMAT JANAAN SISTEM</h3>
+                                <table style="width: 100%; border: none; font-size: 14px;">
+                                    <tr><td style="width: 200px; padding: 4px 0;"><strong>Nama Program</strong></td><td>: ${activeSchoolSubtitle} Tahun ${activeYear}</td></tr>
+                                    <tr><td style="padding: 4px 0;"><strong>Tarikh Kejohanan</strong></td><td>: ${dateStrDisplay}</td></tr>
+                                    <tr><td style="padding: 4px 0;"><strong>Masa Mula Acara Pertama</strong></td><td>: ${startTimeDisplay}</td></tr>
+                                    <tr><td style="padding: 4px 0;"><strong>Jumlah Atlet Didaftarkan</strong></td><td>: ${totalAthletes} Orang (Lelaki: ${maleCount}, Perempuan: ${femaleCount})</td></tr>
+                                </table>
+                            </div>
+
+                            <div style="margin-bottom: 20px; page-break-inside: avoid;">
+                                <h3 style="font-size: 15px; font-weight: bold; margin-bottom: 8px; background: #e2e8f0; padding: 5px;">B. KEPUTUSAN KESELURUHAN (PUNGUTAN PINGAT)</h3>
+                                <table style="width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 10px;">
+                                    <thead style="background: #f1f1f1;">
+                                        <tr>
+                                            <th style="border: 1px solid #000; padding: 6px;">Ked.</th>
+                                            <th style="border: 1px solid #000; padding: 6px; text-align: left;">Rumah Sukan</th>
+                                            <th style="border: 1px solid #000; padding: 6px;">Emas</th>
+                                            <th style="border: 1px solid #000; padding: 6px;">Perak</th>
+                                            <th style="border: 1px solid #000; padding: 6px;">Gangsa</th>
+                                            <th style="border: 1px solid #000; padding: 6px;">Ke-4</th>
+                                            <th style="border: 1px solid #000; padding: 6px;">Jumlah Mata</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>${standingRows}</tbody>
+                                </table>
+                            </div>
+
+                            <div style="margin-bottom: 25px; page-break-inside: avoid;">
+                                <h3 style="font-size: 15px; font-weight: bold; margin-bottom: 8px; background: #e2e8f0; padding: 5px;">C. PENERIMA ANUGERAH ATLET TERBAIK</h3>
+                                <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
                                     <tr>
-                                        <th style="border: 1px solid #cbd5e1; padding: 10px;">Ked.</th>
-                                        <th style="border: 1px solid #cbd5e1; padding: 10px;">Rumah Sukan</th>
-                                        <th style="border: 1px solid #cbd5e1; padding: 10px;">Emas</th>
-                                        <th style="border: 1px solid #cbd5e1; padding: 10px;">Perak</th>
-                                        <th style="border: 1px solid #cbd5e1; padding: 10px;">Gangsa</th>
-                                        <th style="border: 1px solid #cbd5e1; padding: 10px;">Keempat</th>
-                                        <th style="border: 1px solid #cbd5e1; padding: 10px;">Jumlah Mata</th>
+                                        <td style="border: 1px solid #000; padding: 8px; width: 50%; vertical-align: top;">
+                                            <strong>OLAHRAGAWAN (LELAKI)</strong><br>
+                                            Nama: ${overallMale ? overallMale.nama.toUpperCase() : '-'}<br>
+                                            Kelas: ${overallMale ? overallMale.kelas : '-'}<br>
+                                            Rumah: ${overallMale ? overallMale.rumah : '-'}<br>
+                                            Pencapaian: ${overallMale ? `${overallMale.g} Emas, ${overallMale.s} Perak, ${overallMale.b} Gangsa` : '-'}
+                                        </td>
+                                        <td style="border: 1px solid #000; padding: 8px; width: 50%; vertical-align: top;">
+                                            <strong>OLAHRAGAWATI (PEREMPUAN)</strong><br>
+                                            Nama: ${overallFemale ? overallFemale.nama.toUpperCase() : '-'}<br>
+                                            Kelas: ${overallFemale ? overallFemale.kelas : '-'}<br>
+                                            Rumah: ${overallFemale ? overallFemale.rumah : '-'}<br>
+                                            Pencapaian: ${overallFemale ? `${overallFemale.g} Emas, ${overallFemale.s} Perak, ${overallFemale.b} Gangsa` : '-'}
+                                        </td>
                                     </tr>
-                                </thead>
-                                <tbody>${rows}</tbody>
-                            </table>
+                                </table>
+                            </div>
+
+                            <div style="margin-bottom: 20px; page-break-inside: auto;">
+                                <h3 style="font-size: 15px; font-weight: bold; margin-bottom: 5px; background: #e2e8f0; padding: 5px;">D. LAPORAN TAMBAHAN (MANUAL)</h3>
+                                <p style="font-size: 11px; color: #64748b; font-style: italic; margin-top: 0;">Nota: Klik di dalam kotak terputus-putus di bawah untuk menaip laporan anda sebelum mencetak, atau biarkan kosong untuk diisi menggunakan pen.</p>
+                                
+                                <h4 style="font-size: 14px; margin: 10px 0 5px 0;">1. Kehadiran Keseluruhan (Tetamu, Guru, Ibu Bapa dll)</h4>
+                                <div contenteditable="true" style="${manualBoxStyle}"><br><br></div>
+
+                                <h4 style="font-size: 14px; margin: 10px 0 5px 0;">2. Laporan Kewangan (Ringkasan Perbelanjaan & Tajaan)</h4>
+                                <div contenteditable="true" style="${manualBoxStyle}"><br><br></div>
+
+                                <h4 style="font-size: 14px; margin: 10px 0 5px 0;">3. Kekuatan, Cabaran & Cadangan Penambahbaikan</h4>
+                                <div contenteditable="true" style="${manualBoxStyle}"><br><br><br><br></div>
+                            </div>
+
+                            <div style="margin-top: 40px; display: flex; justify-content: space-between; page-break-inside: avoid;">
+                                <div style="width: 45%; text-align: center;">
+                                    <p style="margin-bottom: 60px;">Disediakan oleh,</p>
+                                    <div style="border-bottom: 1px solid #000; width: 80%; margin: 0 auto;"></div>
+                                    <p style="margin-top: 5px; font-weight: bold;">Setiausaha Sukan / Penyelaras Program</p>
+                                    <p style="margin: 0;">${activeSchoolName}</p>
+                                </div>
+                                <div style="width: 45%; text-align: center;">
+                                    <p style="margin-bottom: 60px;">Disahkan oleh,</p>
+                                    <div style="border-bottom: 1px solid #000; width: 80%; margin: 0 auto;"></div>
+                                    <p style="margin-top: 5px; font-weight: bold;">Guru Besar</p>
+                                    <p style="margin: 0;">${activeSchoolName}</p>
+                                </div>
+                            </div>
                         </div>
                     `;
                 } else if (mode === 'kehadiran_rumah') {

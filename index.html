@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SiPS Online</title>
+    <title>SiPS Online - Transformasi Digital</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet">
@@ -20,6 +20,13 @@
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
         @media print { body { background: white; margin: 0; padding: 0; } }
+        
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+        @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
+        .animate-slide-in { animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .animate-slide-up { animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
     </style>
 </head>
 <body class="text-slate-800 antialiased">
@@ -32,13 +39,6 @@
 
     <script type="text/babel">
         const { useState, useEffect, useMemo, useRef } = React;
-
-        const translations = {
-            BM: {
-                dashboard: "Papan Pemuka", rumah_sukan: "Rumah Sukan", acara: "Pengurusan Acara", atlit: "Pengurusan Atlet", 
-                keputusan: "Keputusan Acara", pasca_sukan: "Pasca Sukan", announcement: "Hebahan Semasa Kejohanan"
-            }
-        };
 
         const DEFAULT_FIREBASE_CONFIG = {
             apiKey: "AIzaSyAJ5LrENOSzRkClehZmu3dy3JKrt6QvtcU", authDomain: "sps-skb-d8256.firebaseapp.com",
@@ -87,6 +87,11 @@
             return parts.length === 3 ? (parts[0].length === 4 ? `${parts[2]}-${parts[1]}-${parts[0]}` : dateStr) : dateStr;
         };
 
+        const getCurrentFormattedDate = () => {
+            const d = new Date();
+            return `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`;
+        };
+
         const categoriesMatch = (athCat, evCat) => {
             if (!athCat || !evCat) return false;
             const a = athCat.trim().toUpperCase().replace(/\s+/g, '');
@@ -110,7 +115,6 @@
         };
 
         const App = () => {
-            const [lang, setLang] = useState("BM");
             const [userRole, setUserRole] = useState("pelawat");
             const [currentUser, setCurrentUser] = useState(null);
             const [isCloudActive, setIsCloudActive] = useState(false);
@@ -144,11 +148,12 @@
             const [showAdminManagerModal, setShowAdminManagerModal] = useState(false);
             const [newAdminEmail, setNewAdminEmail] = useState("");
             
-            const [suSukanName, setSuSukanName] = useState(() => localStorage.getItem('sps_su_sukan') || "");
-            const [pkKokumName, setPkKokumName] = useState(() => localStorage.getItem('sps_pk_kokum') || "");
-            const [gbName, setGbName] = useState(() => localStorage.getItem('sps_gb_name') || "");
-            const [certSignatory1Name, setCertSignatory1Name] = useState(() => localStorage.getItem('sps_sig1_name') || "Cikgu Adnan Bin Haji Abdul Rahman");
-            const [certSignatory1Title, setCertSignatory1Title] = useState(() => localStorage.getItem('sps_sig1_title') || "Guru Besar");
+            const [certSignatory1Name, setCertSignatory1Name] = useState(() => localStorage.getItem('sps_sig1_name') || "SITI NURHALIZA");
+            const [certSignatory1Title, setCertSignatory1Title] = useState(() => localStorage.getItem('sps_sig1_title') || "Setiausaha Sukan");
+            const [certSignatory2Name, setCertSignatory2Name] = useState(() => localStorage.getItem('sps_sig2_name') || "AHMAD ALBAB");
+            const [certSignatory2Title, setCertSignatory2Title] = useState(() => localStorage.getItem('sps_sig2_title') || "Penolong Kanan Kokurikulum");
+            const [certSignatory3Name, setCertSignatory3Name] = useState(() => localStorage.getItem('sps_sig3_name') || "ADAM CORRIE");
+            const [certSignatory3Title, setCertSignatory3Title] = useState(() => localStorage.getItem('sps_sig3_title') || "Guru Besar");
 
             const [athleteForm, setAthleteForm] = useState({ id: "", nama: "", kelas: "", rumah: "Merah", jantina: "Lelaki", kategori: "L12TKB" });
             const [isAddAthleteSidebarOpen, setIsAddAthleteSidebarOpen] = useState(false);
@@ -196,7 +201,6 @@
 
             const adminMenuRef = useRef(null);
             const fileInputRef = useRef(null);
-            const t = useMemo(() => translations[lang] || translations.BM, [lang]);
             
             const activeSchoolName = localStorage.getItem('sps_school_name') || DEFAULT_SCHOOL_NAME;
             const activeSchoolSubtitle = localStorage.getItem('sps_school_subtitle') || DEFAULT_SCHOOL_SUBTITLE;
@@ -294,7 +298,7 @@
             };
 
             const createLog = async (action, details) => {
-                const logData = { id: "log_" + Date.now(), timestamp: new Date().toLocaleString('ms-MY'), userEmail: currentUser?.email || "Anonym", userName: currentUser?.displayName || "Pelawat", action, details };
+                const logData = { id: "log_" + Date.now(), timestamp: getCurrentFormattedDate() + " " + new Date().toLocaleTimeString('ms-MY'), userEmail: currentUser?.email || "Anonym", userName: currentUser?.displayName || "Pelawat", action, details };
                 if (isCloudActive && db) await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('logs').doc(logData.id).set(logData);
                 else setLogs(prev => [logData, ...prev]);
             };
@@ -343,29 +347,50 @@
                 });
             }, [events]);
 
-            const bestAthletesCalc = useMemo(() => {
-                const calculateBest = (gender, cat) => {
-                    if (!cat) return null;
-                    const catAthletes = athletes.filter(a => a.jantina === gender && (a.kategori === cat || categoriesMatch(a.kategori, cat)));
-                    const stats = catAthletes.map(ath => {
-                        let g=0, s=0, b=0, k=0, pts=0;
-                        results.forEach(r => {
-                            if (r.athleteId === ath.id) {
-                                const ev = events.find(e => e.id === r.eventId);
-                                if (ev && ev.format === "Individu") {
-                                    if(r.kedudukan==="1"){g++; pts+=pointsConfig.emas;}
-                                    else if(r.kedudukan==="2"){s++; pts+=pointsConfig.perak;}
-                                    else if(r.kedudukan==="3"){b++; pts+=pointsConfig.gangsa;}
-                                    else if(r.kedudukan==="4"){k++; pts+=pointsConfig.keempat;}
-                                }
+            const calculateBest = (gender, cat) => {
+                if (!cat) return null;
+                const catAthletes = athletes.filter(a => a.jantina === gender && (a.kategori === cat || categoriesMatch(a.kategori, cat)));
+                const stats = catAthletes.map(ath => {
+                    let g=0, s=0, b=0, k=0, pts=0;
+                    results.forEach(r => {
+                        if (r.athleteId === ath.id) {
+                            const ev = events.find(e => e.id === r.eventId);
+                            if (ev && ev.format === "Individu") {
+                                if(r.kedudukan==="1"){g++; pts+=pointsConfig.emas;}
+                                else if(r.kedudukan==="2"){s++; pts+=pointsConfig.perak;}
+                                else if(r.kedudukan==="3"){b++; pts+=pointsConfig.gangsa;}
+                                else if(r.kedudukan==="4"){k++; pts+=pointsConfig.keempat;}
                             }
-                        });
-                        return { ...ath, g, s, b, k, pts };
+                        }
                     });
-                    const sorted = stats.sort((x,y) => y.g-x.g || y.s-x.s || y.b-x.b || y.k-x.k || y.pts-x.pts);
-                    return sorted.find(a => (a.g>0||a.s>0||a.b>0||a.pts>0)) || null;
-                };
+                    return { ...ath, g, s, b, k, pts };
+                });
+                const sorted = stats.sort((x,y) => y.g-x.g || y.s-x.s || y.b-x.b || y.k-x.k || y.pts-x.pts);
+                return sorted.find(a => (a.g>0||a.s>0||a.b>0||a.pts>0)) || null;
+            };
 
+            const calculateOverallBest = (gender) => {
+                const catAthletes = athletes.filter(a => a.jantina === gender);
+                const stats = catAthletes.map(ath => {
+                    let g=0, s=0, b=0, k=0, pts=0;
+                    results.forEach(r => {
+                        if (r.athleteId === ath.id) {
+                            const ev = events.find(e => e.id === r.eventId);
+                            if (ev && ev.format === "Individu") {
+                                if(r.kedudukan==="1"){g++; pts+=pointsConfig.emas;}
+                                else if(r.kedudukan==="2"){s++; pts+=pointsConfig.perak;}
+                                else if(r.kedudukan==="3"){b++; pts+=pointsConfig.gangsa;}
+                                else if(r.kedudukan==="4"){k++; pts+=pointsConfig.keempat;}
+                            }
+                        }
+                    });
+                    return { ...ath, g, s, b, k, pts };
+                });
+                const sorted = stats.sort((x,y) => y.g-x.g || y.s-x.s || y.b-x.b || y.k-x.k || y.pts-x.pts);
+                return sorted.find(a => (a.g>0||a.s>0||a.b>0||a.pts>0)) || null;
+            };
+
+            const bestAthletesCalc = useMemo(() => {
                 return { 
                     male: calculateBest("Lelaki", bestAthleteMaleCat), 
                     female: calculateBest("Perempuan", bestAthleteFemaleCat) 
@@ -378,7 +403,7 @@
                 const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ athletes, events: events, results, heats, housesMetadata, records }));
                 const downloadAnchor = document.createElement('a');
                 downloadAnchor.setAttribute("href", dataStr);
-                downloadAnchor.setAttribute("download", `Sandaran_SiPS_${new Date().toISOString().slice(0,10)}.json`);
+                downloadAnchor.setAttribute("download", `Sandaran_SiPS_${getCurrentFormattedDate()}.json`);
                 document.body.appendChild(downloadAnchor);
                 downloadAnchor.click();
                 downloadAnchor.remove();
@@ -491,147 +516,122 @@
                         </div>
                     `;
                 } else if (mode === 'kokum') {
-                    // Pengiraan Data Dinamik Laporan
+                    // Extract Live Data for Report
+                    const sortedDates = [...uniqueEventDates].sort();
+                    const startDate = sortedDates[0] ? formatDateToDMY(sortedDates[0]) : "N/A";
+                    const endDate = sortedDates[sortedDates.length - 1] ? formatDateToDMY(sortedDates[sortedDates.length - 1]) : "N/A";
+                    const totalDays = sortedDates.length || 0;
+                    
+                    const firstEvent = [...events].sort((a,b)=> (a.masa||"").localeCompare(b.masa||""))[0];
+                    const startTime = firstEvent && firstEvent.masa ? firstEvent.masa : "N/A";
+                    
+                    const totalLelaki = athletes.filter(a => a.jantina === "Lelaki").length;
+                    const totalPerempuan = athletes.filter(a => a.jantina === "Perempuan").length;
                     const totalAthletes = athletes.length;
-                    const maleCount = athletes.filter(a => a.jantina === 'Lelaki').length;
-                    const femaleCount = athletes.filter(a => a.jantina === 'Perempuan').length;
+
+                    const ovLelaki = calculateOverallBest("Lelaki");
+                    const ovPerempuan = calculateOverallBest("Perempuan");
                     
-                    const eventDates = events.map(e => e.tarikh).filter(Boolean).sort();
-                    const uniqueDates = [...new Set(eventDates)];
-                    const totalDays = uniqueDates.length;
-                    const startDate = uniqueDates[0];
-                    const endDate = uniqueDates[uniqueDates.length - 1];
-                    let dateStrDisplay = "Belum Ditetapkan";
-                    if (totalDays === 1) dateStrDisplay = formatDateToDMY(startDate) + " (1 Hari)";
-                    else if (totalDays > 1) dateStrDisplay = formatDateToDMY(startDate) + " hingga " + formatDateToDMY(endDate) + ` (${totalDays} Hari Kejohanan)`;
-
-                    const eventTimes = events.map(e => e.masa).filter(Boolean).sort();
-                    const startTimeDisplay = eventTimes[0] || "Belum Ditetapkan";
-
-                    const calculateOverallBest = (gender) => {
-                        const genderAthletes = athletes.filter(a => a.jantina === gender);
-                        const stats = genderAthletes.map(ath => {
-                            let g=0, s=0, b=0, pts=0;
-                            results.forEach(r => {
-                                if (r.athleteId === ath.id) {
-                                    const ev = events.find(e => e.id === r.eventId);
-                                    if (ev && ev.format === "Individu") {
-                                        if(r.kedudukan==="1"){g++; pts+=pointsConfig.emas;}
-                                        else if(r.kedudukan==="2"){s++; pts+=pointsConfig.perak;}
-                                        else if(r.kedudukan==="3"){b++; pts+=pointsConfig.gangsa;}
-                                    }
-                                }
-                            });
-                            return { ...ath, g, s, b, pts };
-                        });
-                        const sorted = stats.sort((x,y) => y.g-x.g || y.s-x.s || y.b-x.b || y.pts-x.pts);
-                        return sorted.length > 0 && (sorted[0].g > 0 || sorted[0].pts > 0) ? sorted[0] : null;
-                    };
-                    
-                    const overallMale = calculateOverallBest('Lelaki');
-                    const overallFemale = calculateOverallBest('Perempuan');
-
-                    const standingRows = houseStandings.map((h, i) => `
+                    const houseRows = houseStandings.map((h, i) => `
                         <tr>
-                            <td style="border: 1px solid #cbd5e1; padding: 6px; text-align: center; font-weight: bold;">${i+1}</td>
-                            <td style="border: 1px solid #cbd5e1; padding: 6px; font-weight: bold;">Rumah ${h.nama}</td>
-                            <td style="border: 1px solid #cbd5e1; padding: 6px; text-align: center;">${h.emas}</td>
-                            <td style="border: 1px solid #cbd5e1; padding: 6px; text-align: center;">${h.perak}</td>
-                            <td style="border: 1px solid #cbd5e1; padding: 6px; text-align: center;">${h.gangsa}</td>
-                            <td style="border: 1px solid #cbd5e1; padding: 6px; text-align: center;">${h.keempat}</td>
-                            <td style="border: 1px solid #cbd5e1; padding: 6px; text-align: center; background: #f8fafc; font-weight: bold;">${h.mata}</td>
+                            <td style="border: 1px solid #000; padding: 8px; text-align: center;">${i+1}</td>
+                            <td style="border: 1px solid #000; padding: 8px; font-weight: bold;">Rumah ${h.nama}</td>
+                            <td style="border: 1px solid #000; padding: 8px; text-align: center;">${h.emas}</td>
+                            <td style="border: 1px solid #000; padding: 8px; text-align: center;">${h.perak}</td>
+                            <td style="border: 1px solid #000; padding: 8px; text-align: center;">${h.gangsa}</td>
+                            <td style="border: 1px solid #000; padding: 8px; text-align: center;">${h.keempat}</td>
+                            <td style="border: 1px solid #000; padding: 8px; text-align: center; font-weight: bold; background: #e2e8f0;">${h.mata}</td>
                         </tr>
                     `).join('');
 
-                    const manualBoxStyle = "border: 1px dashed #94a3b8; padding: 15px; min-height: 70px; margin-bottom: 15px; font-family: inherit; color: #1e293b; line-height: 1.5; outline: none; background: #f8fafc;";
-
                     printContent = `
-                        <div style="font-family: 'Times New Roman', serif; padding: 10px 30px; font-size: 14px; line-height: 1.5; color: #000;">
+                        <div style="font-family: Arial, sans-serif; padding: 20px; color: #000; line-height: 1.5;">
                             ${headerHtml}
-                            <h2 style="text-align: center; margin-bottom: 20px; font-size: 18px; text-decoration: underline;">LAPORAN RASMI KEJOHANAN SUKAN TAHUNAN</h2>
+                            <h2 style="text-align: center; margin-bottom: 20px; text-transform: uppercase;">Laporan Rasmi ${activeSchoolSubtitle} Tahun ${activeYear}</h2>
                             
                             <div style="margin-bottom: 20px;">
-                                <h3 style="font-size: 15px; font-weight: bold; margin-bottom: 8px; background: #e2e8f0; padding: 5px;">A. MAKLUMAT JANAAN SISTEM</h3>
-                                <table style="width: 100%; border: none; font-size: 14px;">
-                                    <tr><td style="width: 200px; padding: 4px 0;"><strong>Nama Program</strong></td><td>: ${activeSchoolSubtitle} Tahun ${activeYear}</td></tr>
-                                    <tr><td style="padding: 4px 0;"><strong>Tarikh Kejohanan</strong></td><td>: ${dateStrDisplay}</td></tr>
-                                    <tr><td style="padding: 4px 0;"><strong>Masa Mula Acara Pertama</strong></td><td>: ${startTimeDisplay}</td></tr>
-                                    <tr><td style="padding: 4px 0;"><strong>Jumlah Atlet Didaftarkan</strong></td><td>: ${totalAthletes} Orang (Lelaki: ${maleCount}, Perempuan: ${femaleCount})</td></tr>
+                                <h3 style="background: #e2e8f0; padding: 5px 10px; margin: 0 0 10px 0; border-left: 5px solid #1e3a8a;">A. Maklumat Kejohanan</h3>
+                                <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                                    <tr><td style="width: 200px; padding: 5px; font-weight: bold;">Tarikh Kejohanan</td><td style="padding: 5px;">: ${startDate} hingga ${endDate}</td></tr>
+                                    <tr><td style="padding: 5px; font-weight: bold;">Jumlah Hari</td><td style="padding: 5px;">: ${totalDays} Hari</td></tr>
+                                    <tr><td style="padding: 5px; font-weight: bold;">Masa Mula Acara Pertama</td><td style="padding: 5px;">: ${startTime}</td></tr>
                                 </table>
                             </div>
 
-                            <div style="margin-bottom: 20px; page-break-inside: avoid;">
-                                <h3 style="font-size: 15px; font-weight: bold; margin-bottom: 8px; background: #e2e8f0; padding: 5px;">B. KEPUTUSAN KESELURUHAN (PUNGUTAN PINGAT)</h3>
-                                <table style="width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 10px;">
-                                    <thead style="background: #f1f1f1;">
+                            <div style="margin-bottom: 20px;">
+                                <h3 style="background: #e2e8f0; padding: 5px 10px; margin: 0 0 10px 0; border-left: 5px solid #1e3a8a;">B. Statistik Penyertaan Murid (Atlet)</h3>
+                                <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                                    <tr><td style="width: 200px; padding: 5px; font-weight: bold;">Jumlah Atlet Lelaki</td><td style="padding: 5px;">: ${totalLelaki} Orang</td></tr>
+                                    <tr><td style="padding: 5px; font-weight: bold;">Jumlah Atlet Perempuan</td><td style="padding: 5px;">: ${totalPerempuan} Orang</td></tr>
+                                    <tr><td style="padding: 5px; font-weight: bold;">Jumlah Keseluruhan Penyertaan</td><td style="padding: 5px;">: <strong>${totalAthletes} Orang</strong></td></tr>
+                                </table>
+                            </div>
+
+                            <div style="margin-bottom: 20px;">
+                                <h3 style="background: #e2e8f0; padding: 5px 10px; margin: 0 0 10px 0; border-left: 5px solid #1e3a8a;">C. Keputusan Rasmi & Anugerah</h3>
+                                
+                                <h4 style="margin: 10px 0 5px 0;">1. Pungutan Pingat Keseluruhan Rumah Sukan</h4>
+                                <table style="width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 15px;">
+                                    <thead style="background: #f1f5f9;">
                                         <tr>
-                                            <th style="border: 1px solid #000; padding: 6px;">Ked.</th>
-                                            <th style="border: 1px solid #000; padding: 6px; text-align: left;">Rumah Sukan</th>
-                                            <th style="border: 1px solid #000; padding: 6px;">Emas</th>
-                                            <th style="border: 1px solid #000; padding: 6px;">Perak</th>
-                                            <th style="border: 1px solid #000; padding: 6px;">Gangsa</th>
-                                            <th style="border: 1px solid #000; padding: 6px;">Ke-4</th>
-                                            <th style="border: 1px solid #000; padding: 6px;">Jumlah Mata</th>
+                                            <th style="border: 1px solid #000; padding: 8px;">Ked.</th>
+                                            <th style="border: 1px solid #000; padding: 8px;">Rumah Sukan</th>
+                                            <th style="border: 1px solid #000; padding: 8px;">Emas</th>
+                                            <th style="border: 1px solid #000; padding: 8px;">Perak</th>
+                                            <th style="border: 1px solid #000; padding: 8px;">Gangsa</th>
+                                            <th style="border: 1px solid #000; padding: 8px;">Ke-4</th>
+                                            <th style="border: 1px solid #000; padding: 8px;">Mata</th>
                                         </tr>
                                     </thead>
-                                    <tbody>${standingRows}</tbody>
+                                    <tbody>${houseRows}</tbody>
                                 </table>
-                            </div>
 
-                            <div style="margin-bottom: 25px; page-break-inside: avoid;">
-                                <h3 style="font-size: 15px; font-weight: bold; margin-bottom: 8px; background: #e2e8f0; padding: 5px;">C. PENERIMA ANUGERAH ATLET TERBAIK</h3>
+                                <h4 style="margin: 10px 0 5px 0;">2. Penerima Anugerah Khas</h4>
                                 <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
                                     <tr>
-                                        <td style="border: 1px solid #000; padding: 8px; width: 50%; vertical-align: top;">
-                                            <strong>OLAHRAGAWAN (LELAKI)</strong><br>
-                                            Nama: ${overallMale ? overallMale.nama.toUpperCase() : '-'}<br>
-                                            Kelas: ${overallMale ? overallMale.kelas : '-'}<br>
-                                            Rumah: ${overallMale ? overallMale.rumah : '-'}<br>
-                                            Pencapaian: ${overallMale ? `${overallMale.g} Emas, ${overallMale.s} Perak, ${overallMale.b} Gangsa` : '-'}
+                                        <td style="border: 1px solid #000; padding: 8px; font-weight: bold; width: 150px; background: #f8fafc;">Olahragawan<br>(Keseluruhan)</td>
+                                        <td style="border: 1px solid #000; padding: 8px;">
+                                            ${ovLelaki ? `<span style="text-transform:uppercase; font-weight:bold;">${ovLelaki.nama}</span><br>Rumah: ${ovLelaki.rumah} | Kelas: ${ovLelaki.kelas}<br>Pencapaian: ${ovLelaki.g} Emas, ${ovLelaki.s} Perak, ${ovLelaki.b} Gangsa` : 'Belum Ditentukan'}
                                         </td>
-                                        <td style="border: 1px solid #000; padding: 8px; width: 50%; vertical-align: top;">
-                                            <strong>OLAHRAGAWATI (PEREMPUAN)</strong><br>
-                                            Nama: ${overallFemale ? overallFemale.nama.toUpperCase() : '-'}<br>
-                                            Kelas: ${overallFemale ? overallFemale.kelas : '-'}<br>
-                                            Rumah: ${overallFemale ? overallFemale.rumah : '-'}<br>
-                                            Pencapaian: ${overallFemale ? `${overallFemale.g} Emas, ${overallFemale.s} Perak, ${overallFemale.b} Gangsa` : '-'}
+                                    </tr>
+                                    <tr>
+                                        <td style="border: 1px solid #000; padding: 8px; font-weight: bold; width: 150px; background: #f8fafc;">Olahragawati<br>(Keseluruhan)</td>
+                                        <td style="border: 1px solid #000; padding: 8px;">
+                                            ${ovPerempuan ? `<span style="text-transform:uppercase; font-weight:bold;">${ovPerempuan.nama}</span><br>Rumah: ${ovPerempuan.rumah} | Kelas: ${ovPerempuan.kelas}<br>Pencapaian: ${ovPerempuan.g} Emas, ${ovPerempuan.s} Perak, ${ovPerempuan.b} Gangsa` : 'Belum Ditentukan'}
                                         </td>
                                     </tr>
                                 </table>
                             </div>
 
-                            <div style="margin-bottom: 20px; page-break-inside: auto;">
-                                <h3 style="font-size: 15px; font-weight: bold; margin-bottom: 5px; background: #e2e8f0; padding: 5px;">D. LAPORAN TAMBAHAN (MANUAL)</h3>
-                                <p style="font-size: 11px; color: #64748b; font-style: italic; margin-top: 0;">Nota: Klik di dalam kotak terputus-putus di bawah untuk menaip laporan anda sebelum mencetak, atau biarkan kosong untuk diisi menggunakan pen.</p>
-                                
-                                <h4 style="font-size: 14px; margin: 10px 0 5px 0;">1. Kehadiran Keseluruhan (Tetamu, Guru, Ibu Bapa dll)</h4>
-                                <div contenteditable="true" style="${manualBoxStyle}"><br><br></div>
-
-                                <h4 style="font-size: 14px; margin: 10px 0 5px 0;">2. Laporan Kewangan (Ringkasan Perbelanjaan & Tajaan)</h4>
-                                <div contenteditable="true" style="${manualBoxStyle}"><br><br></div>
-
-                                <h4 style="font-size: 14px; margin: 10px 0 5px 0;">3. Kekuatan, Cabaran & Cadangan Penambahbaikan</h4>
-                                <div contenteditable="true" style="${manualBoxStyle}"><br><br><br><br></div>
+                            <div style="margin-bottom: 20px;">
+                                <h3 style="background: #e2e8f0; padding: 5px 10px; margin: 0 0 10px 0; border-left: 5px solid #1e3a8a;">D. Laporan Tambahan / Manual (Ulasan)</h3>
+                                <p style="font-size: 11px; color: #666; margin:0 0 5px 0; font-style:italic;">* Sila klik di dalam kotak di bawah untuk menaip laporan kehadiran tetamu, kewangan, kekuatan, atau isu kejohanan secara manual sebelum mencetak, atau biarkan kosong untuk diisi kemudian.</p>
+                                <div contenteditable="true" style="width: 100%; min-height: 250px; border: 1px solid #94a3b8; padding: 15px; font-size: 13px; line-height: 1.6; outline: none; background: #fafafa;">
+                                    <b>1. Kehadiran Tetamu/Jemputan:</b><br><br><br>
+                                    <b>2. Kewangan (Perbelanjaan & Tajaan):</b><br><br><br>
+                                    <b>3. Kekuatan Program:</b><br><br><br>
+                                    <b>4. Isu / Cabaran & Cadangan Penambahbaikan:</b><br><br><br>
+                                </div>
                             </div>
-
-                            <div style="margin-top: 40px; display: flex; justify-content: space-between; page-break-inside: avoid;">
+                            
+                            <div style="display: flex; justify-content: space-between; margin-top: 60px; font-size: 12px; page-break-inside: avoid;">
                                 <div style="width: 30%; text-align: center;">
-                                    <p style="margin-bottom: 60px;">Disediakan oleh,</p>
+                                    <p style="margin: 0 0 40px 0;">Disediakan Oleh,</p>
                                     <div style="border-bottom: 1px solid #000; width: 80%; margin: 0 auto;"></div>
-                                    <p style="margin-top: 5px; font-weight: bold;">${suSukanName || "Setiausaha Sukan"}</p>
-                                    <p style="margin: 0;">${activeSchoolName}</p>
+                                    <p style="margin: 5px 0 0 0; font-weight: bold; text-transform: uppercase;">${certSignatory1Name}</p>
+                                    <p style="margin: 0;">${certSignatory1Title}</p>
                                 </div>
                                 <div style="width: 30%; text-align: center;">
-                                    <p style="margin-bottom: 60px;">Disemak oleh,</p>
+                                    <p style="margin: 0 0 40px 0;">Disemak Oleh,</p>
                                     <div style="border-bottom: 1px solid #000; width: 80%; margin: 0 auto;"></div>
-                                    <p style="margin-top: 5px; font-weight: bold;">${pkKokumName || "Guru Penolong Kanan Kokurikulum"}</p>
-                                    <p style="margin: 0;">${activeSchoolName}</p>
+                                    <p style="margin: 5px 0 0 0; font-weight: bold; text-transform: uppercase;">${certSignatory2Name}</p>
+                                    <p style="margin: 0;">${certSignatory2Title}</p>
                                 </div>
                                 <div style="width: 30%; text-align: center;">
-                                    <p style="margin-bottom: 60px;">Disahkan oleh,</p>
+                                    <p style="margin: 0 0 40px 0;">Disahkan Oleh,</p>
                                     <div style="border-bottom: 1px solid #000; width: 80%; margin: 0 auto;"></div>
-                                    <p style="margin-top: 5px; font-weight: bold;">${gbName || "Guru Besar"}</p>
-                                    <p style="margin: 0;">${activeSchoolName}</p>
+                                    <p style="margin: 5px 0 0 0; font-weight: bold; text-transform: uppercase;">${certSignatory3Name}</p>
+                                    <p style="margin: 0;">${certSignatory3Title}</p>
                                 </div>
                             </div>
                         </div>
@@ -879,16 +879,18 @@
                     for (let i = 0; i < rowCount; i++) {
                         const ath = sortedAthletes[i];
                         if (ath) {
-                            rowsHtml += `<tr style="height: 30px;"><td style="border: 1px solid #000; text-align: center;">${i + 1}</td><td style="border: 1px solid #000; text-align: center;">${ath.noAtlet || ""}</td><td style="border: 1px solid #000; padding-left: 8px; text-align: left; text-transform: uppercase;">${ath.nama}</td><td style="border: 1px solid #000; text-align: center;">${ath.rumah}</td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td></tr>`;
+                            rowsHtml += `<tr style="height: 35px;"><td style="border: 1px solid #000; text-align: center;">${i + 1}</td><td style="border: 1px solid #000; text-align: center;">${ath.noAtlet || ""}</td><td style="border: 1px solid #000; padding-left: 8px; text-align: left; text-transform: uppercase;">${ath.nama}</td><td style="border: 1px solid #000; text-align: center;">${ath.rumah}</td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td></tr>`;
                         } else {
-                            rowsHtml += `<tr style="height: 30px;"><td style="border: 1px solid #000; text-align: center;">${i + 1}</td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td></tr>`;
+                            rowsHtml += `<tr style="height: 35px;"><td style="border: 1px solid #000; text-align: center;">${i + 1}</td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td></tr>`;
                         }
                     }
 
                     printContent = `
                         <style>
                             .lt-container { font-family: Arial, sans-serif; font-size: 10pt; color: #000; }
-                            .lt-title { font-size: 14pt; font-weight: bold; margin: 0; }
+                            .lt-header { display: flex; align-items: center; justify-content: center; margin-bottom: 15px; }
+                            .lt-logo { height: 60px; margin-right: 15px; }
+                            .lt-title { font-size: 14pt; font-weight: bold; margin: 0;}
                             .lt-info-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
                             .lt-info-table td { border: 1px solid #000; padding: 6px; font-weight: bold; }
                             .lt-info-label { width: 150px; background-color: #e9e9e9; }
@@ -904,8 +906,8 @@
                             .lt-sig-line { border-bottom: 1px solid #000; margin-bottom: 5px; height: 35px; }
                         </style>
                         <div class="lt-container">
-                            <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 15px;">
-                                <img src="${logoUrl}" style="height: 60px; margin-right: 15px;" onerror="this.style.display='none'" />
+                            <div class="lt-header">
+                                <img src="${logoUrl}" class="lt-logo" onerror="this.style.display='none'" />
                                 <div class="lt-title">BORANG CATATAN HAKIM - ACARA LOMPAT TINGGI</div>
                             </div>
                             <table class="lt-info-table">
@@ -918,7 +920,7 @@
                             <table class="lt-main-table">
                                 <thead>
                                     <tr>
-                                        <th rowspan="2" style="width: 30px;">BIL</th><th rowspan="2" style="width: 60px;">NO.<br>PESERTA</th><th rowspan="2" style="text-align: left; padding-left: 8px; width: auto;">NAMA PESERTA</th><th rowspan="2" style="width: 80px;">PASUKAN</th><th colspan="5">KETINGGIAN PALANG (m)</th><th rowspan="2" style="width: 70px;">CATATAN<br>TERBAIK</th><th rowspan="2" style="width: 70px;">KEDUDUKAN</th>
+                                        <th rowspan="2" style="width: 30px;">BIL</th><th rowspan="2" style="width: 40px;">NO.<br>PES.</th><th rowspan="2" style="text-align: left; padding-left: 8px; width: auto;">NAMA PESERTA</th><th rowspan="2" style="width: 70px;">PASUKAN</th><th colspan="5">KETINGGIAN PALANG (m)</th><th rowspan="2" style="width: 60px;">CATATAN<br>TERBAIK</th><th rowspan="2" style="width: 60px;">KEDUDUKAN</th>
                                     </tr>
                                     <tr><th style="width: 60px; height: 25px;"></th><th style="width: 60px;"></th><th style="width: 60px;"></th><th style="width: 60px;"></th><th style="width: 60px;"></th></tr>
                                 </thead>
@@ -935,52 +937,49 @@
                         </div>
                     `;
                 } else if (mode === 'sijil') {
-                    // Menyemak pencapaian murid (Podium Kedudukan 1, 2, atau 3)
-                    const athResults = results.filter(r => r.athleteId === targetData.id);
-                    const podiumResults = athResults.filter(r => parseInt(r.kedudukan) >= 1 && parseInt(r.kedudukan) <= 3).sort((a,b) => parseInt(a.kedudukan) - parseInt(b.kedudukan));
+                    const athResults = results.filter(r => r.athleteId === targetData.id && ["1","2","3"].includes(r.kedudukan));
+                    const hasWon = athResults.length > 0;
+                    const certTitle = hasWon ? "SIJIL PENCAPAIAN" : "SIJIL PENGHARGAAN";
                     
-                    let title = "SIJIL PENGHARGAAN";
-                    let descriptionHtml = `
-                        <p style="font-size: 18px; line-height: 1.6; max-width: 600px; margin: 0 auto 50px auto;">
-                            Telah mempamerkan semangat kesukanan yang tinggi dan mengambil bahagian dengan cemerlang semasa ${activeSchoolSubtitle} Tahun ${activeYear}.
-                        </p>
-                    `;
-
-                    if (podiumResults.length > 0) {
-                        title = "SIJIL PENCAPAIAN";
-                        let achievementList = podiumResults.map(res => {
-                            const ev = events.find(e => e.id === res.eventId);
-                            const medal = res.kedudukan === "1" ? "EMAS" : res.kedudukan === "2" ? "PERAK" : "GANGSA";
-                            return `<li style="margin-bottom: 8px; font-weight: bold; background: #f8fafc; padding: 5px; border-radius: 5px; border: 1px solid #e2e8f0;">Pingat ${medal} - ${ev ? ev.nama : 'Acara'} (${ev ? ev.kategori : ''})</li>`;
-                        }).join('');
-
-                        descriptionHtml = `
-                            <p style="font-size: 17px; line-height: 1.5; max-width: 600px; margin: 0 auto 20px auto;">
-                                Tahniah, di atas pencapaian cemerlang atlet ini semasa ${activeSchoolSubtitle} Tahun ${activeYear} 
-                                seperti rekod berikut:
-                            </p>
-                            <ul style="list-style-type: none; padding: 0; margin: 0 auto 40px auto; max-width: 500px; font-size: 15px; color: #1e3a8a;">
-                                ${achievementList}
-                            </ul>
-                        `;
+                    let achievementText = "";
+                    if (hasWon) {
+                        const medals = athResults.map(r => {
+                            const ev = events.find(e => e.id === r.eventId);
+                            const medalName = r.kedudukan === "1" ? "Emas" : r.kedudukan === "2" ? "Perak" : "Gangsa";
+                            return `${medalName} dalam acara ${ev ? ev.nama : "Tidak Diketahui"}`;
+                        });
+                        achievementText = `<p style="font-size: 16px; font-weight: bold; color: #1e3a8a; margin: 15px 0;">Tahniah, kerana telah memenangi pingat:<br>${medals.join('<br>')}</p>`;
+                    } else {
+                        achievementText = `<p style="font-size: 18px; line-height: 1.6; max-width: 600px; margin: 0 auto 30px auto;">Telah mempamerkan semangat kesukanan yang tinggi dan mengambil bahagian dengan cemerlang.</p>`;
                     }
 
                     printContent = `
                         <div style="border: 12px double #1e3a8a; padding: 40px; text-align: center; font-family: 'Playfair Display', serif; min-height: 250mm; box-sizing: border-box; position: relative;">
-                            <img src="${logoUrl}" style="height: 100px; margin-bottom: 20px;" onerror="this.style.display='none'" />
+                            <img src="${logoUrl}" style="height: 100px; margin-bottom: 20px;" onerror="this.style.display='none'"/>
                             <h1 style="font-size: 28px; font-weight: 800; color: #1e3a8a; margin: 0;">${activeSchoolName}</h1>
                             <div style="height: 2px; width: 120px; background: #fbbf24; margin: 25px auto;"></div>
-                            <h2 style="font-size: 34px; font-weight: 700; color: #b45309;">${title}</h2>
+                            <h2 style="font-size: 34px; font-weight: 700; color: #b45309;">${certTitle}</h2>
                             <p style="font-size: 16px; margin: 30px 0;">Dengan ini diperakui bahawa</p>
                             <h3 style="font-size: 26px; font-weight: bold; text-decoration: underline; margin: 10px 0;">${targetData.nama.toUpperCase()}</h3>
-                            <p style="font-size: 14px; color: #334155; margin-bottom: 30px;">
+                            <p style="font-size: 14px; color: #334155; margin-bottom: 20px;">
                                 Rumah: <strong>Rumah ${targetData.rumah}</strong> | Kelas: <strong>${targetData.kelas}</strong>
                             </p>
-                            ${descriptionHtml}
-                            <div style="margin-top: 40px; font-family: sans-serif; font-size: 12px;">
-                                <div style="border-bottom: 1px solid #000; width: 250px; margin: 0 auto;"></div>
-                                <p style="margin: 8px 0 0 0; font-weight: bold;">${certSignatory1Name}</p>
-                                <p style="margin: 0; color: #64748b;">${certSignatory1Title}</p>
+                            
+                            ${achievementText}
+                            
+                            <p style="font-size: 16px; margin: 20px 0 50px 0;">Semasa ${activeSchoolSubtitle} Tahun ${activeYear}.</p>
+                            
+                            <div style="margin-top: 60px; font-family: sans-serif; font-size: 12px; display: flex; justify-content: space-around;">
+                                <div style="width: 40%; text-align: center;">
+                                    <div style="border-bottom: 1px solid #000; width: 100%; margin: 0 auto;"></div>
+                                    <p style="margin: 8px 0 0 0; font-weight: bold;">${certSignatory2Name}</p>
+                                    <p style="margin: 0; color: #64748b;">${certSignatory2Title}</p>
+                                </div>
+                                <div style="width: 40%; text-align: center;">
+                                    <div style="border-bottom: 1px solid #000; width: 100%; margin: 0 auto;"></div>
+                                    <p style="margin: 8px 0 0 0; font-weight: bold;">${certSignatory3Name}</p>
+                                    <p style="margin: 0; color: #64748b;">${certSignatory3Title}</p>
+                                </div>
                             </div>
                         </div>
                     `;
@@ -1013,6 +1012,7 @@
             const handleEventSubmit = async (e) => {
                 e.preventDefault(); if (!checkAuth()) return;
                 const id = eventForm.id || "E_" + Date.now();
+                // Check format dd-mm-yyyy for display later, but HTML input date returns yyyy-mm-dd
                 const evData = { ...eventForm, id };
                 if (isCloudActive && db) await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('events').doc(id).set(evData);
                 else setEvents(prev => isEditingEvent ? prev.map(x => x.id === id ? evData : x) : [...prev, evData]);
@@ -1052,12 +1052,12 @@
             };
 
             const TABS = [
-                { id: "dashboard", label: t.dashboard },
-                { id: "rumah_sukan", label: t.rumah_sukan, reqAdmin: true },
-                { id: "acara", label: t.acara, reqAdmin: true },
-                { id: "atlit", label: t.atlit, reqAdmin: true },
-                { id: "keputusan", label: t.keputusan },
-                { id: "pasca_sukan", label: t.pasca_sukan, reqAdmin: true }
+                { id: "dashboard", label: "Papan Pemuka" },
+                { id: "rumah_sukan", label: "Rumah Sukan", reqAdmin: true },
+                { id: "acara", label: "Pengurusan Acara", reqAdmin: true },
+                { id: "atlit", label: "Pengurusan Atlet", reqAdmin: true },
+                { id: "keputusan", label: "Keputusan Acara" },
+                { id: "pasca_sukan", label: "Pasca Sukan", reqAdmin: true }
             ].filter(tab => !tab.reqAdmin || userRole !== 'pelawat');
 
             return (
@@ -1069,7 +1069,7 @@
                             <div className="flex items-center gap-4">
                                 <img src={logoUrl} alt="Logo" className="w-14 h-14 object-contain rounded bg-white p-1" />
                                 <div>
-                                    <h1 className="text-xl font-extrabold tracking-tight">SiPS Online - Transformasi Digital dalam Pengurusan Sukan</h1>
+                                    <h1 className="text-xl font-extrabold tracking-tight">SiPS Online<span className="font-normal text-sm ml-2">- Transformasi Digital dalam Pengurusan Sukan</span></h1>
                                     <p className="text-xs text-indigo-200 font-medium">{activeSchoolSubtitle} {activeYear} | {isCloudActive ? "🟢 Awan" : "🟡 Lokal"}</p>
                                 </div>
                             </div>
@@ -1117,6 +1117,7 @@
 
                     <main className="max-w-7xl mx-auto p-4 w-full flex-grow">
                         
+                        {}
                         {activeTab === "dashboard" && (
                             <div className="space-y-6 animate-fade-in">
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1145,7 +1146,7 @@
                                         {showAnnounceForm && (
                                             <form onSubmit={(e) => {
                                                 e.preventDefault();
-                                                const ann = { id: "ann_"+Date.now(), text: announceFormText, date: new Date().toLocaleDateString('ms-MY'), author: currentUser?.displayName || "Pentadbir" };
+                                                const ann = { id: "ann_"+Date.now(), text: announceFormText, date: getCurrentFormattedDate(), author: currentUser?.displayName || "Pentadbir" };
                                                 if (isCloudActive && db) db.collection('artifacts').doc(appId).collection('public').doc('data').collection('announcements').doc(ann.id).set(ann);
                                                 else setAnnouncements([ann, ...announcements]);
                                                 setAnnounceFormText(""); setShowAnnounceForm(false); showToastMessage("Hebahan ditambah");
@@ -1182,6 +1183,7 @@
                             </div>
                         )}
 
+                        {}
                         {activeTab === "rumah_sukan" && userRole !== "pelawat" && (
                             <div className="space-y-6">
                                 <div className="bg-white p-4 border rounded-2xl flex justify-between items-center shadow-sm">
@@ -1241,6 +1243,7 @@
                             </div>
                         )}
 
+                        {}
                         {activeTab === "acara" && userRole !== "pelawat" && (
                             <div className="space-y-6">
                                 <div className="bg-white p-4 border rounded-2xl flex justify-between items-center shadow-sm">
@@ -1248,7 +1251,7 @@
                                     <div className="flex gap-2">
                                         <select value={selectedEventDate} onChange={e => setSelectedEventDate(e.target.value)} className="border p-2 rounded-xl text-xs font-bold bg-slate-50">
                                             <option value="Semua">Semua Hari</option>
-                                            {uniqueEventDates.map(d => <option key={d} value={d}>{d}</option>)}
+                                            {uniqueEventDates.map(d => <option key={d} value={d}>{formatDateToDMY(d)}</option>)}
                                         </select>
                                         <button onClick={() => { setEventForm({ id:"", noAcara:"", nama:"", kategori:categories[0], jenis:"Balapan", format:"Individu", tarikh:"", masa:"" }); setIsEditingEvent(false); setIsEventSidebarOpen(true); }} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-xs font-bold shadow transition">+ Daftar Acara</button>
                                     </div>
@@ -1277,8 +1280,7 @@
                                                     {ev.jenis === "Padang" && (
                                                         <div className="flex gap-1.5">
                                                             <button onClick={() => executeBypassPrint('hakim_padang', ev)} className="bg-white hover:bg-slate-100 text-emerald-700 border border-emerald-200 py-1.5 px-3 rounded-lg flex items-center justify-center gap-1 font-bold text-[11px] shadow-sm transition">🖨️ Borang Am Padang</button>
-                                                            {/* Fix: Butang Cetak Borang Lompat Tinggi hanya wujud bagi acara yang mempunyai nama "Lompat Tinggi" */}
-                                                            {ev.nama && ev.nama.toUpperCase().includes('TINGGI') && (
+                                                            {(ev.nama || "").toUpperCase().includes("LOMPAT TINGGI") && (
                                                                 <button onClick={() => executeBypassPrint('hakim_lompat_tinggi', ev)} className="bg-white hover:bg-slate-100 text-teal-700 border border-teal-200 py-1.5 px-3 rounded-lg flex items-center justify-center gap-1 font-bold text-[11px] shadow-sm transition">🖨️ Borang L.Tinggi</button>
                                                             )}
                                                         </div>
@@ -1292,6 +1294,7 @@
                             </div>
                         )}
 
+                        {}
                         {activeTab === "atlit" && userRole !== "pelawat" && (
                             <div className="space-y-6">
                                 <div className="bg-white p-4 border rounded-2xl flex flex-col md:flex-row justify-between md:items-center gap-4 shadow-sm">
@@ -1356,6 +1359,7 @@
                             </div>
                         )}
 
+                        {}
                         {activeTab === "keputusan" && (
                             <div className="space-y-6">
                                 <div className="bg-white p-5 border rounded-2xl flex flex-wrap justify-between items-end gap-4 shadow-sm">
@@ -1492,12 +1496,13 @@
                             </div>
                         )}
 
+                        {}
                         {activeTab === "pasca_sukan" && userRole !== "pelawat" && (
                             <div className="space-y-6">
                                 <div className="bg-white p-6 border rounded-2xl shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
-                                    <div><h3 className="text-lg font-black text-slate-900">Modul Dokumentasi</h3><p className="text-xs text-slate-400">Jana laporan rumah sukan (Kokum) dan Sijil Penyertaan / Pencapaian.</p></div>
+                                    <div><h3 className="text-lg font-black text-slate-900">Modul Dokumentasi</h3><p className="text-xs text-slate-400">Jana laporan rumah sukan (Kokum) dan Sijil Penyertaan.</p></div>
                                     <div className="flex gap-2">
-                                        <button onClick={() => setShowSignatoryModal(true)} className="bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow transition">✍️ Penandatangan Sijil</button>
+                                        <button onClick={() => setShowSignatoryModal(true)} className="bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow transition">✍️ Penandatangan Sijil & Laporan</button>
                                         <button onClick={() => executeBypassPrint('kokum')} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow transition">📊 Cetak Laporan Kokum</button>
                                     </div>
                                 </div>
@@ -1519,6 +1524,7 @@
                         )}
                     </main>
 
+                    {}
                     {isLoginModalOpen && (
                         <div className="fixed inset-0 bg-slate-900/75 z-[9999] flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
                             <div className="bg-white rounded-2xl w-full max-w-sm p-8 space-y-5 shadow-2xl">
@@ -1634,6 +1640,7 @@
                         </div>
                     )}
 
+                    {}
                     {isAddAthleteSidebarOpen && (
                         <div className="fixed inset-0 z-[9999] flex justify-end text-xs">
                             <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={()=>setIsAddAthleteSidebarOpen(false)}></div>
@@ -1775,24 +1782,48 @@
 
                     {showSignatoryModal && (
                         <div className="fixed inset-0 bg-slate-900/60 z-[9999] flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
-                            <div className="bg-white rounded-2xl p-6 w-full max-w-sm text-xs font-semibold space-y-3 shadow-2xl">
-                                <h3 className="font-black text-sm uppercase text-slate-900 border-b pb-2">✍️ Tetapan Penandatangan</h3>
-                                <div><label className="block mb-1 text-slate-500 uppercase text-[10px]">Nama Setiausaha Sukan</label><input type="text" value={suSukanName} onChange={e=>setSuSukanName(e.target.value)} className="w-full border p-2 rounded-xl" /></div>
-                                <div><label className="block mb-1 text-slate-500 uppercase text-[10px]">Nama PK Kokurikulum</label><input type="text" value={pkKokumName} onChange={e=>setPkKokumName(e.target.value)} className="w-full border p-2 rounded-xl" /></div>
-                                <div><label className="block mb-1 text-slate-500 uppercase text-[10px]">Nama Guru Besar</label><input type="text" value={gbName} onChange={e=>setGbName(e.target.value)} className="w-full border p-2 rounded-xl" /></div>
-                                <div className="border-t pt-2 mt-2">
-                                    <label className="block mb-1 text-slate-500 uppercase text-[10px]">Nama Penandatangan Sijil</label>
-                                    <input type="text" value={certSignatory1Name} onChange={e=>setCertSignatory1Name(e.target.value)} className="w-full border p-2 rounded-xl" />
+                            <div className="bg-white rounded-2xl p-8 w-full max-w-2xl text-xs font-semibold space-y-4 shadow-2xl">
+                                <h3 className="font-black text-sm uppercase text-slate-900 border-b pb-2">✍️ Tetapan Penandatangan Sijil & Laporan Kokum</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                                        <p className="font-bold text-indigo-700 mb-2 border-b border-indigo-200 pb-1">1. Disediakan Oleh (S/U Sukan)</p>
+                                        <label className="block mb-1 text-slate-500 uppercase text-[10px]">Nama Penuh</label>
+                                        <input type="text" value={certSignatory1Name} onChange={e=>setCertSignatory1Name(e.target.value)} className="w-full border p-2 rounded-lg font-bold bg-white mb-2" />
+                                        <label className="block mb-1 text-slate-500 uppercase text-[10px]">Jawatan</label>
+                                        <input type="text" value={certSignatory1Title} onChange={e=>setCertSignatory1Title(e.target.value)} className="w-full border p-2 rounded-lg font-bold bg-white" />
+                                    </div>
+                                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                                        <p className="font-bold text-indigo-700 mb-2 border-b border-indigo-200 pb-1">2. Disemak Oleh (PK Kokurikulum)</p>
+                                        <label className="block mb-1 text-slate-500 uppercase text-[10px]">Nama Penuh</label>
+                                        <input type="text" value={certSignatory2Name} onChange={e=>setCertSignatory2Name(e.target.value)} className="w-full border p-2 rounded-lg font-bold bg-white mb-2" />
+                                        <label className="block mb-1 text-slate-500 uppercase text-[10px]">Jawatan</label>
+                                        <input type="text" value={certSignatory2Title} onChange={e=>setCertSignatory2Title(e.target.value)} className="w-full border p-2 rounded-lg font-bold bg-white" />
+                                    </div>
+                                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 md:col-span-2">
+                                        <p className="font-bold text-indigo-700 mb-2 border-b border-indigo-200 pb-1">3. Disahkan Oleh (Guru Besar)</p>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                            <div>
+                                                <label className="block mb-1 text-slate-500 uppercase text-[10px]">Nama Penuh</label>
+                                                <input type="text" value={certSignatory3Name} onChange={e=>setCertSignatory3Name(e.target.value)} className="w-full border p-2 rounded-lg font-bold bg-white" />
+                                            </div>
+                                            <div>
+                                                <label className="block mb-1 text-slate-500 uppercase text-[10px]">Jawatan</label>
+                                                <input type="text" value={certSignatory3Title} onChange={e=>setCertSignatory3Title(e.target.value)} className="w-full border p-2 rounded-lg font-bold bg-white" />
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div className="flex gap-3 pt-3">
                                     <button onClick={()=>setShowSignatoryModal(false)} className="flex-1 py-3 bg-slate-200 hover:bg-slate-300 rounded-xl transition">Batal</button>
                                     <button onClick={()=>{
-                                        localStorage.setItem('sps_su_sukan', suSukanName);
-                                        localStorage.setItem('sps_pk_kokum', pkKokumName);
-                                        localStorage.setItem('sps_gb_name', gbName);
                                         localStorage.setItem('sps_sig1_name', certSignatory1Name);
-                                        setShowSignatoryModal(false); showToastMessage("Penandatangan dikemaskini.");
-                                    }} className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-md transition">Simpan</button>
+                                        localStorage.setItem('sps_sig1_title', certSignatory1Title);
+                                        localStorage.setItem('sps_sig2_name', certSignatory2Name);
+                                        localStorage.setItem('sps_sig2_title', certSignatory2Title);
+                                        localStorage.setItem('sps_sig3_name', certSignatory3Name);
+                                        localStorage.setItem('sps_sig3_title', certSignatory3Title);
+                                        setShowSignatoryModal(false); showToastMessage("Maklumat semua penandatangan dikemaskini.");
+                                    }} className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-md transition">Simpan Tetapan</button>
                                 </div>
                             </div>
                         </div>
@@ -2070,13 +2101,5 @@
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
     </script>
-    <style>
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
-        @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
-        .animate-slide-in { animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        .animate-slide-up { animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-    </style>
 </body>
 </html>

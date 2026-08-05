@@ -330,9 +330,16 @@
                 });
                 
                 (results || []).forEach(res => {
-                    const ath = (athletes || []).find(a => a.id === res.athleteId);
-                    if (ath && houses[ath.rumah]) {
-                        const h = houses[ath.rumah];
+                    let targetHouse = null;
+                    if (res.athleteId && res.athleteId.startsWith("TEAM_")) {
+                        targetHouse = res.athleteId.split('_')[1];
+                    } else {
+                        const ath = (athletes || []).find(a => a.id === res.athleteId);
+                        if (ath) targetHouse = ath.rumah;
+                    }
+
+                    if (targetHouse && houses[targetHouse]) {
+                        const h = houses[targetHouse];
                         if (res.kedudukan === "1") { h.emas++; h.mata += pointsConfig.emas; }
                         else if (res.kedudukan === "2") { h.perak++; h.mata += pointsConfig.perak; }
                         else if (res.kedudukan === "3") { h.gangsa++; h.mata += pointsConfig.gangsa; }
@@ -363,46 +370,92 @@
             }, [events]);
 
             const calculateBest = (gender, cat) => {
-                if (!cat) return null;
+                if (!cat) return [];
                 const catAthletes = athletes.filter(a => a.jantina === gender && (a.kategori === cat || categoriesMatch(a.kategori, cat)));
                 const stats = catAthletes.map(ath => {
-                    let g=0, s=0, b=0, k=0, pts=0;
+                    let g=0, s=0, b=0, k=0, pts=0, bg=0, bs=0, bb=0;
                     results.forEach(r => {
+                        const ev = events.find(e => e.id === r.eventId);
+                        if (!ev) return;
+                        
+                        let isWinner = false;
                         if (r.athleteId === ath.id) {
-                            const ev = events.find(e => e.id === r.eventId);
-                            if (ev && ev.format === "Individu") {
-                                if(r.kedudukan==="1"){g++; pts+=pointsConfig.emas;}
-                                else if(r.kedudukan==="2"){s++; pts+=pointsConfig.perak;}
-                                else if(r.kedudukan==="3"){b++; pts+=pointsConfig.gangsa;}
-                                else if(r.kedudukan==="4"){k++; pts+=pointsConfig.keempat;}
+                            isWinner = true;
+                        } else if (ev.format === "Berkumpulan" && r.athleteId && r.athleteId.startsWith("TEAM_")) {
+                            const parts = r.athleteId.split('_');
+                            if (ath.rumah === parts[1] && ath.relayData && ath.relayData[ev.id] && ath.relayData[ev.id].pasukan === parts[2]) {
+                                isWinner = true;
                             }
                         }
+
+                        if (isWinner) {
+                            if(r.kedudukan==="1"){g++; pts+=pointsConfig.emas; if(ev.jenis==="Balapan") bg++;}
+                            else if(r.kedudukan==="2"){s++; pts+=pointsConfig.perak; if(ev.jenis==="Balapan") bs++;}
+                            else if(r.kedudukan==="3"){b++; pts+=pointsConfig.gangsa; if(ev.jenis==="Balapan") bb++;}
+                            else if(r.kedudukan==="4"){k++; pts+=pointsConfig.keempat;}
+                        }
                     });
-                    return { ...ath, g, s, b, k, pts };
+                    return { ...ath, g, s, b, k, pts, bg, bs, bb };
+                }).filter(a => (a.g>0||a.s>0||a.b>0||a.pts>0));
+                
+                stats.sort((x,y) => {
+                    if (y.g !== x.g) return y.g - x.g;
+                    if (y.s !== x.s) return y.s - x.s;
+                    if (y.b !== x.b) return y.b - x.b;
+                    if (y.k !== x.k) return y.k - x.k;
+                    if (y.pts !== x.pts) return y.pts - x.pts;
+                    if (y.bg !== x.bg) return y.bg - x.bg;
+                    if (y.bs !== x.bs) return y.bs - x.bs;
+                    if (y.bb !== x.bb) return y.bb - x.bb;
+                    return 0;
                 });
-                const sorted = stats.sort((x,y) => y.g-x.g || y.s-x.s || y.b-x.b || y.k-x.k || y.pts-x.pts);
-                return sorted.find(a => (a.g>0||a.s>0||a.b>0||a.pts>0)) || null;
+                if (stats.length === 0) return [];
+                const top = stats[0];
+                return stats.filter(a => a.g===top.g && a.s===top.s && a.b===top.b && a.k===top.k && a.pts===top.pts && a.bg===top.bg && a.bs===top.bs && a.bb===top.bb);
             };
 
             const calculateOverallBest = (gender) => {
                 const catAthletes = athletes.filter(a => a.jantina === gender);
                 const stats = catAthletes.map(ath => {
-                    let g=0, s=0, b=0, k=0, pts=0;
+                    let g=0, s=0, b=0, k=0, pts=0, bg=0, bs=0, bb=0;
                     results.forEach(r => {
+                        const ev = events.find(e => e.id === r.eventId);
+                        if (!ev) return;
+                        
+                        let isWinner = false;
                         if (r.athleteId === ath.id) {
-                            const ev = events.find(e => e.id === r.eventId);
-                            if (ev && ev.format === "Individu") {
-                                if(r.kedudukan==="1"){g++; pts+=pointsConfig.emas;}
-                                else if(r.kedudukan==="2"){s++; pts+=pointsConfig.perak;}
-                                else if(r.kedudukan==="3"){b++; pts+=pointsConfig.gangsa;}
-                                else if(r.kedudukan==="4"){k++; pts+=pointsConfig.keempat;}
+                            isWinner = true;
+                        } else if (ev.format === "Berkumpulan" && r.athleteId && r.athleteId.startsWith("TEAM_")) {
+                            const parts = r.athleteId.split('_');
+                            if (ath.rumah === parts[1] && ath.relayData && ath.relayData[ev.id] && ath.relayData[ev.id].pasukan === parts[2]) {
+                                isWinner = true;
                             }
                         }
+
+                        if (isWinner) {
+                            if(r.kedudukan==="1"){g++; pts+=pointsConfig.emas; if(ev.jenis==="Balapan") bg++;}
+                            else if(r.kedudukan==="2"){s++; pts+=pointsConfig.perak; if(ev.jenis==="Balapan") bs++;}
+                            else if(r.kedudukan==="3"){b++; pts+=pointsConfig.gangsa; if(ev.jenis==="Balapan") bb++;}
+                            else if(r.kedudukan==="4"){k++; pts+=pointsConfig.keempat;}
+                        }
                     });
-                    return { ...ath, g, s, b, k, pts };
+                    return { ...ath, g, s, b, k, pts, bg, bs, bb };
+                }).filter(a => (a.g>0||a.s>0||a.b>0||a.pts>0));
+
+                stats.sort((x,y) => {
+                    if (y.g !== x.g) return y.g - x.g;
+                    if (y.s !== x.s) return y.s - x.s;
+                    if (y.b !== x.b) return y.b - x.b;
+                    if (y.k !== x.k) return y.k - x.k;
+                    if (y.pts !== x.pts) return y.pts - x.pts;
+                    if (y.bg !== x.bg) return y.bg - x.bg;
+                    if (y.bs !== x.bs) return y.bs - x.bs;
+                    if (y.bb !== x.bb) return y.bb - x.bb;
+                    return 0;
                 });
-                const sorted = stats.sort((x,y) => y.g-x.g || y.s-x.s || y.b-x.b || y.k-x.k || y.pts-x.pts);
-                return sorted.find(a => (a.g>0||a.s>0||a.b>0||a.pts>0)) || null;
+                if (stats.length === 0) return [];
+                const top = stats[0];
+                return stats.filter(a => a.g===top.g && a.s===top.s && a.b===top.b && a.k===top.k && a.pts===top.pts && a.bg===top.bg && a.bs===top.bs && a.bb===top.bb);
             };
 
             const bestAthletesCalc = useMemo(() => {
@@ -495,14 +548,26 @@
                         if (evResults.length === 0) return '';
                         
                         const rows = evResults.map(res => {
-                            const ath = athletes.find(a => a.id === res.athleteId);
+                            let namaPemenang = "-";
+                            let rumahPemenang = "-";
+                            if (res.athleteId && res.athleteId.startsWith("TEAM_")) {
+                                const parts = res.athleteId.split('_');
+                                namaPemenang = `PASUKAN ${parts[2]}`;
+                                rumahPemenang = parts[1];
+                            } else {
+                                const ath = athletes.find(a => a.id === res.athleteId);
+                                if (ath) {
+                                    namaPemenang = ath.nama;
+                                    rumahPemenang = ath.rumah;
+                                }
+                            }
                             const medal = res.kedudukan === "1" ? "EMAS" : res.kedudukan === "2" ? "PERAK" : res.kedudukan === "3" ? "GANGSA" : "KE-4";
                             return `
                                 <tr>
                                     <td style="border: 1px solid #cbd5e1; padding: 6px; text-align: center; font-weight: bold;">${res.kedudukan}</td>
                                     <td style="border: 1px solid #cbd5e1; padding: 6px; font-weight: bold;">${medal}</td>
-                                    <td style="border: 1px solid #cbd5e1; padding: 6px; text-transform: uppercase;">${ath ? ath.nama : "-"}</td>
-                                    <td style="border: 1px solid #cbd5e1; padding: 6px; text-align: center;">Rumah ${ath ? ath.rumah : "-"}</td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 6px; text-transform: uppercase;">${namaPemenang}</td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 6px; text-align: center;">Rumah ${rumahPemenang}</td>
                                     <td style="border: 1px solid #cbd5e1; padding: 6px; text-align: center; font-family: monospace;">${res.catatan || "-"}</td>
                                 </tr>
                             `;
@@ -930,7 +995,19 @@
                         </div>
                     `;
                 } else if (mode === 'sijil') {
-                    const athResults = results.filter(r => r.athleteId === targetData.id && ["1","2","3"].includes(r.kedudukan));
+                    const athResults = results.filter(r => {
+                        if (r.athleteId === targetData.id) return true;
+                        if (r.athleteId && r.athleteId.startsWith("TEAM_")) {
+                            const ev = events.find(e => e.id === r.eventId);
+                            if (ev && ev.format === "Berkumpulan") {
+                                const parts = r.athleteId.split('_');
+                                if (targetData.rumah === parts[1] && targetData.relayData && targetData.relayData[ev.id] && targetData.relayData[ev.id].pasukan === parts[2]) {
+                                    return true;
+                                }
+                            }
+                        }
+                        return false;
+                    }).filter(r => ["1","2","3"].includes(r.kedudukan));
                     const hasWon = athResults.length > 0;
                     const certTitle = hasWon ? "SIJIL PENCAPAIAN" : "SIJIL PENGHARGAAN";
                     
@@ -1454,7 +1531,25 @@
                                                 </select>
                                                 <select required value={resultForm.athleteId} onChange={e => setResultForm({...resultForm, athleteId:e.target.value})} className="w-full border p-2 rounded-xl bg-slate-50 uppercase">
                                                     <option value="">-- Pilih Pemenang Dari Senarai --</option>
-                                                    {athletes.filter(a => a.acaraIds && a.acaraIds.includes(resultForm.eventId)).map(a => <option key={a.id} value={a.id}>{a.nama} (Rumah {a.rumah})</option>)}
+                                                    {(() => {
+                                                        const ev = events.find(e => e.id === resultForm.eventId);
+                                                        if (ev && ev.format === "Berkumpulan") {
+                                                            const evAthletes = athletes.filter(a => a.acaraIds && a.acaraIds.includes(resultForm.eventId));
+                                                            const teams = {};
+                                                            evAthletes.forEach(a => {
+                                                                const rData = (a.relayData && a.relayData[resultForm.eventId]) || { pasukan: "A" };
+                                                                const tKey = `${a.rumah}_${rData.pasukan}`;
+                                                                if (!teams[tKey]) teams[tKey] = { rumah: a.rumah, pasukan: rData.pasukan };
+                                                            });
+                                                            return Object.values(teams).sort((a,b)=>a.rumah.localeCompare(b.rumah)).map(t => (
+                                                                <option key={`${t.rumah}_${t.pasukan}`} value={`TEAM_${t.rumah}_${t.pasukan}`}>Rumah {t.rumah} (Pasukan {t.pasukan})</option>
+                                                            ));
+                                                        } else {
+                                                            return athletes.filter(a => a.acaraIds && a.acaraIds.includes(resultForm.eventId)).map(a => (
+                                                                <option key={a.id} value={a.id}>{a.nama} (Rumah {a.rumah})</option>
+                                                            ));
+                                                        }
+                                                    })()}
                                                 </select>
                                                 <input type="text" value={resultForm.catatan} onChange={e => setResultForm({...resultForm, catatan:e.target.value})} placeholder="Catatan Masa/Jarak (Contoh: 10.5s atau 5.2m)" className="w-full border p-2 rounded-xl bg-slate-50" />
                                                 <button type="submit" disabled={!resultForm.eventId} className="w-full bg-slate-800 hover:bg-slate-900 text-white py-2.5 rounded-xl transition disabled:bg-slate-300 disabled:cursor-not-allowed shadow-md">Simpan Keputusan Rasmi</button>
@@ -1467,11 +1562,23 @@
                                         <div className="space-y-2 text-xs">
                                             {results.filter(r => r.eventId === resultForm.eventId).length === 0 ? <p className="text-slate-400 italic bg-slate-50 p-3 rounded-xl text-center">Sila pilih acara dan simpan pemenang untuk memaparkan senarai.</p> : 
                                                 results.filter(r => r.eventId === resultForm.eventId).sort((a,b)=>parseInt(a.kedudukan)-parseInt(b.kedudukan)).map(res => {
-                                                    const ath = athletes.find(a => a.id === res.athleteId);
+                                                    let nameDisplay = "-";
+                                                    let houseDisplay = "-";
+                                                    if (res.athleteId && res.athleteId.startsWith("TEAM_")) {
+                                                        const parts = res.athleteId.split('_');
+                                                        nameDisplay = `PASUKAN ${parts[2]}`;
+                                                        houseDisplay = parts[1];
+                                                    } else {
+                                                        const ath = athletes.find(a => a.id === res.athleteId);
+                                                        if (ath) {
+                                                            nameDisplay = ath.nama;
+                                                            houseDisplay = ath.rumah;
+                                                        }
+                                                    }
                                                     const med = res.kedudukan === "1" ? "🥇" : res.kedudukan === "2" ? "🥈" : res.kedudukan === "3" ? "🥉" : "🏅";
                                                     return (
                                                         <div key={res.id} className="bg-slate-50 p-3 rounded-xl border flex justify-between items-center font-bold shadow-sm hover:shadow transition">
-                                                            <span className="uppercase">{med} Ked. {res.kedudukan}: <span className="text-slate-900">{ath?ath.nama:"-"}</span> <span className="text-[10px] text-slate-500">(Rumah {ath?ath.rumah:"-"})</span></span>
+                                                            <span className="uppercase">{med} Ked. {res.kedudukan}: <span className="text-slate-900">{nameDisplay}</span> <span className="text-[10px] text-slate-500">(Rumah {houseDisplay})</span></span>
                                                             <div className="flex gap-3 items-center">
                                                                 <span className="font-mono bg-white border px-2 py-1 rounded text-[10px]">{res.catatan||"N/A"}</span>
                                                                 {userRole !== "pelawat" && <button onClick={() => {
@@ -1596,7 +1703,15 @@
                                             let mEvent = true;
                                             if (certEventFilter !== "Semua") {
                                                 const reg = a.acaraIds && a.acaraIds.includes(certEventFilter);
-                                                const won = (results || []).some(r => r.athleteId === a.id && r.eventId === certEventFilter);
+                                                const won = (results || []).some(r => {
+                                                    if (r.eventId !== certEventFilter) return false;
+                                                    if (r.athleteId === a.id) return true;
+                                                    if (r.athleteId && r.athleteId.startsWith("TEAM_")) {
+                                                        const parts = r.athleteId.split('_');
+                                                        if (a.rumah === parts[1] && a.relayData && a.relayData[certEventFilter] && a.relayData[certEventFilter].pasukan === parts[2]) return true;
+                                                    }
+                                                    return false;
+                                                });
                                                 mEvent = reg || won;
                                             }
                                             return mSearch && mHouse && mEvent;
@@ -1612,7 +1727,15 @@
                                             let mEvent = true;
                                             if (certEventFilter !== "Semua") {
                                                 const reg = a.acaraIds && a.acaraIds.includes(certEventFilter);
-                                                const won = (results || []).some(r => r.athleteId === a.id && r.eventId === certEventFilter);
+                                                const won = (results || []).some(r => {
+                                                    if (r.eventId !== certEventFilter) return false;
+                                                    if (r.athleteId === a.id) return true;
+                                                    if (r.athleteId && r.athleteId.startsWith("TEAM_")) {
+                                                        const parts = r.athleteId.split('_');
+                                                        if (a.rumah === parts[1] && a.relayData && a.relayData[certEventFilter] && a.relayData[certEventFilter].pasukan === parts[2]) return true;
+                                                    }
+                                                    return false;
+                                                });
                                                 mEvent = reg || won;
                                             }
                                             return mSearch && mHouse && mEvent;

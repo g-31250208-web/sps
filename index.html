@@ -1179,8 +1179,9 @@
 
             const handleAthleteSubmit = async (e) => {
                 e.preventDefault(); if (!checkAuth()) return;
+                if (!athleteForm.nama || athleteForm.nama.trim() === "") { showToastMessage("Sila pastikan ruangan nama tidak kosong.", "error"); return; }
                 const id = athleteForm.id || "A_" + Date.now();
-                const athData = { ...athleteForm, id, nama: athleteForm.nama.toUpperCase() };
+                const athData = { ...athleteForm, id, nama: athleteForm.nama.trim().toUpperCase() };
                 if (isCloudActive && db) await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('athletes').doc(id).set(athData);
                 else setAthletes(prev => isEditingAthlete ? prev.map(x => x.id === id ? athData : x) : [...prev, athData]);
                 setIsAddAthleteSidebarOpen(false); showToastMessage("Atlet disimpan!");
@@ -1197,7 +1198,7 @@
 
                 for (const line of lines) {
                     const parts = line.split(/[,|\t]/).map(p => p.trim());
-                    if (parts.length >= 1) {
+                    if (parts.length >= 1 && parts[0] !== "") {
                         const nama = parts[0].toUpperCase();
                         const kelas = parts[1] ? parts[1].toUpperCase() : "6 AMANAH";
                         const rawJantina = parts[2] ? parts[2].toLowerCase() : "lelaki";
@@ -1800,6 +1801,7 @@
                                     </div>
                                     <div className="max-h-72 overflow-y-auto space-y-2 pr-2">
                                         {athletes.filter(a => {
+                                            if (!a.nama || a.nama.trim() === "") return false;
                                             const mSearch = !certSearchQuery || (a.nama||"").toLowerCase().includes(certSearchQuery.toLowerCase());
                                             const mHouse = certHouseFilter === "Semua" || a.rumah === certHouseFilter;
                                             let mEvent = true;
@@ -1827,6 +1829,7 @@
                                             </div>
                                         ))}
                                         {athletes.filter(a => {
+                                            if (!a.nama || a.nama.trim() === "") return false;
                                             const mSearch = !certSearchQuery || (a.nama||"").toLowerCase().includes(certSearchQuery.toLowerCase());
                                             const mHouse = certHouseFilter === "Semua" || a.rumah === certHouseFilter;
                                             let mEvent = true;

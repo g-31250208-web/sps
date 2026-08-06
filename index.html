@@ -1444,42 +1444,49 @@
                         {}
                         {activeTab === "acara" && userRole !== "pelawat" && (
                             <div className="space-y-6">
-                                <div className="bg-white p-4 border rounded-2xl flex justify-between items-center shadow-sm">
+                                <div className="bg-white p-4 border rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-sm">
                                     <div><h3 className="font-bold">Pengurusan Acara Sukan</h3><p className="text-xs text-slate-400">Tetapan Format Individu / Berkumpulan (Relay) & Penjanaan Borang.</p></div>
-                                    <div className="flex gap-2">
-                                        <select value={selectedEventDate} onChange={e => setSelectedEventDate(e.target.value)} className="border p-2 rounded-xl text-xs font-bold bg-slate-50">
+                                    <div className="flex flex-wrap w-full md:w-auto gap-2">
+                                        <select value={selectedEventDate} onChange={e => setSelectedEventDate(e.target.value)} className="flex-1 border p-2 rounded-xl text-xs font-bold bg-slate-50">
                                             <option value="Semua">Semua Hari</option>
                                             {uniqueEventDates.map(d => <option key={d} value={d}>{formatDateToDMY(d)}</option>)}
                                         </select>
-                                        <button onClick={() => { setEventForm({ id:"", noAcara:"", nama:"", kategori:categories[0], jenis:"Balapan", format:"Individu", tarikh:"", masa:"" }); setIsEditingEvent(false); setIsEventSidebarOpen(true); }} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-xs font-bold shadow transition">+ Daftar Acara</button>
+                                        <button onClick={() => { setEventForm({ id:"", noAcara:"", nama:"", kategori:categories[0], jenis:"Balapan", format:"Individu", tarikh:"", masa:"" }); setIsEditingEvent(false); setIsEventSidebarOpen(true); }} className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-xs font-bold shadow transition whitespace-nowrap">+ Daftar Acara</button>
                                     </div>
                                 </div>
-                                <div className="bg-white border rounded-2xl p-5 space-y-3 shadow-sm">
+                                <div className="bg-white border rounded-2xl p-4 sm:p-5 space-y-4 shadow-sm">
                                     {eventsWithCode.filter(e => selectedEventDate === "Semua" || e.tarikh === selectedEventDate).map(ev => (
-                                        <div key={ev.id} className="bg-slate-50 hover:bg-slate-100 transition border p-3 rounded-xl flex justify-between items-center text-xs">
-                                            <div className="flex gap-3 items-center">
-                                                <span className="bg-indigo-600 text-white px-2.5 py-1.5 rounded-lg font-mono font-bold shadow-sm">{ev.kodAcara}</span>
-                                                <div><h4 className="font-extrabold uppercase text-sm text-slate-900">{ev.nama} {ev.kategori}</h4><span className="text-slate-500 font-semibold">{ev.jenis} • <span className={ev.format==="Berkumpulan"?"text-purple-600 font-bold bg-purple-100 px-1 rounded":""}>{ev.format}</span></span></div>
+                                        <div key={ev.id} className="bg-slate-50 hover:bg-slate-100 transition border p-4 rounded-xl flex flex-col lg:flex-row justify-between items-start lg:items-center text-xs gap-4">
+                                            <div className="flex gap-3 items-center w-full lg:w-auto">
+                                                <span className="bg-indigo-600 text-white px-3 py-2 rounded-lg font-mono font-bold shadow-sm">{ev.kodAcara}</span>
+                                                <div className="flex-1">
+                                                    <h4 className="font-extrabold uppercase text-sm text-slate-900 leading-tight">{ev.nama} <span className="text-indigo-600">{ev.kategori}</span></h4>
+                                                    <div className="text-slate-500 font-semibold mt-1 flex items-center gap-1.5 flex-wrap">
+                                                        <span>{ev.jenis}</span>
+                                                        <span className="text-[10px]">•</span>
+                                                        <span className={ev.format==="Berkumpulan"?"text-purple-600 font-bold bg-purple-100 px-1.5 py-0.5 rounded":""}>{ev.format}</span>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div className="flex flex-col items-end gap-2">
-                                                <div className="flex gap-3 items-center font-bold">
-                                                    <span className="text-slate-400 bg-white border px-2 py-0.5 rounded-lg shadow-sm">📅 {formatDateToDMY(ev.tarikh)} {ev.masa}</span>
+                                            <div className="flex flex-col lg:items-end gap-3 w-full lg:w-auto pt-3 lg:pt-0 border-t border-slate-200 lg:border-0">
+                                                <div className="flex flex-wrap justify-between lg:justify-end items-center gap-3 w-full">
+                                                    <span className="text-slate-500 bg-white border px-2.5 py-1 rounded-lg shadow-sm whitespace-nowrap text-[10px]">📅 {formatDateToDMY(ev.tarikh)} {ev.masa}</span>
                                                     <div className="flex gap-2">
-                                                        <button onClick={() => { setEventForm(ev); setIsEditingEvent(true); setIsEventSidebarOpen(true); }} className="text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition shadow-sm">Edit</button>
+                                                        <button onClick={() => { setEventForm(ev); setIsEditingEvent(true); setIsEventSidebarOpen(true); }} className="text-blue-600 bg-blue-50 hover:bg-blue-100 px-4 py-1.5 rounded-lg transition shadow-sm font-bold">Edit</button>
                                                         <button onClick={() => {
                                                             if(isCloudActive&&db) db.collection('artifacts').doc(appId).collection('public').doc('data').collection('events').doc(ev.id).delete();
                                                             else setEvents(events.filter(x => x.id !== ev.id));
-                                                        }} className="text-red-600 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg transition shadow-sm">Padam</button>
+                                                        }} className="text-red-600 bg-red-50 hover:bg-red-100 px-4 py-1.5 rounded-lg transition shadow-sm font-bold">Padam</button>
                                                     </div>
                                                 </div>
-                                                <div className="flex gap-1.5 mt-1">
-                                                    <button onClick={() => executeBypassPrint('marshall', ev)} className="bg-white hover:bg-slate-100 text-indigo-700 border border-indigo-200 py-1.5 px-3 rounded-lg flex items-center justify-center gap-1 font-bold text-[11px] shadow-sm transition">🖨️ Cetak Marshall</button>
-                                                    {ev.jenis === "Balapan" && <button onClick={() => executeBypassPrint('hakim_penamat', ev)} className="bg-white hover:bg-slate-100 text-rose-700 border border-rose-200 py-1.5 px-3 rounded-lg flex items-center justify-center gap-1 font-bold text-[11px] shadow-sm transition">🖨️ Hakim Penamat</button>}
+                                                <div className="flex flex-wrap gap-2 w-full lg:justify-end">
+                                                    <button onClick={() => executeBypassPrint('marshall', ev)} className="flex-1 sm:flex-none bg-white hover:bg-slate-100 text-indigo-700 border border-indigo-200 py-1.5 px-3 rounded-lg flex items-center justify-center gap-1 font-bold text-[11px] shadow-sm transition whitespace-nowrap">🖨️ Cetak Marshall</button>
+                                                    {ev.jenis === "Balapan" && <button onClick={() => executeBypassPrint('hakim_penamat', ev)} className="flex-1 sm:flex-none bg-white hover:bg-slate-100 text-rose-700 border border-rose-200 py-1.5 px-3 rounded-lg flex items-center justify-center gap-1 font-bold text-[11px] shadow-sm transition whitespace-nowrap">🖨️ Hakim Penamat</button>}
                                                     {ev.jenis === "Padang" && (
-                                                        <div className="flex gap-1.5">
-                                                            <button onClick={() => executeBypassPrint('hakim_padang', ev)} className="bg-white hover:bg-slate-100 text-emerald-700 border border-emerald-200 py-1.5 px-3 rounded-lg flex items-center justify-center gap-1 font-bold text-[11px] shadow-sm transition">🖨️ Borang Am Padang</button>
+                                                        <div className="flex flex-wrap gap-2 flex-1 sm:flex-none">
+                                                            <button onClick={() => executeBypassPrint('hakim_padang', ev)} className="flex-1 sm:flex-none bg-white hover:bg-slate-100 text-emerald-700 border border-emerald-200 py-1.5 px-3 rounded-lg flex items-center justify-center gap-1 font-bold text-[11px] shadow-sm transition whitespace-nowrap">🖨️ Borang Padang</button>
                                                             {(ev.nama || "").toUpperCase().includes("LOMPAT TINGGI") && (
-                                                                <button onClick={() => executeBypassPrint('hakim_lompat_tinggi', ev)} className="bg-white hover:bg-slate-100 text-teal-700 border border-teal-200 py-1.5 px-3 rounded-lg flex items-center justify-center gap-1 font-bold text-[11px] shadow-sm transition">🖨️ Borang L.Tinggi</button>
+                                                                <button onClick={() => executeBypassPrint('hakim_lompat_tinggi', ev)} className="flex-1 sm:flex-none bg-white hover:bg-slate-100 text-teal-700 border border-teal-200 py-1.5 px-3 rounded-lg flex items-center justify-center gap-1 font-bold text-[11px] shadow-sm transition whitespace-nowrap">🖨️ L.Tinggi</button>
                                                             )}
                                                         </div>
                                                     )}

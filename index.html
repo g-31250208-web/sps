@@ -202,6 +202,8 @@
             const [bestAthleteMaleCat, setBestAthleteMaleCat] = useState("");
             const [bestAthleteFemaleCat, setBestAthleteFemaleCat] = useState("");
             const [athleteHouseFilter, setAthleteHouseFilter] = useState("Semua");
+            const [bestMaleResults, setBestMaleResults] = useState([]);
+            const [bestFemaleResults, setBestFemaleResults] = useState([]);
 
             const [recordForm, setRecordForm] = useState({id:"", acara:"", kategori:categories[0]||"L12TKB", catatan:"", nama:"", tahun:activeYear});
             const [showRecordForm, setShowRecordForm] = useState(false);
@@ -414,62 +416,6 @@
                 return stats.filter(a => a.g===top.g && a.s===top.s && a.b===top.b && a.k===top.k && a.pts===top.pts && a.bg===top.bg && a.bs===top.bs && a.bb===top.bb);
             };
 
-            const calculateOverallBest = (gender) => {
-                const catAthletes = athletes.filter(a => a.jantina === gender);
-                const stats = catAthletes.map(ath => {
-                    let g=0, s=0, b=0, k=0, pts=0, bg=0, bs=0, bb=0;
-                    results.forEach(r => {
-                        const ev = events.find(e => e.id === r.eventId);
-                        if (!ev) return;
-                        
-                        let isWinner = false;
-                        if (r.athleteId === ath.id) {
-                            isWinner = true;
-                        } else if (ev.format === "Berkumpulan" && r.athleteId && r.athleteId.startsWith("TEAM_")) {
-                            const parts = r.athleteId.split('_');
-                            if (ath.rumah === parts[1] && ath.relayData && ath.relayData[ev.id] && ath.relayData[ev.id].pasukan === parts[2]) {
-                                isWinner = true;
-                            }
-                        }
-
-                        if (isWinner) {
-                            if(r.kedudukan==="1"){g++; pts+=pointsConfig.emas; if(ev.jenis==="Balapan") bg++;}
-                            else if(r.kedudukan==="2"){s++; pts+=pointsConfig.perak; if(ev.jenis==="Balapan") bs++;}
-                            else if(r.kedudukan==="3"){b++; pts+=pointsConfig.gangsa; if(ev.jenis==="Balapan") bb++;}
-                            else if(r.kedudukan==="4"){k++; pts+=pointsConfig.keempat;}
-                        }
-                    });
-                    return { ...ath, g, s, b, k, pts, bg, bs, bb };
-                }).filter(a => (a.g>0||a.s>0||a.b>0||a.pts>0));
-
-                stats.sort((x,y) => {
-                    if (y.g !== x.g) return y.g - x.g;
-                    if (y.s !== x.s) return y.s - x.s;
-                    if (y.b !== x.b) return y.b - x.b;
-                    if (y.k !== x.k) return y.k - x.k;
-                    if (y.pts !== x.pts) return y.pts - x.pts;
-                    if (y.bg !== x.bg) return y.bg - x.bg;
-                    if (y.bs !== x.bs) return y.bs - x.bs;
-                    if (y.bb !== x.bb) return y.bb - x.bb;
-                    return 0;
-                });
-                if (stats.length === 0) return [];
-                const top = stats[0];
-                return stats.filter(a => a.g===top.g && a.s===top.s && a.b===top.b && a.k===top.k && a.pts===top.pts && a.bg===top.bg && a.bs===top.bs && a.bb===top.bb);
-            };
-
-            const bestAthletesCalc = useMemo(() => {
-                const getBest = (gender, cat) => {
-                    if (!cat) return null;
-                    if (cat === "Keseluruhan") return calculateOverallBest(gender);
-                    return calculateBest(gender, cat);
-                };
-                return { 
-                    male: getBest("Lelaki", bestAthleteMaleCat), 
-                    female: getBest("Perempuan", bestAthleteFemaleCat) 
-                };
-            }, [athletes, results, events, bestAthleteMaleCat, bestAthleteFemaleCat, pointsConfig]);
-
             const uniqueEventDates = Array.from(new Set(events.map(e => e.tarikh).filter(Boolean))).sort();
 
             const handleBackup = () => {
@@ -624,8 +570,10 @@
                     const totalPerempuan = athletes.filter(a => a.jantina === "Perempuan").length;
                     const totalAthletes = athletes.length;
 
-                    const ovLelaki = calculateOverallBest("Lelaki");
-                    const ovPerempuan = calculateOverallBest("Perempuan");
+                    const ovLelakiArr = calculateOverallBest("Lelaki");
+                    const ovPerempuanArr = calculateOverallBest("Perempuan");
+                    const ovLelaki = ovLelakiArr.length > 0 ? ovLelakiArr[0] : null;
+                    const ovPerempuan = ovPerempuanArr.length > 0 ? ovPerempuanArr[0] : null;
                     
                     const houseRows = houseStandings.map((h, i) => `
                         <tr>
@@ -1610,42 +1558,68 @@
                                             <div className="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 p-4 rounded-2xl shadow-sm relative overflow-hidden">
                                                 <div className="absolute top-0 right-0 p-2 opacity-20 text-4xl">👨‍👦</div>
                                                 <div className="flex justify-between items-center mb-3">
-                                                    <p className="text-[10px] font-black text-blue-800 uppercase tracking-wider">Olahragawan (Lelaki)</p>
-                                                    <select value={bestAthleteMaleCat} onChange={e=>setBestAthleteMaleCat(e.target.value)} className="border border-blue-200 p-1 rounded-lg text-[10px] font-bold bg-white outline-none focus:ring-1 focus:ring-blue-500 z-10 relative">
-                                                        <option value="">-- Kategori --</option>
-                                                        <option value="Keseluruhan">Keseluruhan</option>
-                                                        {categories.filter(c => !c.toUpperCase().startsWith('P')).map(c => <option key={c} value={c}>{c}</option>)}
-                                                    </select>
-                                                </div>
-                                                {bestAthleteMaleCat && bestAthletesCalc.male ? (
-                                                    <div className="relative z-10">
-                                                        <p className="font-black text-sm uppercase text-slate-900 leading-tight">{bestAthletesCalc.male.nama}</p>
-                                                        <p className="text-[11px] font-semibold text-slate-700 mt-1">Rumah {bestAthletesCalc.male.rumah}</p>
-                                                        <div className="mt-3 flex gap-2 text-xs font-bold bg-white/60 p-2 rounded-lg border border-white/50 w-fit">
-                                                            <span>🥇{bestAthletesCalc.male.g}</span><span>🥈{bestAthletesCalc.male.s}</span><span>🥉{bestAthletesCalc.male.b}</span><span className="ml-1 text-indigo-700">Pts:{bestAthletesCalc.male.pts}</span>
-                                                        </div>
+                                                    <p className="text-[10px] font-black text-blue-800 uppercase tracking-wider">Olahragawan</p>
+                                                    <div className="flex gap-1 z-10 relative">
+                                                        <select value={bestAthleteMaleCat} onChange={e=>setBestAthleteMaleCat(e.target.value)} className="border border-blue-200 p-1 rounded-lg text-[10px] font-bold bg-white outline-none focus:ring-1 focus:ring-blue-500">
+                                                            <option value="">-- Kategori --</option>
+                                                            <option value="Keseluruhan">Keseluruhan</option>
+                                                            {categories.filter(c => !c.toUpperCase().startsWith('P')).map(c => <option key={c} value={c}>{c}</option>)}
+                                                        </select>
+                                                        <button onClick={()=>{
+                                                            if(!bestAthleteMaleCat) { setBestMaleResults([]); return; }
+                                                            setBestMaleResults(bestAthleteMaleCat === "Keseluruhan" ? calculateOverallBest("Lelaki") : calculateBest("Lelaki", bestAthleteMaleCat));
+                                                        }} className="bg-blue-600 hover:bg-blue-700 text-white px-2.5 py-1 rounded-lg text-[10px] font-bold shadow-sm transition">Cari</button>
                                                     </div>
-                                                ) : <p className="text-xs text-slate-500 italic bg-white/50 p-2 rounded font-semibold mt-2 relative z-10">{!bestAthleteMaleCat ? "Sila pilih kategori." : "Belum ada pungutan pingat."}</p>}
+                                                </div>
+                                                {bestMaleResults && bestMaleResults.length > 0 ? (
+                                                    <div className="relative z-10 space-y-2 max-h-[200px] overflow-y-auto pr-1">
+                                                        {bestMaleResults.map(ath => (
+                                                            <div key={ath.id} className="bg-white/60 p-2.5 rounded-xl border border-white/50 shadow-sm">
+                                                                <p className="font-black text-sm uppercase text-slate-900 leading-tight">{ath.nama}</p>
+                                                                <p className="text-[10px] font-bold text-slate-600 mt-0.5">Rumah {ath.rumah} | Kelas {ath.kelas}</p>
+                                                                <div className="mt-2 flex gap-2 text-[10px] font-bold">
+                                                                    <span className="bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded">🥇 {ath.g}</span>
+                                                                    <span className="bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded">🥈 {ath.s}</span>
+                                                                    <span className="bg-orange-100 text-orange-800 px-1.5 py-0.5 rounded">🥉 {ath.b}</span>
+                                                                    <span className="ml-auto bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded font-black">Pts: {ath.pts}</span>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                ) : <p className="text-xs text-slate-500 italic bg-white/50 p-2 rounded font-semibold mt-2 relative z-10">{!bestAthleteMaleCat ? "Pilih kategori & tekan Cari." : "Belum ada rekod / Tiada pemenang."}</p>}
                                             </div>
                                             <div className="bg-gradient-to-br from-pink-50 to-pink-100 border border-pink-200 p-4 rounded-2xl shadow-sm relative overflow-hidden">
                                                 <div className="absolute top-0 right-0 p-2 opacity-20 text-4xl">👩‍👧</div>
                                                 <div className="flex justify-between items-center mb-3">
-                                                    <p className="text-[10px] font-black text-pink-800 uppercase tracking-wider">Olahragawati (Perempuan)</p>
-                                                    <select value={bestAthleteFemaleCat} onChange={e=>setBestAthleteFemaleCat(e.target.value)} className="border border-pink-200 p-1 rounded-lg text-[10px] font-bold bg-white outline-none focus:ring-1 focus:ring-pink-500 z-10 relative">
-                                                        <option value="">-- Kategori --</option>
-                                                        <option value="Keseluruhan">Keseluruhan</option>
-                                                        {categories.filter(c => !c.toUpperCase().startsWith('L')).map(c => <option key={c} value={c}>{c}</option>)}
-                                                    </select>
-                                                </div>
-                                                {bestAthleteFemaleCat && bestAthletesCalc.female ? (
-                                                    <div className="relative z-10">
-                                                        <p className="font-black text-sm uppercase text-slate-900 leading-tight">{bestAthletesCalc.female.nama}</p>
-                                                        <p className="text-[11px] font-semibold text-slate-700 mt-1">Rumah {bestAthletesCalc.female.rumah}</p>
-                                                        <div className="mt-3 flex gap-2 text-xs font-bold bg-white/60 p-2 rounded-lg border border-white/50 w-fit">
-                                                            <span>🥇{bestAthletesCalc.female.g}</span><span>🥈{bestAthletesCalc.female.s}</span><span>🥉{bestAthletesCalc.female.b}</span><span className="ml-1 text-pink-700">Pts:{bestAthletesCalc.female.pts}</span>
-                                                        </div>
+                                                    <p className="text-[10px] font-black text-pink-800 uppercase tracking-wider">Olahragawati</p>
+                                                    <div className="flex gap-1 z-10 relative">
+                                                        <select value={bestAthleteFemaleCat} onChange={e=>setBestAthleteFemaleCat(e.target.value)} className="border border-pink-200 p-1 rounded-lg text-[10px] font-bold bg-white outline-none focus:ring-1 focus:ring-pink-500">
+                                                            <option value="">-- Kategori --</option>
+                                                            <option value="Keseluruhan">Keseluruhan</option>
+                                                            {categories.filter(c => !c.toUpperCase().startsWith('L')).map(c => <option key={c} value={c}>{c}</option>)}
+                                                        </select>
+                                                        <button onClick={()=>{
+                                                            if(!bestAthleteFemaleCat) { setBestFemaleResults([]); return; }
+                                                            setBestFemaleResults(bestAthleteFemaleCat === "Keseluruhan" ? calculateOverallBest("Perempuan") : calculateBest("Perempuan", bestAthleteFemaleCat));
+                                                        }} className="bg-pink-600 hover:bg-pink-700 text-white px-2.5 py-1 rounded-lg text-[10px] font-bold shadow-sm transition">Cari</button>
                                                     </div>
-                                                ) : <p className="text-xs text-slate-500 italic bg-white/50 p-2 rounded font-semibold mt-2 relative z-10">{!bestAthleteFemaleCat ? "Sila pilih kategori." : "Belum ada pungutan pingat."}</p>}
+                                                </div>
+                                                {bestFemaleResults && bestFemaleResults.length > 0 ? (
+                                                    <div className="relative z-10 space-y-2 max-h-[200px] overflow-y-auto pr-1">
+                                                        {bestFemaleResults.map(ath => (
+                                                            <div key={ath.id} className="bg-white/60 p-2.5 rounded-xl border border-white/50 shadow-sm">
+                                                                <p className="font-black text-sm uppercase text-slate-900 leading-tight">{ath.nama}</p>
+                                                                <p className="text-[10px] font-bold text-slate-600 mt-0.5">Rumah {ath.rumah} | Kelas {ath.kelas}</p>
+                                                                <div className="mt-2 flex gap-2 text-[10px] font-bold">
+                                                                    <span className="bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded">🥇 {ath.g}</span>
+                                                                    <span className="bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded">🥈 {ath.s}</span>
+                                                                    <span className="bg-orange-100 text-orange-800 px-1.5 py-0.5 rounded">🥉 {ath.b}</span>
+                                                                    <span className="ml-auto bg-pink-100 text-pink-800 px-1.5 py-0.5 rounded font-black">Pts: {ath.pts}</span>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                ) : <p className="text-xs text-slate-500 italic bg-white/50 p-2 rounded font-semibold mt-2 relative z-10">{!bestAthleteFemaleCat ? "Pilih kategori & tekan Cari." : "Belum ada rekod / Tiada pemenang."}</p>}
                                             </div>
                                         </div>
                                     </div>

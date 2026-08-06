@@ -1986,7 +1986,12 @@
                                                                         setSelectedEventIds(selectedEventIds.filter(id=>id!==ev.id));
                                                                         const newRelayData = {...selectedRelayData}; delete newRelayData[ev.id];
                                                                         setSelectedRelayData(newRelayData);
-                                                                    } else { setSelectedEventIds([...selectedEventIds, ev.id]); }
+                                                                    } else { 
+                                                                        setSelectedEventIds([...selectedEventIds, ev.id]); 
+                                                                        if (ev.format === 'Berkumpulan') {
+                                                                            setSelectedRelayData(prev => ({ ...prev, [ev.id]: { pasukan: "A", pelari: "1" } }));
+                                                                        }
+                                                                    }
                                                                 }} />
                                                                 <div className="flex-1">
                                                                     <p className="font-bold text-slate-800 leading-tight">[{ev.kodAcara}] {ev.nama}</p>

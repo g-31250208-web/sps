@@ -1276,7 +1276,7 @@
                                     <div className="relative inline-block" ref={adminMenuRef}>
                                         <button onClick={() => setIsAdminMenuOpen(!isAdminMenuOpen)} className="bg-yellow-500 hover:bg-yellow-600 text-slate-950 font-black px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 shadow-sm">🛠️ PANEL PENTADBIR</button>
                                         {isAdminMenuOpen && (
-                                            <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-2xl border py-2 text-slate-800 z-[9999]">
+                                            <div className="absolute left-1/2 -translate-x-1/2 sm:left-auto sm:translate-x-0 sm:right-0 mt-2 w-64 max-w-[95vw] bg-white rounded-2xl shadow-2xl border py-2 text-slate-800 z-[9999]">
                                                 <button onClick={() => { setShowDiagModal(true); setIsAdminMenuOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-semibold">ℹ️ Info Diag</button>
                                                 <button onClick={() => { setShowAdminManagerModal(true); setIsAdminMenuOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-semibold">👥 Pengurusan Admin Tambahan</button>
                                                 <button onClick={() => { setShowPointsModal(true); setIsAdminMenuOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-semibold">⚙️ Tetapan Kategori & Mata</button>

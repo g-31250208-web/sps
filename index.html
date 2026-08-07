@@ -1118,8 +1118,36 @@
                 setPreviewContent(`
                     <!DOCTYPE html>
                     <html lang="ms">
-                    <head><style>body{background:#fff; padding:${isLandscape ? '10mm' : '15mm'}; font-family:sans-serif;} @media print{body{padding:0; margin:0; background: white;} @page{ size: A4 ${isLandscape ? 'landscape' : 'portrait'}; margin: ${isLandscape ? '10mm' : '10mm'}; }}</style></head>
-                    <body>${printContent}</body>
+                    <head>
+                        <meta name="viewport" content="width=${isLandscape ? 1123 : 794}">
+                        <style>
+                            /* Menetapkan saiz kekal A4 supaya pratonton tepat 1:1 dengan hasil cetakan */
+                            html, body { background: #cbd5e1; margin: 0; padding: 0; font-family: sans-serif; }
+                            .preview-container { padding: 20px; display: flex; justify-content: center; min-width: max-content; }
+                            .a4-page {
+                                background: white;
+                                width: ${isLandscape ? '1123px' : '794px'};
+                                min-height: ${isLandscape ? '794px' : '1123px'};
+                                box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+                                box-sizing: border-box;
+                                padding: ${isLandscape ? '10mm' : '15mm'};
+                                position: relative;
+                            }
+                            @media print { 
+                                html, body { background: white; padding: 0; margin: 0; }
+                                .preview-container { padding: 0; display: block; min-width: auto; }
+                                .a4-page { width: 100%; min-height: auto; box-shadow: none; padding: 0; }
+                                @page { size: A4 ${isLandscape ? 'landscape' : 'portrait'}; margin: ${isLandscape ? '10mm' : '10mm'}; }
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="preview-container">
+                            <div class="a4-page">
+                                ${printContent}
+                            </div>
+                        </div>
+                    </body>
                     </html>
                 `);
                 setIsPreviewModalOpen(true);
@@ -2432,8 +2460,8 @@
                                     <h3 className="font-black text-xs uppercase tracking-widest flex items-center gap-2">🖨️ Pratinjau Dokumen Cetak</h3>
                                     <button onClick={()=>setIsPreviewModalOpen(false)} className="bg-slate-800 hover:bg-red-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold transition">✕</button>
                                 </div>
-                                <div className="flex-1 p-4 overflow-hidden bg-slate-300/50">
-                                    <iframe id="preview-frame" srcDoc={previewContent} className="w-full h-full bg-white rounded-xl shadow-lg border border-slate-200" />
+                                <div className="flex-1 p-0 sm:p-4 overflow-hidden bg-slate-300/50">
+                                    <iframe id="preview-frame" srcDoc={previewContent} className="w-full h-full border-none sm:rounded-xl shadow-lg" />
                                 </div>
                                 <div className="p-4 bg-white flex justify-end gap-3 text-xs font-bold border-t z-10">
                                     {currentPrintMode === 'kokum' && (

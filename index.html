@@ -1587,6 +1587,7 @@
                                         <thead className="bg-slate-50 border-b">
                                             <tr>
                                                 <th className="p-3 text-slate-500 uppercase">No</th>
+                                                <th className="p-3 text-slate-500 uppercase">No. Bib</th>
                                                 <th className="p-3 text-slate-500 uppercase">Nama</th>
                                                 <th className="p-3 text-slate-500 uppercase">Kelas</th>
                                                 <th className="p-3 text-slate-500 uppercase">Kategori</th>
@@ -1601,6 +1602,7 @@
                                                 .map((ath, idx) => (
                                                 <tr key={ath.id} className="border-b font-semibold hover:bg-slate-50 transition">
                                                     <td className="p-3 text-slate-500">{idx+1}</td>
+                                                    <td className="p-3 font-mono font-bold text-slate-600">{ath.noBib || "-"}</td>
                                                     <td className="p-3 uppercase text-slate-900">{ath.nama}</td>
                                                     <td className="p-3">{ath.kelas}</td>
                                                     <td className="p-3 text-indigo-600 bg-indigo-50 font-bold">{ath.kategori}</td>
@@ -1635,7 +1637,7 @@
                                             ))}
                                             {(!athletes || athletes.filter(a => athleteHouseFilter === "Semua" || a.rumah === athleteHouseFilter)
                                                      .filter(a => !athleteSearchQuery || (a.nama && a.nama.toLowerCase().includes(athleteSearchQuery.toLowerCase()))).length === 0) && (
-                                                <tr><td colSpan="7" className="text-center py-6 text-slate-400 italic">Tiada rekod atlet dijumpai.</td></tr>
+                                                <tr><td colSpan="8" className="text-center py-6 text-slate-400 italic">Tiada rekod atlet dijumpai.</td></tr>
                                             )}
                                         </tbody>
                                     </table>
@@ -2113,13 +2115,14 @@
                                 <form onSubmit={handleAthleteSubmit} className="space-y-4 font-semibold">
                                     <div><label className="block mb-1 text-slate-500 text-[10px] uppercase">Nama Penuh (Seperti Sijil Lahir)</label><input required type="text" value={athleteForm.nama} onChange={e=>setAthleteForm({...athleteForm, nama:e.target.value.toUpperCase()})} className="w-full border-2 border-slate-200 focus:border-indigo-500 p-2.5 rounded-xl uppercase transition outline-none font-bold" /></div>
                                     <div className="grid grid-cols-2 gap-3">
+                                        <div><label className="block mb-1 text-slate-500 text-[10px] uppercase">No. Bib / No. Peserta</label><input type="text" value={athleteForm.noBib || ""} onChange={e=>setAthleteForm({...athleteForm, noBib:e.target.value})} placeholder="Cth: M012" className="w-full border-2 border-slate-200 focus:border-indigo-500 p-2.5 rounded-xl uppercase transition outline-none font-bold" /></div>
                                         <div><label className="block mb-1 text-slate-500 text-[10px] uppercase">Kelas / Tahun</label><input required type="text" value={athleteForm.kelas} onChange={e=>setAthleteForm({...athleteForm, kelas:e.target.value})} className="w-full border-2 border-slate-200 focus:border-indigo-500 p-2.5 rounded-xl uppercase transition outline-none font-bold" /></div>
-                                        <div><label className="block mb-1 text-slate-500 text-[10px] uppercase">Rumah Sukan</label><select value={athleteForm.rumah} onChange={e=>setAthleteForm({...athleteForm, rumah:e.target.value})} className="w-full border-2 border-slate-200 p-2.5 rounded-xl bg-slate-50 font-bold">{Object.keys(housesMetadata).map(k=><option key={k} value={k}>{k}</option>)}</select></div>
                                     </div>
                                     <div className="grid grid-cols-2 gap-3">
+                                        <div><label className="block mb-1 text-slate-500 text-[10px] uppercase">Rumah Sukan</label><select value={athleteForm.rumah} onChange={e=>setAthleteForm({...athleteForm, rumah:e.target.value})} className="w-full border-2 border-slate-200 p-2.5 rounded-xl bg-slate-50 font-bold">{Object.keys(housesMetadata).map(k=><option key={k} value={k}>{k}</option>)}</select></div>
                                         <div><label className="block mb-1 text-slate-500 text-[10px] uppercase">Jantina</label><select value={athleteForm.jantina} onChange={e=>setAthleteForm({...athleteForm, jantina:e.target.value})} className="w-full border-2 border-slate-200 p-2.5 rounded-xl bg-slate-50 font-bold"><option value="Lelaki">Lelaki</option><option value="Perempuan">Perempuan</option></select></div>
-                                        <div><label className="block mb-1 text-slate-500 text-[10px] uppercase">Kategori Umur</label><select value={athleteForm.kategori} onChange={e=>setAthleteForm({...athleteForm, kategori:e.target.value})} className="w-full border-2 border-slate-200 p-2.5 rounded-xl bg-slate-50 font-bold">{categories.map(c=><option key={c} value={c}>{c}</option>)}</select></div>
                                     </div>
+                                    <div><label className="block mb-1 text-slate-500 text-[10px] uppercase">Kategori Umur</label><select value={athleteForm.kategori} onChange={e=>setAthleteForm({...athleteForm, kategori:e.target.value})} className="w-full border-2 border-slate-200 p-2.5 rounded-xl bg-slate-50 font-bold">{categories.map(c=><option key={c} value={c}>{c}</option>)}</select></div>
                                     <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl shadow-md transition font-bold mt-4 tracking-wide">Simpan Profil Atlet</button>
                                 </form>
                             </div>

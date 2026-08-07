@@ -185,10 +185,17 @@
 
             const [isAssignEventSidebarOpen, setIsAssignEventSidebarOpen] = useState(false);
             const [studentSearchQuery, setStudentSearchQuery] = useState("");
+            const [athleteSearchQuery, setAthleteSearchQuery] = useState("");
             const [selectedStudentId, setSelectedStudentId] = useState("");
             const [selectedEventIds, setSelectedEventIds] = useState([]);
             const [selectedRelayData, setSelectedRelayData] = useState({});
             const [showSearchDropdown, setShowSearchDropdown] = useState(false);
+
+            const [isEventRegModalOpen, setIsEventRegModalOpen] = useState(false);
+            const [activeRegEvent, setActiveRegEvent] = useState(null);
+            const [tempRegData, setTempRegData] = useState({});
+
+            const [gridResults, setGridResults] = useState({});
 
             const [resultForm, setResultForm] = useState({ eventId: "", athleteId: "", kedudukan: "1", catatan: "" });
 
@@ -219,6 +226,18 @@
 
             const adminMenuRef = useRef(null);
             const fileInputRef = useRef(null);
+
+            useEffect(() => {
+                if (resultForm.eventId) {
+                    const initGrid = {};
+                    results.filter(r => r.eventId === resultForm.eventId).forEach(r => {
+                        initGrid[r.athleteId] = { kedudukan: r.kedudukan, catatan: r.catatan || "" };
+                    });
+                    setGridResults(initGrid);
+                } else {
+                    setGridResults({});
+                }
+            }, [resultForm.eventId, results]);
             
             const activeSchoolName = localStorage.getItem('sps_school_name') || DEFAULT_SCHOOL_NAME;
             const activeSchoolSubtitle = localStorage.getItem('sps_school_subtitle') || DEFAULT_SCHOOL_SUBTITLE;
@@ -1233,8 +1252,18 @@
                         const jantina = (rawJantina.startsWith('p') || rawJantina.startsWith('f')) ? "Perempuan" : "Lelaki";
                         const kategori = parts[3] ? parts[3].toUpperCase() : categories[0];
 
+                        let rumahParsed = bulkHouse;
+                        if (parts[4]) {
+                            const rawR = parts[4].trim();
+                            rumahParsed = rawR.charAt(0).toUpperCase() + rawR.slice(1).toLowerCase();
+                            if (!housesMetadata[rumahParsed]) {
+                                const matched = Object.keys(housesMetadata).find(k => k.toLowerCase() === rawR.toLowerCase());
+                                if (matched) rumahParsed = matched;
+                            }
+                        }
+
                         const id = "A_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
-                        const athData = { id, nama, kelas, rumah: bulkHouse, jantina, kategori, acaraIds: [], relayData: {} };
+                        const athData = { id, nama, kelas, rumah: rumahParsed, jantina, kategori, acaraIds: [], relayData: {} };
 
                         newAthletesList.push(athData);
                         if (isCloudActive && db) {
@@ -1509,6 +1538,17 @@
                                                     </div>
                                                 </div>
                                                 <div className="flex flex-wrap gap-2 w-full lg:justify-end">
+                                                    <button onClick={() => {
+                                                        setActiveRegEvent(ev);
+                                                        const initialData = {};
+                                                        athletes.forEach(a => {
+                                                            if (a.acaraIds && a.acaraIds.includes(ev.id)) {
+                                                                initialData[a.id] = { selected: true, pasukan: (a.relayData && a.relayData[ev.id]?.pasukan) || "A", pelari: (a.relayData && a.relayData[ev.id]?.pelari) || "1" };
+                                                            }
+                                                        });
+                                                        setTempRegData(initialData);
+                                                        setIsEventRegModalOpen(true);
+                                                    }} className="flex-1 sm:flex-none bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 py-1.5 px-3 rounded-lg flex items-center justify-center gap-1 font-bold text-[11px] shadow-sm transition whitespace-nowrap">👥 Daftar Peserta</button>
                                                     <button onClick={() => executeBypassPrint('marshall', ev)} className="flex-1 sm:flex-none bg-white hover:bg-slate-100 text-indigo-700 border border-indigo-200 py-1.5 px-3 rounded-lg flex items-center justify-center gap-1 font-bold text-[11px] shadow-sm transition whitespace-nowrap">🖨️ Cetak Marshall</button>
                                                     {ev.jenis === "Balapan" && <button onClick={() => executeBypassPrint('hakim_penamat', ev)} className="flex-1 sm:flex-none bg-white hover:bg-slate-100 text-rose-700 border border-rose-200 py-1.5 px-3 rounded-lg flex items-center justify-center gap-1 font-bold text-[11px] shadow-sm transition whitespace-nowrap">🖨️ Hakim Penamat</button>}
                                                     {ev.jenis === "Padang" && (
@@ -1534,6 +1574,7 @@
                                 <div className="bg-white p-4 border rounded-2xl flex flex-col md:flex-row justify-between md:items-center gap-4 shadow-sm">
                                     <div><h3 className="font-bold">Pengurusan Atlet / Murid</h3><p className="text-xs text-slate-400">Daftar murid dan tetapkan penyertaan acara (Individu & Pasukan).</p></div>
                                     <div className="flex flex-wrap gap-2 items-center">
+                                        <input type="text" placeholder="Cari Nama Atlet..." value={athleteSearchQuery} onChange={e => setAthleteSearchQuery(e.target.value)} className="border p-2 rounded-xl text-xs font-bold bg-slate-50 focus:ring-2 focus:ring-indigo-500 outline-none w-full sm:w-auto min-w-[200px]" />
                                         <select value={athleteHouseFilter} onChange={e => setAthleteHouseFilter(e.target.value)} className="border p-2 rounded-xl text-xs font-bold bg-slate-50 focus:ring-2 focus:ring-indigo-500 outline-none">
                                             <option value="Semua">Semua Rumah</option>
                                             {Object.keys(housesMetadata).map(k => <option key={k} value={k}>Rumah {k}</option>)}
@@ -1556,7 +1597,9 @@
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {athletes.filter(a => athleteHouseFilter === "Semua" || a.rumah === athleteHouseFilter).map((ath, idx) => (
+                                            {athletes.filter(a => athleteHouseFilter === "Semua" || a.rumah === athleteHouseFilter)
+                                                .filter(a => !athleteSearchQuery || a.nama.toLowerCase().includes(athleteSearchQuery.toLowerCase()))
+                                                .map((ath, idx) => (
                                                 <tr key={ath.id} className="border-b font-semibold hover:bg-slate-50 transition">
                                                     <td className="p-3 text-slate-500">{idx+1}</td>
                                                     <td className="p-3 uppercase text-slate-900">{ath.nama}</td>
@@ -1575,16 +1618,25 @@
                                                     </td>
                                                     <td className="p-3">
                                                         <div className="flex justify-center items-center gap-4">
-                                                            <button onClick={() => { setAthleteForm(ath); setIsEditingAthlete(true); setIsAddAthleteSidebarOpen(true); }} className="text-blue-600 hover:text-blue-800 hover:scale-110 transition text-sm">✏️</button>
+                                                            <button onClick={() => { 
+                                                                setSelectedStudentId(ath.id); 
+                                                                setStudentSearchQuery(ath.nama); 
+                                                                setSelectedEventIds(ath.acaraIds||[]); 
+                                                                setSelectedRelayData(ath.relayData||{});
+                                                                setIsAssignEventSidebarOpen(true); 
+                                                            }} className="text-emerald-600 hover:text-emerald-800 hover:scale-110 transition text-sm" title="Tetapan Acara">⏱️</button>
+                                                            <button onClick={() => { setAthleteForm(ath); setIsEditingAthlete(true); setIsAddAthleteSidebarOpen(true); }} className="text-blue-600 hover:text-blue-800 hover:scale-110 transition text-sm" title="Kemaskini Profil">✏️</button>
                                                             <button onClick={() => {
                                                                 if(isCloudActive&&db) db.collection('artifacts').doc(appId).collection('public').doc('data').collection('athletes').doc(ath.id).delete();
                                                                 else setAthletes(athletes.filter(x => x.id !== ath.id));
-                                                            }} className="text-red-500 hover:text-red-700 hover:scale-110 transition text-sm">✕</button>
+                                                            }} className="text-red-500 hover:text-red-700 hover:scale-110 transition text-sm" title="Padam Rekod">✕</button>
                                                         </div>
                                                     </td>
                                                 </tr>
                                             ))}
-                                            {athletes.filter(a => athleteHouseFilter === "Semua" || a.rumah === athleteHouseFilter).length === 0 && (
+                                            {athletes.filter(a => athleteHouseFilter === "Semua" || a.rumah === athleteHouseFilter)
+                                                     .filter(a => !athleteSearchQuery || a.nama.toLowerCase().includes(athleteSearchQuery.toLowerCase()))
+                                                     .length === 0 && (
                                                 <tr><td colSpan="7" className="text-center py-6 text-slate-400 italic">Tiada rekod atlet dijumpai.</td></tr>
                                             )}
                                         </tbody>
@@ -1601,7 +1653,7 @@
                                         <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Pilih Acara Kejohanan</label>
                                         <div className="flex gap-2 items-center">
                                             <select value={resultForm.eventId} onChange={e => setResultForm({...resultForm, eventId:e.target.value})} className="w-full border p-2.5 rounded-xl bg-slate-50 font-bold text-sm hover:bg-white transition focus:ring-2 focus:ring-indigo-500">
-                                                <option value="">-- Sila Pilih Acara Untuk Mengunci Pingat --</option>
+                                                <option value="">-- Sila Pilih Acara Untuk Mengunci Keputusan --</option>
                                                 {eventsWithCode.map(ev => <option key={ev.id} value={ev.id}>[{ev.kodAcara}] {ev.nama} Kategori {ev.kategori}</option>)}
                                             </select>
                                             {userRole !== "pelawat" && <button onClick={() => executeBypassPrint('semua_keputusan')} className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-md whitespace-nowrap transition">🖨️ Cetak Semua Keputusan</button>}
@@ -1609,76 +1661,100 @@
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="grid grid-cols-1 gap-6">
                                     <div className="bg-white border rounded-2xl p-5 shadow-sm space-y-4">
-                                        <h3 className="font-bold border-b pb-2">🏅 Kunci Keputusan Pingat (Podium)</h3>
+                                        <h3 className="font-bold border-b pb-2">🏅 Kunci Keputusan Pingat Secara Grid (Inline / Berpusat)</h3>
                                         {userRole === "pelawat" ? <p className="text-xs text-red-500 italic font-semibold bg-red-50 p-3 rounded-xl border border-red-100">Ciri dikunci untuk Akaun Pelawat.</p> : (
-                                            <form onSubmit={handleResultSubmit} className="space-y-3 text-xs font-bold">
-                                                <select value={resultForm.kedudukan} onChange={e => setResultForm({...resultForm, kedudukan:e.target.value})} className="w-full border p-2 rounded-xl bg-slate-50">
-                                                    <option value="1">🥇 Johan (Emas)</option><option value="2">🥈 Naib Johan (Perak)</option>
-                                                    <option value="3">🥉 Ketiga (Gangsa)</option><option value="4">🏅 Tempat Keempat</option>
-                                                </select>
-                                                <select required value={resultForm.athleteId} onChange={e => setResultForm({...resultForm, athleteId:e.target.value})} className="w-full border p-2 rounded-xl bg-slate-50 uppercase">
-                                                    <option value="">-- Pilih Pemenang Dari Senarai --</option>
-                                                    {(() => {
-                                                        const ev = events.find(e => e.id === resultForm.eventId);
-                                                        if (ev && ev.format === "Berkumpulan") {
-                                                            const evAthletes = athletes.filter(a => a.acaraIds && a.acaraIds.includes(resultForm.eventId));
-                                                            const teams = {};
-                                                            evAthletes.forEach(a => {
-                                                                const rData = (a.relayData && a.relayData[resultForm.eventId]) || { pasukan: "A", pelari: "1" };
-                                                                const tKey = `${a.rumah}_${rData.pasukan}`;
-                                                                if (!teams[tKey]) teams[tKey] = { rumah: a.rumah, pasukan: rData.pasukan };
-                                                            });
-                                                            return Object.values(teams).sort((a,b)=>a.rumah.localeCompare(b.rumah)).map(t => (
-                                                                <option key={`${t.rumah}_${t.pasukan}`} value={`TEAM_${t.rumah}_${t.pasukan}`}>Rumah {t.rumah} (Pasukan {t.pasukan})</option>
-                                                            ));
-                                                        } else {
-                                                            return athletes.filter(a => a.acaraIds && a.acaraIds.includes(resultForm.eventId)).map(a => (
-                                                                <option key={a.id} value={a.id}>{a.nama} (Rumah {a.rumah})</option>
-                                                            ));
+                                            !resultForm.eventId ? <p className="text-slate-400 italic bg-slate-50 p-6 rounded-xl text-center text-xs border border-dashed">Sila pilih acara dari dropdown di atas untuk menyenaraikan peserta dan mula mengunci keputusan.</p> :
+                                            <form onSubmit={async (e) => {
+                                                e.preventDefault();
+                                                const toDelete = results.filter(r => r.eventId === resultForm.eventId);
+                                                
+                                                if (isCloudActive && db) {
+                                                    const batch = db.batch();
+                                                    toDelete.forEach(r => {
+                                                        const ref = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('results').doc(r.id);
+                                                        batch.delete(ref);
+                                                    });
+                                                    Object.entries(gridResults).forEach(([athId, data]) => {
+                                                        if (data.kedudukan && data.kedudukan !== "") {
+                                                            const id = "R_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9);
+                                                            const ref = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('results').doc(id);
+                                                            batch.set(ref, { id, eventId: resultForm.eventId, athleteId: athId, kedudukan: data.kedudukan, catatan: data.catatan });
                                                         }
-                                                    })()}
-                                                </select>
-                                                <input type="text" value={resultForm.catatan} onChange={e => setResultForm({...resultForm, catatan:e.target.value})} placeholder="Catatan Masa/Jarak (Contoh: 10.5s atau 5.2m)" className="w-full border p-2 rounded-xl bg-slate-50" />
-                                                <button type="submit" disabled={!resultForm.eventId} className="w-full bg-slate-800 hover:bg-slate-900 text-white py-2.5 rounded-xl transition disabled:bg-slate-300 disabled:cursor-not-allowed shadow-md">Simpan Keputusan Rasmi</button>
+                                                    });
+                                                    await batch.commit();
+                                                } else {
+                                                    const newResultsList = results.filter(r => r.eventId !== resultForm.eventId);
+                                                    Object.entries(gridResults).forEach(([athId, data]) => {
+                                                        if (data.kedudukan && data.kedudukan !== "") {
+                                                            const id = "R_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9);
+                                                            newResultsList.push({ id, eventId: resultForm.eventId, athleteId: athId, kedudukan: data.kedudukan, catatan: data.catatan });
+                                                        }
+                                                    });
+                                                    setResults(newResultsList);
+                                                }
+                                                createLog("Kunci Keputusan Pukal", `Mengemaskini grid keputusan untuk acara ${resultForm.eventId}`);
+                                                showToastMessage("Semua keputusan acara berjaya disimpan secara pukal!");
+                                            }} className="space-y-4 text-xs font-bold">
+                                                <div className="overflow-x-auto border rounded-xl">
+                                                    <table className="w-full text-left">
+                                                        <thead className="bg-slate-100 border-b">
+                                                            <tr>
+                                                                <th className="p-3 uppercase text-slate-500">Nama Peserta / Pasukan (Rumah)</th>
+                                                                <th className="p-3 uppercase text-slate-500 w-44">Kedudukan</th>
+                                                                <th className="p-3 uppercase text-slate-500 w-48">Catatan Masa / Jarak</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {(() => {
+                                                                const ev = events.find(e => e.id === resultForm.eventId);
+                                                                let activeEntities = [];
+                                                                if (ev) {
+                                                                    if (ev.format === "Berkumpulan") {
+                                                                        const evAthletes = athletes.filter(a => a.acaraIds && a.acaraIds.includes(ev.id));
+                                                                        const teams = {};
+                                                                        evAthletes.forEach(a => {
+                                                                            const rData = (a.relayData && a.relayData[ev.id]) || { pasukan: "A", pelari: "1" };
+                                                                            const tKey = `TEAM_${a.rumah}_${rData.pasukan}`;
+                                                                            if (!teams[tKey]) teams[tKey] = { id: tKey, nameDisplay: `PASUKAN ${rData.pasukan}`, houseDisplay: a.rumah };
+                                                                        });
+                                                                        activeEntities = Object.values(teams).sort((a,b)=>a.houseDisplay.localeCompare(b.houseDisplay));
+                                                                    } else {
+                                                                        activeEntities = athletes.filter(a => a.acaraIds && a.acaraIds.includes(ev.id)).map(a => ({
+                                                                            id: a.id, nameDisplay: a.nama, houseDisplay: a.rumah
+                                                                        })).sort((a,b)=>a.nameDisplay.localeCompare(b.nameDisplay));
+                                                                    }
+                                                                }
+                                                                if (activeEntities.length === 0) return <tr><td colSpan="3" className="p-4 text-center italic text-slate-400 bg-white">Tiada peserta didaftarkan untuk acara ini.</td></tr>;
+                                                                
+                                                                return activeEntities.map(ent => (
+                                                                    <tr key={ent.id} className="border-b bg-white hover:bg-slate-50 transition">
+                                                                        <td className="p-3">
+                                                                            <span className="block text-slate-900 uppercase font-black text-sm">{ent.nameDisplay}</span>
+                                                                            <span className="text-[10px] text-slate-500 uppercase">Rumah {ent.houseDisplay}</span>
+                                                                        </td>
+                                                                        <td className="p-3">
+                                                                            <select value={gridResults[ent.id]?.kedudukan || ""} onChange={e => setGridResults(prev => ({...prev, [ent.id]: { ...(prev[ent.id] || { catatan: "" }), kedudukan: e.target.value }}))} className="w-full border-2 border-slate-200 p-2 rounded-lg bg-slate-50 focus:border-indigo-500 focus:bg-white outline-none transition">
+                                                                                <option value="">-- Tiada --</option>
+                                                                                <option value="1">🥇 1 (Johan)</option>
+                                                                                <option value="2">🥈 2 (Naib Johan)</option>
+                                                                                <option value="3">🥉 3 (Ketiga)</option>
+                                                                                <option value="4">🏅 4 (Keempat)</option>
+                                                                            </select>
+                                                                        </td>
+                                                                        <td className="p-3">
+                                                                            <input type="text" value={gridResults[ent.id]?.catatan || ""} onChange={e => setGridResults(prev => ({...prev, [ent.id]: { ...(prev[ent.id] || { kedudukan: "" }), catatan: e.target.value }}))} placeholder="Cth: 10.5s atau 4.2m" className="w-full border-2 border-slate-200 p-2 rounded-lg bg-slate-50 focus:border-indigo-500 focus:bg-white outline-none transition" />
+                                                                        </td>
+                                                                    </tr>
+                                                                ));
+                                                            })()}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                                <button type="submit" className="w-full bg-slate-800 hover:bg-slate-900 text-white py-3.5 rounded-xl transition shadow-md text-sm tracking-wide font-black">💾 SIMPAN SEMUA KEPUTUSAN (GRID)</button>
                                             </form>
                                         )}
-                                    </div>
-
-                                    <div className="bg-white border rounded-2xl p-5 shadow-sm">
-                                        <h3 className="font-bold border-b pb-2 mb-3">Senarai Pemenang Acara Ini</h3>
-                                        <div className="space-y-2 text-xs">
-                                            {results.filter(r => r.eventId === resultForm.eventId).length === 0 ? <p className="text-slate-400 italic bg-slate-50 p-3 rounded-xl text-center">Sila pilih acara dan simpan pemenang untuk memaparkan senarai.</p> : 
-                                                results.filter(r => r.eventId === resultForm.eventId).sort((a,b)=>parseInt(a.kedudukan)-parseInt(b.kedudukan)).map(res => {
-                                                    let nameDisplay = "-";
-                                                    let houseDisplay = "-";
-                                                    if (res.athleteId && res.athleteId.startsWith("TEAM_")) {
-                                                        const parts = res.athleteId.split('_');
-                                                        nameDisplay = `PASUKAN ${parts[2]}`;
-                                                        houseDisplay = parts[1];
-                                                    } else {
-                                                        const ath = athletes.find(a => a.id === res.athleteId);
-                                                        if (ath) {
-                                                            nameDisplay = ath.nama;
-                                                            houseDisplay = ath.rumah;
-                                                        }
-                                                    }
-                                                    const med = res.kedudukan === "1" ? "🥇" : res.kedudukan === "2" ? "🥈" : res.kedudukan === "3" ? "🥉" : "🏅";
-                                                    return (
-                                                        <div key={res.id} className="bg-slate-50 p-3 rounded-xl border flex justify-between items-center font-bold shadow-sm hover:shadow transition">
-                                                            <span className="uppercase">{med} Ked. {res.kedudukan}: <span className="text-slate-900">{nameDisplay}</span> <span className="text-[10px] text-slate-500">(Rumah {houseDisplay})</span></span>
-                                                            <div className="flex gap-3 items-center">
-                                                                <span className="font-mono bg-white border px-2 py-1 rounded text-[10px]">{res.catatan||"N/A"}</span>
-                                                                {userRole !== "pelawat" && <button onClick={() => {
-                                                                    if(isCloudActive&&db) db.collection('artifacts').doc(appId).collection('public').doc('data').collection('results').doc(res.id).delete();
-                                                                    else setResults(results.filter(x => x.id !== res.id));
-                                                                }} className="text-red-500 hover:scale-110 transition text-sm">✕</button>}
-                                                            </div>
-                                                        </div>
-                                                    )
-                                            })}
-                                        </div>
                                     </div>
                                 </div>
                                 
@@ -1891,12 +1967,12 @@
                                     <button onClick={() => setIsBulkModalOpen(false)} className="text-slate-400 hover:text-slate-700 font-bold text-lg">✕</button>
                                 </div>
                                 <p className="text-[11px] text-slate-500 leading-relaxed">
-                                    Pilih Rumah Sukan, kemudian salin dan tampal (paste) senarai nama murid di bawah. Anda boleh masukkan mengikut format: <br/>
-                                    <code>Nama Penuh | Kelas | Jantina (L/P) | Kategori (Cth: L12TKB)</code><br/>
-                                    <i>(Satu baris untuk setiap seorang murid. Ruang Kelas dan Jantina adalah wajib).</i>
+                                    Salin dan tampal (paste) senarai nama murid di bawah. Anda boleh masukkan mengikut format: <br/>
+                                    <code>Nama Penuh | Kelas | Jantina (L/P) | Kategori (Cth: L12TKB) | Rumah Sukan (Opsyenal)</code><br/>
+                                    <i>(Satu baris untuk setiap seorang murid. Kolum Rumah Sukan akan diutamakan, jika tiada, rumah lalai di bawah akan digunakan).</i>
                                 </p>
                                 <div>
-                                    <label className="block mb-1 text-slate-700 font-bold">Pilih Rumah Sukan untuk Senarai Ini:</label>
+                                    <label className="block mb-1 text-slate-700 font-bold">Rumah Sukan Lalai (Jika tidak dinyatakan dalam jadual):</label>
                                     <select value={bulkHouse} onChange={e => setBulkHouse(e.target.value)} className="w-full border-2 border-slate-200 p-2.5 rounded-xl font-bold bg-slate-50">
                                         {Object.keys(housesMetadata).map(h => <option key={h} value={h}>Rumah {h}</option>)}
                                     </select>
@@ -1904,7 +1980,7 @@
                                 <form onSubmit={handleBulkImportSubmit} className="space-y-3">
                                     <div>
                                         <label className="block mb-1 text-slate-700 font-bold">Senarai Nama Murid (Salin & Tampal dari Excel/Word):</label>
-                                        <textarea required rows="8" value={bulkText} onChange={e => setBulkText(e.target.value)} placeholder={`Ahmad bin Ali | 6 Amanah | Lelaki | L12TKB\nSiti binti Abu | 5 Cerdas | Perempuan | P12TKB\nDanial Hakim | 4 Bijak | L | L10TKB`} className="w-full border-2 border-slate-200 p-3 rounded-xl font-mono text-[11px] bg-slate-50 focus:bg-white focus:border-indigo-500 transition outline-none"></textarea>
+                                        <textarea required rows="8" value={bulkText} onChange={e => setBulkText(e.target.value)} placeholder={`Ahmad bin Ali | 6 Amanah | Lelaki | L12TKB | Merah\nSiti binti Abu | 5 Cerdas | Perempuan | P12TKB | Biru\nDanial Hakim | 4 Bijak | L | L10TKB`} className="w-full border-2 border-slate-200 p-3 rounded-xl font-mono text-[11px] bg-slate-50 focus:bg-white focus:border-indigo-500 transition outline-none"></textarea>
                                     </div>
                                     <div className="flex justify-end gap-2 pt-2">
                                         <button type="button" onClick={() => setIsBulkModalOpen(false)} className="px-5 py-2.5 bg-slate-200 hover:bg-slate-300 rounded-xl font-bold transition">Batal</button>
@@ -2158,6 +2234,113 @@
                                         </form>
                                     )
                                 })()}
+                            </div>
+                        </div>
+                    )}
+
+                    {isEventRegModalOpen && activeRegEvent && (
+                        <div className="fixed inset-0 z-[9999] flex justify-end text-xs">
+                            <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={()=>setIsEventRegModalOpen(false)}></div>
+                            <div className="relative w-full max-w-2xl bg-white p-6 h-full flex flex-col space-y-4 shadow-2xl overflow-y-auto animate-slide-in">
+                                <div className="flex justify-between items-center border-b pb-3">
+                                    <h3 className="font-black text-sm uppercase text-slate-900">👥 Pendaftaran Peserta Berpusat</h3>
+                                    <button onClick={() => setIsEventRegModalOpen(false)} className="text-slate-400 hover:text-slate-700 text-lg font-bold">✕</button>
+                                </div>
+                                <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-100 shadow-sm">
+                                    <p className="font-extrabold text-indigo-900 text-sm uppercase">[{activeRegEvent.kodAcara}] {activeRegEvent.nama}</p>
+                                    <p className="text-indigo-600 font-bold mt-1">Kategori: {activeRegEvent.kategori} | Format: {activeRegEvent.format}</p>
+                                </div>
+                                
+                                <div className="flex-1 overflow-y-auto space-y-2 pr-2">
+                                    {(() => {
+                                        const eligibleAthletes = athletes.filter(a => {
+                                            if (!categoriesMatch(a.kategori, activeRegEvent.kategori)) return false;
+                                            const evCatStr = (activeRegEvent.kategori || "").trim().toUpperCase();
+                                            if (evCatStr === "TERBUKA" || evCatStr === "KESELURUHAN") return true;
+                                            if (a.jantina === "Lelaki" && evCatStr.startsWith("P")) return false;
+                                            if (a.jantina === "Perempuan" && evCatStr.startsWith("L")) return false;
+                                            return true;
+                                        }).sort((a, b) => a.rumah.localeCompare(b.rumah) || a.nama.localeCompare(b.nama));
+                                        
+                                        if (eligibleAthletes.length === 0) return <p className="text-center text-slate-400 italic py-6">Tiada atlet yang melepasi syarat kategori jantina dan umur untuk acara ini.</p>;
+                                        
+                                        return eligibleAthletes.map(ath => {
+                                            const isChecked = !!tempRegData[ath.id]?.selected;
+                                            return (
+                                                <div key={ath.id} className={`bg-white border-2 p-3 rounded-xl transition flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${isChecked ? 'border-indigo-400 shadow-md bg-indigo-50/20' : 'border-slate-100'}`}>
+                                                    <label className="flex items-center gap-3 cursor-pointer flex-1">
+                                                        <input type="checkbox" checked={isChecked} onChange={(e) => {
+                                                            setTempRegData(prev => ({
+                                                                ...prev,
+                                                                [ath.id]: { selected: e.target.checked, pasukan: prev[ath.id]?.pasukan || "A", pelari: prev[ath.id]?.pelari || "1" }
+                                                            }));
+                                                        }} className="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500 cursor-pointer" />
+                                                        <div>
+                                                            <p className="font-bold text-slate-800 uppercase text-sm">{ath.nama}</p>
+                                                            <p className="text-[10px] font-semibold text-slate-500">Rumah {ath.rumah} | Kelas {ath.kelas} | Kategori {ath.kategori}</p>
+                                                        </div>
+                                                    </label>
+                                                    {isChecked && activeRegEvent.format === "Berkumpulan" && (
+                                                        <div className="flex gap-2 w-full sm:w-auto bg-slate-50 p-2 rounded-lg border border-slate-200">
+                                                            <select value={tempRegData[ath.id]?.pasukan || "A"} onChange={e => setTempRegData(prev=>({...prev, [ath.id]:{...prev[ath.id], pasukan:e.target.value}}))} className="border-2 border-slate-200 p-1.5 rounded bg-white outline-none font-bold text-slate-700">
+                                                                <option value="A">Pasukan A</option><option value="B">Pasukan B</option>
+                                                            </select>
+                                                            <select value={tempRegData[ath.id]?.pelari || "1"} onChange={e => setTempRegData(prev=>({...prev, [ath.id]:{...prev[ath.id], pelari:e.target.value}}))} className="border-2 border-slate-200 p-1.5 rounded bg-white outline-none font-bold text-slate-700">
+                                                                <option value="1">Pelari 1</option><option value="2">Pelari 2</option><option value="3">Pelari 3</option><option value="4">Pelari 4</option>
+                                                            </select>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )
+                                        });
+                                    })()}
+                                </div>
+                                
+                                <button onClick={async () => {
+                                    const updatedAthletes = [];
+                                    for (let ath of athletes) {
+                                        const data = tempRegData[ath.id];
+                                        const currentlyHas = ath.acaraIds && ath.acaraIds.includes(activeRegEvent.id);
+                                        const shouldHave = !!data?.selected;
+                        
+                                        if (shouldHave !== currentlyHas || (shouldHave && activeRegEvent.format === 'Berkumpulan')) {
+                                            let newAcaraIds = ath.acaraIds || [];
+                                            let newRelayData = ath.relayData || {};
+                        
+                                            if (shouldHave) {
+                                                if (!currentlyHas) newAcaraIds = [...newAcaraIds, activeRegEvent.id];
+                                                if (activeRegEvent.format === 'Berkumpulan') {
+                                                    newRelayData[activeRegEvent.id] = { pasukan: data.pasukan, pelari: data.pelari };
+                                                }
+                                            } else {
+                                                newAcaraIds = newAcaraIds.filter(id => id !== activeRegEvent.id);
+                                                delete newRelayData[activeRegEvent.id];
+                                            }
+                        
+                                            updatedAthletes.push({ ...ath, acaraIds: newAcaraIds, relayData: newRelayData });
+                                        }
+                                    }
+                                    
+                                    if (updatedAthletes.length > 0) {
+                                        if (isCloudActive && db) {
+                                            const batch = db.batch();
+                                            updatedAthletes.forEach(ath => {
+                                                const ref = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('athletes').doc(ath.id);
+                                                batch.set(ref, ath);
+                                            });
+                                            await batch.commit();
+                                        } else {
+                                            let currentAthletes = [...athletes];
+                                            updatedAthletes.forEach(updated => {
+                                                const idx = currentAthletes.findIndex(a => a.id === updated.id);
+                                                if(idx !== -1) currentAthletes[idx] = updated;
+                                            });
+                                            setAthletes(currentAthletes);
+                                        }
+                                    }
+                                    setIsEventRegModalOpen(false);
+                                    showToastMessage(`Pendaftaran Berpusat Selesai. Sebanyak ${updatedAthletes.length} profil atlet telah dikemaskini secara serentak.`);
+                                }} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3.5 rounded-xl font-bold shadow-md transition tracking-wider mt-4">💾 SIMPAN PENDAFTARAN SERENTAK</button>
                             </div>
                         </div>
                     )}

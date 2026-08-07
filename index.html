@@ -1597,8 +1597,8 @@
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {athletes.filter(a => athleteHouseFilter === "Semua" || a.rumah === athleteHouseFilter)
-                                                .filter(a => !athleteSearchQuery || a.nama.toLowerCase().includes(athleteSearchQuery.toLowerCase()))
+                                            {athletes && athletes.length > 0 && athletes.filter(a => athleteHouseFilter === "Semua" || a.rumah === athleteHouseFilter)
+                                                .filter(a => !athleteSearchQuery || (a.nama && a.nama.toLowerCase().includes(athleteSearchQuery.toLowerCase())))
                                                 .map((ath, idx) => (
                                                 <tr key={ath.id} className="border-b font-semibold hover:bg-slate-50 transition">
                                                     <td className="p-3 text-slate-500">{idx+1}</td>
@@ -1617,7 +1617,7 @@
                                                         </div>
                                                     </td>
                                                     <td className="p-3">
-                                                        <div className="flex justify-center items-center gap-4">
+                                                        <div className="flex justify-center items-center gap-3">
                                                             <button onClick={() => { 
                                                                 setSelectedStudentId(ath.id); 
                                                                 setStudentSearchQuery(ath.nama); 
@@ -1634,9 +1634,8 @@
                                                     </td>
                                                 </tr>
                                             ))}
-                                            {athletes.filter(a => athleteHouseFilter === "Semua" || a.rumah === athleteHouseFilter)
-                                                     .filter(a => !athleteSearchQuery || a.nama.toLowerCase().includes(athleteSearchQuery.toLowerCase()))
-                                                     .length === 0 && (
+                                            {(!athletes || athletes.filter(a => athleteHouseFilter === "Semua" || a.rumah === athleteHouseFilter)
+                                                     .filter(a => !athleteSearchQuery || (a.nama && a.nama.toLowerCase().includes(athleteSearchQuery.toLowerCase()))).length === 0) && (
                                                 <tr><td colSpan="7" className="text-center py-6 text-slate-400 italic">Tiada rekod atlet dijumpai.</td></tr>
                                             )}
                                         </tbody>

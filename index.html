@@ -1580,7 +1580,6 @@
                                             {Object.keys(housesMetadata).map(k => <option key={k} value={k}>Rumah {k}</option>)}
                                         </select>
                                         <button onClick={() => { setAthleteForm({ id:"", nama:"", kelas:"", rumah:Object.keys(housesMetadata)[0]||"Merah", jantina:"Lelaki", kategori:categories[0] }); setIsEditingAthlete(false); setIsAddAthleteSidebarOpen(true); }} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-xs font-bold shadow transition">+ Tambah Atlet</button>
-                                        <button onClick={() => { setSelectedStudentId(""); setStudentSearchQuery(""); setSelectedEventIds([]); setSelectedRelayData({}); setIsAssignEventSidebarOpen(true); }} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-bold shadow transition">⏱️ Tetapan Acara Murid</button>
                                     </div>
                                 </div>
                                 <div className="bg-white border rounded-2xl overflow-x-auto shadow-sm">
